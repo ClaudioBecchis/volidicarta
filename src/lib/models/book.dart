@@ -9,6 +9,8 @@ class Book {
   final String? isbn;
   final int? pageCount;
   final String? categories;
+  final String? previewLink;   // link anteprima Google Books
+  final String? coverLargeUrl; // copertina alta risoluzione
 
   Book({
     required this.id,
@@ -21,6 +23,8 @@ class Book {
     this.isbn,
     this.pageCount,
     this.categories,
+    this.previewLink,
+    this.coverLargeUrl,
   });
 
   factory Book.fromGoogleApi(Map<String, dynamic> json) {
@@ -33,10 +37,17 @@ class Book {
             ) ??
         {};
 
-    String? cover = imageLinks['thumbnail'] as String?;
-    if (cover != null) {
-      cover = cover.replaceFirst('http://', 'https://');
-    }
+    String? toHttps(String? url) =>
+        url?.replaceFirst('http://', 'https://');
+
+    final cover = toHttps(imageLinks['thumbnail'] as String?);
+    final coverLarge = toHttps(
+        imageLinks['extraLarge'] as String? ??
+        imageLinks['large'] as String? ??
+        imageLinks['medium'] as String? ??
+        imageLinks['thumbnail'] as String?);
+    final previewLink = toHttps(json['volumeInfo']?['previewLink'] as String?
+        ?? json['accessInfo']?['webReaderLink'] as String?);
 
     return Book(
       id: json['id'] ?? '',
@@ -44,11 +55,13 @@ class Book {
       authors: (info['authors'] as List?)?.join(', ') ?? 'Autore sconosciuto',
       description: info['description'],
       coverUrl: cover,
+      coverLargeUrl: coverLarge,
       publisher: info['publisher'],
       publishedDate: info['publishedDate'],
       isbn: identifiers['identifier'],
       pageCount: info['pageCount'],
       categories: (info['categories'] as List?)?.join(', '),
+      previewLink: previewLink,
     );
   }
 }

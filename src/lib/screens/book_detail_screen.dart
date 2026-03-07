@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/book.dart';
 import '../models/review.dart';
 import '../services/auth_service.dart';
@@ -30,6 +31,27 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     if (uid == null) return;
     final r = await DbHelper().getReviewForBook(uid, widget.book.id);
     if (mounted) setState(() { _review = r; _loading = false; });
+  }
+
+  void _showCoverFullscreen(String url) {
+    showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: GestureDetector(
+          onTap: () => Navigator.pop(context),
+          child: InteractiveViewer(
+            child: CachedNetworkImage(
+              imageUrl: url,
+              fit: BoxFit.contain,
+              errorWidget: (_, __, ___) =>
+                  const Icon(Icons.broken_image, color: Colors.white, size: 80),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _deleteReview() async {
@@ -147,6 +169,69 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 ),
               ),
             ),
+            // Anteprima copertina grande (se disponibile)
+            if (book.coverLargeUrl != null) ...[
+              const SizedBox(height: 12),
+              Card(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12)),
+                clipBehavior: Clip.antiAlias,
+                child: GestureDetector(
+                  onTap: () => _showCoverFullscreen(book.coverLargeUrl!),
+                  child: Stack(
+                    alignment: Alignment.bottomRight,
+                    children: [
+                      CachedNetworkImage(
+                        imageUrl: book.coverLargeUrl!,
+                        width: double.infinity,
+                        height: 220,
+                        fit: BoxFit.contain,
+                        placeholder: (_, __) => const SizedBox(height: 220,
+                            child: Center(child: CircularProgressIndicator())),
+                        errorWidget: (_, __, ___) => const SizedBox.shrink(),
+                      ),
+                      Container(
+                        margin: const EdgeInsets.all(8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: Colors.black54,
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.zoom_in, color: Colors.white, size: 14),
+                            SizedBox(width: 4),
+                            Text('Ingrandisci',
+                                style: TextStyle(
+                                    color: Colors.white, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+            // Pulsante Anteprima Google Books
+            if (book.previewLink != null) ...[
+              const SizedBox(height: 8),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final uri = Uri.parse(book.previewLink!);
+                    if (await canLaunchUrl(uri)) {
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
+                    }
+                  },
+                  icon: const Icon(Icons.preview_outlined),
+                  label: const Text('Anteprima su Google Books'),
+                ),
+              ),
+            ],
             // Descrizione
             if (book.description != null) ...[
               const SizedBox(height: 12),
