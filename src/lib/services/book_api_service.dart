@@ -2,19 +2,24 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/book.dart';
+import '../config/app_config.dart';
 
 class BookApiService {
   static const _base = 'https://www.googleapis.com/books/v1/volumes';
 
-  // Cerca libri per titolo, autore, ISBN, ecc.
-  // Funziona con Amazon, Feltrinelli, IBS, Mondadori, ecc.
-  // (tutti i libri su Google Books)
+  String _addKey(String url) {
+    if (AppConfig.hasGoogleApiKey) {
+      return '$url&key=${AppConfig.googleBooksApiKey}';
+    }
+    return url;
+  }
+
   Future<({List<Book> books, String? error})> search(
       String query, {int maxResults = 20}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
     final encoded = Uri.encodeQueryComponent(query.trim());
-    final uri = Uri.parse(
-        '$_base?q=$encoded&maxResults=$maxResults&langRestrict=it&printType=books');
+    final uri = Uri.parse(_addKey(
+        '$_base?q=$encoded&maxResults=$maxResults&langRestrict=it&printType=books'));
     return _fetch(uri);
   }
 
@@ -22,14 +27,19 @@ class BookApiService {
       String query, {int maxResults = 20}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
     final encoded = Uri.encodeQueryComponent(query.trim());
-    final uri = Uri.parse(
-        '$_base?q=$encoded&maxResults=$maxResults&printType=books');
+    final uri = Uri.parse(_addKey(
+        '$_base?q=$encoded&maxResults=$maxResults&printType=books'));
     return _fetch(uri);
   }
 
   Future<({List<Book> books, String? error})> _fetch(Uri uri) async {
     try {
       final res = await http.get(uri).timeout(const Duration(seconds: 12));
+      if (res.statusCode == 429) {
+        return (books: <Book>[], error:
+            'Troppo traffico su Google Books (errore 429).\n'
+            'Attendi qualche minuto e riprova.');
+      }
       if (res.statusCode != 200) {
         return (books: <Book>[], error: 'Errore server: ${res.statusCode}');
       }

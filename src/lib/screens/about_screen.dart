@@ -1,6 +1,9 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
 import '../config/supabase_config.dart';
 
 class AboutScreen extends StatefulWidget {
@@ -13,14 +16,18 @@ class AboutScreen extends StatefulWidget {
 class _AboutScreenState extends State<AboutScreen> {
   static const _currentVersion = '1.0.0';
   bool _checking = false;
+  bool _downloading = false;
+  double _downloadProgress = 0;
   String? _updateMessage;
   bool _hasUpdate = false;
+  String? _latestVersion;
+  String? _downloadUrl;
 
   Future<void> _checkUpdates() async {
     setState(() { _checking = true; _updateMessage = null; _hasUpdate = false; });
     try {
       final uri = Uri.parse(
-          '${SupabaseConfig.url}/rest/v1/app_version?select=version,release_notes&order=id.desc&limit=1');
+          '${SupabaseConfig.url}/rest/v1/app_version?select=version,release_notes,download_url&order=id.desc&limit=1');
       final res = await http.get(uri, headers: {
         'apikey': SupabaseConfig.anonKey,
         'Authorization': 'Bearer ${SupabaseConfig.anonKey}',
@@ -30,13 +37,15 @@ class _AboutScreenState extends State<AboutScreen> {
         if (data.isNotEmpty) {
           final latest = data.first['version'] as String;
           final notes = data.first['release_notes'] as String? ?? '';
+          _downloadUrl = data.first['download_url'] as String?;
+          _latestVersion = latest;
           if (latest != _currentVersion) {
             setState(() {
               _hasUpdate = true;
-              _updateMessage = 'Nuova versione disponibile: $latest\n\n$notes';
+              _updateMessage = 'Nuova versione disponibile: v$latest\n\n$notes';
             });
           } else {
-            setState(() => _updateMessage = 'Sei già alla versione più recente ($latest).');
+            setState(() => _updateMessage = 'Sei già alla versione più recente (v$latest).');
           }
         }
       } else {
@@ -46,6 +55,71 @@ class _AboutScreenState extends State<AboutScreen> {
       setState(() => _updateMessage = 'Errore di rete. Controlla la connessione.');
     } finally {
       if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  Future<void> _downloadAndInstall() async {
+    if (_downloadUrl == null) return;
+    // Su web: apri link nel browser
+    if (kIsWeb) {
+      // non possiamo installare su web, ma possiamo mostrare il link
+      setState(() => _updateMessage = 'Scarica la nuova versione dal sito:\n$_downloadUrl');
+      return;
+    }
+    // Solo Windows supporta install automatico
+    if (defaultTargetPlatform != TargetPlatform.windows) {
+      setState(() => _updateMessage = 'Aggiornamento automatico disponibile solo su Windows.\nScarica manualmente da:\n$_downloadUrl');
+      return;
+    }
+
+    setState(() { _downloading = true; _downloadProgress = 0; });
+    try {
+      final tmpDir = await getTemporaryDirectory();
+      final installer = File('${tmpDir.path}\\VoliDiCarta_v${_latestVersion}_Setup.exe');
+
+      final req = http.Request('GET', Uri.parse(_downloadUrl!));
+      final response = await req.send().timeout(const Duration(minutes: 5));
+      final total = response.contentLength ?? 0;
+      int received = 0;
+      final bytes = <int>[];
+
+      await for (final chunk in response.stream) {
+        bytes.addAll(chunk);
+        received += chunk.length;
+        if (total > 0 && mounted) {
+          setState(() => _downloadProgress = received / total);
+        }
+      }
+      await installer.writeAsBytes(bytes);
+      if (!mounted) return;
+      setState(() { _downloading = false; _downloadProgress = 1; });
+
+      // Mostra conferma prima di avviare l'installer
+      final confirm = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text('Aggiornamento scaricato'),
+          content: Text('L\'installer di v${_latestVersion ?? ''} è pronto.\n\nVerrà avviato il wizard di installazione. L\'app si chiuderà.'),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
+            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Installa ora')),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+
+      // Avvia l'installer e chiudi l'app
+      await Process.start(installer.path, [], runInShell: false);
+      exit(0);
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _downloading = false;
+          _updateMessage = 'Download fallito: ${e.toString()}\n\nScarica manualmente da:\n$_downloadUrl';
+          _hasUpdate = true;
+        });
+      }
     }
   }
 
