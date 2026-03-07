@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/book.dart';
 import '../models/review.dart';
+import '../models/wishlist_book.dart';
 import '../services/book_api_service.dart';
 import '../services/auth_service.dart';
 import '../database/db_helper.dart';
@@ -24,6 +25,7 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _searched = false;
   bool _italianOnly = true;
   Map<String, Review> _reviewedMap = {}; // bookId → Review
+  Set<String> _wishlistIds = {}; // bookId → in wishlist
 
   @override
   void initState() {
@@ -35,8 +37,12 @@ class _SearchScreenState extends State<SearchScreen> {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
     final reviews = await DbHelper().getReviewsByUser(uid);
+    final wishlist = await DbHelper().getWishlist(uid);
     if (mounted) {
-      setState(() => _reviewedMap = {for (final r in reviews) r.bookId: r});
+      setState(() {
+        _reviewedMap = {for (final r in reviews) r.bookId: r};
+        _wishlistIds = {for (final w in wishlist) w.bookId};
+      });
     }
   }
 
@@ -48,6 +54,41 @@ class _SearchScreenState extends State<SearchScreen> {
         ? await _api.search(q)
         : await _api.searchAll(q);
     if (mounted) setState(() { _results = res.books; _error = res.error; _loading = false; });
+  }
+
+  Future<void> _toggleWishlist(Book book) async {
+    final uid = AuthService().currentUser?.id;
+    if (uid == null) return;
+    final inWish = _wishlistIds.contains(book.id);
+    if (inWish) {
+      await DbHelper().removeFromWishlist(uid, book.id);
+      if (mounted) setState(() => _wishlistIds.remove(book.id));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Rimosso dalla lista "Da leggere"'),
+                duration: const Duration(seconds: 2)));
+      }
+    } else {
+      final wb = WishlistBook(
+        userId: uid,
+        bookId: book.id,
+        bookTitle: book.title,
+        bookAuthor: book.authors,
+        bookCoverUrl: book.coverUrl,
+        bookPublisher: book.publisher,
+        bookYear: book.publishedDate != null && book.publishedDate!.length >= 4
+            ? book.publishedDate!.substring(0, 4)
+            : book.publishedDate,
+        addedAt: DateTime.now().toIso8601String(),
+      );
+      await DbHelper().addToWishlist(wb);
+      if (mounted) setState(() => _wishlistIds.add(book.id));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Aggiunto a "Da leggere" 🔖'),
+                duration: Duration(seconds: 2)));
+      }
+    }
   }
 
   Future<void> _selectBook(Book book) async {
@@ -216,7 +257,8 @@ class _SearchScreenState extends State<SearchScreen> {
         return BookCard(
           book: book,
           hasReview: _reviewedMap.containsKey(book.id),
-          // Tap sul titolo/copertina → dettaglio libro
+          inWishlist: _wishlistIds.contains(book.id),
+          onWishlistToggle: () => _toggleWishlist(book),
           onTap: () async {
             await Navigator.push(
               context,
@@ -225,7 +267,6 @@ class _SearchScreenState extends State<SearchScreen> {
             );
             _loadReviewed();
           },
-          // Pulsante diretto → vai subito alla recensione
           onSelectRead: () => _selectBook(book),
         );
       },

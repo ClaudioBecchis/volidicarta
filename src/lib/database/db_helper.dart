@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/review.dart';
+import '../models/wishlist_book.dart';
 
 class DbHelper {
   static final DbHelper _instance = DbHelper._();
@@ -19,13 +20,14 @@ class DbHelper {
     final path = join(dbPath, 'volidicarta.db');
     return openDatabase(
       path,
-      version: 4,
+      version: 5,
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
   }
 
   Future<void> _onCreate(Database db, int version) async {
+    await _createWishlist(db);
     await db.execute('''
       CREATE TABLE reviews (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -59,7 +61,30 @@ class DbHelper {
       // v4: aggiunti start_date e end_date
       await db.execute('ALTER TABLE reviews ADD COLUMN start_date TEXT');
       await db.execute('ALTER TABLE reviews ADD COLUMN end_date TEXT');
+      await _createWishlist(db);
+    } else if (oldVersion < 5) {
+      // v5: nuova tabella wishlist
+      await _createWishlist(db);
     }
+  }
+
+  Future<void> _createWishlist(Database db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS wishlist (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id TEXT NOT NULL,
+        book_id TEXT NOT NULL,
+        book_title TEXT NOT NULL,
+        book_author TEXT NOT NULL,
+        book_cover_url TEXT,
+        book_publisher TEXT,
+        book_year TEXT,
+        book_genre TEXT,
+        notes TEXT,
+        added_at TEXT NOT NULL,
+        UNIQUE(user_id, book_id)
+      )
+    ''');
   }
 
   // --- Reviews ---
@@ -127,5 +152,44 @@ class DbHelper {
           0;
     }
     return {'total': total, 'avg': avg, 'distribution': dist};
+  }
+
+  // --- Wishlist ---
+
+  Future<int> addToWishlist(WishlistBook book) async {
+    final db = await database;
+    return db.insert('wishlist', book.toMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace);
+  }
+
+  Future<int> removeFromWishlist(String userId, String bookId) async {
+    final db = await database;
+    return db.delete('wishlist',
+        where: 'user_id = ? AND book_id = ?', whereArgs: [userId, bookId]);
+  }
+
+  Future<List<WishlistBook>> getWishlist(String userId) async {
+    final db = await database;
+    final res = await db.query('wishlist',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        orderBy: 'added_at DESC');
+    return res.map(WishlistBook.fromMap).toList();
+  }
+
+  Future<bool> isInWishlist(String userId, String bookId) async {
+    final db = await database;
+    final res = await db.query('wishlist',
+        where: 'user_id = ? AND book_id = ?',
+        whereArgs: [userId, bookId],
+        limit: 1);
+    return res.isNotEmpty;
+  }
+
+  Future<int> wishlistCount(String userId) async {
+    final db = await database;
+    return Sqflite.firstIntValue(await db.rawQuery(
+            'SELECT COUNT(*) FROM wishlist WHERE user_id = ?', [userId])) ??
+        0;
   }
 }

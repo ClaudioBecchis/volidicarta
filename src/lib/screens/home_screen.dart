@@ -9,6 +9,7 @@ import 'add_book_manual_screen.dart';
 import 'about_screen.dart';
 import 'community_screen.dart';
 import 'settings_screen.dart';
+import 'wishlist_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +25,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _DashboardTab(),
     SearchScreen(),
     MyReviewsScreen(),
+    WishlistScreen(),
     StatsScreen(),
     CommunityScreen(),
   ];
@@ -48,6 +50,10 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: Icon(Icons.rate_review_outlined),
               selectedIcon: Icon(Icons.rate_review),
               label: 'Recensioni'),
+          NavigationDestination(
+              icon: Icon(Icons.bookmark_border),
+              selectedIcon: Icon(Icons.bookmark),
+              label: 'Da leggere'),
           NavigationDestination(
               icon: Icon(Icons.bar_chart_outlined),
               selectedIcon: Icon(Icons.bar_chart),
@@ -272,13 +278,24 @@ class _DashboardTabState extends State<_DashboardTab> {
               ),
               const SizedBox(height: 8),
               _ActionCard(
+                icon: Icons.bookmark_border,
+                title: 'Da Leggere',
+                subtitle: 'La tua lista di libri da leggere',
+                onTap: () {
+                  final state = context
+                      .findAncestorStateOfType<_HomeScreenState>();
+                  state?.setState(() => state._tab = 3);
+                },
+              ),
+              const SizedBox(height: 8),
+              _ActionCard(
                 icon: Icons.bar_chart,
                 title: 'Statistiche',
                 subtitle: 'Vedi le statistiche delle tue letture',
                 onTap: () {
                   final state = context
                       .findAncestorStateOfType<_HomeScreenState>();
-                  state?.setState(() => state._tab = 3);
+                  state?.setState(() => state._tab = 4);
                 },
               ),
               const SizedBox(height: 8),
@@ -289,7 +306,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                 onTap: () {
                   final state = context
                       .findAncestorStateOfType<_HomeScreenState>();
-                  state?.setState(() => state._tab = 4);
+                  state?.setState(() => state._tab = 5);
                 },
               ),
             ],

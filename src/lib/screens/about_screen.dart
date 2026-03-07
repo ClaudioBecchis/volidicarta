@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../config/supabase_config.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -19,9 +20,10 @@ class _AboutScreenState extends State<AboutScreen> {
     setState(() { _checking = true; _updateMessage = null; _hasUpdate = false; });
     try {
       final uri = Uri.parse(
-          'https://qyoupoyikbtizcqrswkt.supabase.co/rest/v1/app_version?select=version,release_notes&order=id.desc&limit=1');
+          '${SupabaseConfig.url}/rest/v1/app_version?select=version,release_notes&order=id.desc&limit=1');
       final res = await http.get(uri, headers: {
-        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5b3Vwb3lpa2J0aXpjcXJzd2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE0MTE5MTIsImV4cCI6MjA1Njk4NzkxMn0.Q_6GiJ_2-VoYSHCqAzLT8BrFl09HvlezZkD3XPJZ_UU',
+        'apikey': SupabaseConfig.anonKey,
+        'Authorization': 'Bearer ${SupabaseConfig.anonKey}',
       }).timeout(const Duration(seconds: 10));
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body) as List;

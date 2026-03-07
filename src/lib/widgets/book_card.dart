@@ -7,6 +7,8 @@ class BookCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback? onSelectRead; // pulsante diretto "Ho letto"
   final bool hasReview;
+  final bool inWishlist;
+  final VoidCallback? onWishlistToggle;
 
   const BookCard({
     super.key,
@@ -14,6 +16,8 @@ class BookCard extends StatelessWidget {
     required this.onTap,
     this.onSelectRead,
     this.hasReview = false,
+    this.inWishlist = false,
+    this.onWishlistToggle,
   });
 
   @override
@@ -67,6 +71,22 @@ class BookCard extends StatelessWidget {
                             padding: EdgeInsets.only(left: 4),
                             child: Icon(Icons.check_circle,
                                 color: Color(0xFF1A5276), size: 18),
+                          ),
+                        if (onWishlistToggle != null)
+                          GestureDetector(
+                            onTap: onWishlistToggle,
+                            child: Padding(
+                              padding: const EdgeInsets.only(left: 4),
+                              child: Icon(
+                                inWishlist
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: inWishlist
+                                    ? const Color(0xFFFFB300)
+                                    : Colors.grey,
+                                size: 20,
+                              ),
+                            ),
                           ),
                       ],
                     ),
