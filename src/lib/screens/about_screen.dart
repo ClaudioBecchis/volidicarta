@@ -232,6 +232,42 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                   ),
                 ],
+                if (_downloading) ...[
+                  const SizedBox(height: 12),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: _downloadProgress > 0 ? _downloadProgress : null,
+                      minHeight: 8,
+                      backgroundColor: Colors.grey.shade200,
+                      color: const Color(0xFF1A5276),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _downloadProgress > 0
+                        ? 'Download: ${(_downloadProgress * 100).toStringAsFixed(0)}%'
+                        : 'Download in corso...',
+                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                if (_hasUpdate && _downloadUrl != null && !_downloading) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: _downloadAndInstall,
+                      icon: const Icon(Icons.download_rounded),
+                      label: const Text('Installa Aggiornamento'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF1A5276),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
                 // Divider
                 const Divider(),
                 const SizedBox(height: 24),
