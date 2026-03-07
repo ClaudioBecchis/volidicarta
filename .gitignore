@@ -1,0 +1,24 @@
+# Binari compilati e installer
+installer/
+output/
+keystore/
+*.jks
+*.keystore
+*.apk
+*.exe
+*.log
+
+# Script di setup locali (non utili per altri sviluppatori)
+*.ps1
+ISTRUZIONI.txt
+
+# Vecchia cartella progetto non aggiornata
+book_review/
+
+# Git helper
+git_init.ps1
+git_publish.ps1
+rename_app.ps1
+generate_icons.ps1
+build_windows.ps1
+build_windows.log
