@@ -14,7 +14,7 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  static const _currentVersion = '1.0.1';
+  static const _currentVersion = '1.0.2';
   bool _checking = false;
   bool _downloading = false;
   double _downloadProgress = 0;

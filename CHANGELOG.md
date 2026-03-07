@@ -4,6 +4,15 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.0.2] - 2026-03-07
+
+### Migliorato
+- **Anti-429**: cache in memoria delle ricerche (stessa query non chiama l'API due volte)
+- **Rate limiting**: intervallo minimo di 1.5s tra chiamate senza chiave API
+- **Retry automatico**: in caso di errore 429, l'app attende 4 secondi e riprova automaticamente
+
+---
+
 ## [1.0.1] - 2026-03-07
 
 ### Aggiunto
