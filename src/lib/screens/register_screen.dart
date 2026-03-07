@@ -122,7 +122,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   color: const Color(0xFF1A5276),
                                   fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('BookShelf Community',
+                      Text('Voli di Carta Community',
                           style: TextStyle(
                               color: Colors.grey.shade600, fontSize: 13)),
                       const SizedBox(height: 24),

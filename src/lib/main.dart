@@ -50,7 +50,7 @@ class _BookReviewAppState extends State<BookReviewApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BookShelf',
+      title: 'Voli di Carta',
       debugShowCheckedModeBanner: false,
       themeMode: _settings.themeMode,
       locale: _settings.locale,

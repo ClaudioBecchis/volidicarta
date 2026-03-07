@@ -80,7 +80,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 ),
                 const SizedBox(height: 20),
                 const Text(
-                  'BookShelf',
+                  'Voli di Carta',
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,

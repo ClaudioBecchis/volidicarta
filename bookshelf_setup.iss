@@ -1,4 +1,4 @@
-#define MyAppName "BookShelf"
+#define MyAppName "Voli di Carta"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Claudio Becchis - PolarisCore.it"
 #define MyAppURL "https://polariscore.it"
@@ -19,7 +19,7 @@ DefaultGroupName={#MyAppName}
 AllowNoIcons=yes
 LicenseFile=
 OutputDir=installer
-OutputBaseFilename=BookShelf_Setup_v{#MyAppVersion}
+OutputBaseFilename=Voli di Carta_Setup_v{#MyAppVersion}
 Compression=lzma2/ultra64
 SolidCompression=yes
 WizardStyle=modern
@@ -41,13 +41,13 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [CustomMessages]
 italian.WelcomeLabel1=Benvenuto nel wizard di installazione di [name]
-italian.WelcomeLabel2=Questo wizard installerà [name/ver] sul tuo computer.%n%nBookShelf ti permette di recensire i libri che leggi e condividerli con la community.%n%nSviluppato da Claudio Becchis · polariscore.it
+italian.WelcomeLabel2=Questo wizard installerà [name/ver] sul tuo computer.%n%nVoli di Carta ti permette di recensire i libri che leggi e condividerli con la community.%n%nSviluppato da Claudio Becchis · polariscore.it
 english.WelcomeLabel1=Welcome to the [name] Setup Wizard
-english.WelcomeLabel2=This wizard will install [name/ver] on your computer.%n%nBookShelf lets you review books you read and share them with the community.%n%nDeveloped by Claudio Becchis · polariscore.it
+english.WelcomeLabel2=This wizard will install [name/ver] on your computer.%n%nVoli di Carta lets you review books you read and share them with the community.%n%nDeveloped by Claudio Becchis · polariscore.it
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
-Name: "startupicon"; Description: "Avvia BookShelf all'avvio di Windows"; GroupDescription: "Opzioni:"; Flags: unchecked
+Name: "startupicon"; Description: "Avvia Voli di Carta all'avvio di Windows"; GroupDescription: "Opzioni:"; Flags: unchecked
 
 [Files]
 Source: "{#MyAppReleaseDir}\{#MyAppExeName}"; DestDir: "{app}"; Flags: ignoreversion

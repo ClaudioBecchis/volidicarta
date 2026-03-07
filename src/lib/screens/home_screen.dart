@@ -97,7 +97,7 @@ class _DashboardTabState extends State<_DashboardTab> {
     return Scaffold(
       backgroundColor: const Color(0xFFEBF5FB),
       appBar: AppBar(
-        title: const Text('BookShelf'),
+        title: const Text('Voli di Carta'),
         actions: [
           PopupMenuButton(
             icon: const Icon(Icons.account_circle_outlined),

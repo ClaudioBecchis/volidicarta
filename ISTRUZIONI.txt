@@ -1,0 +1,81 @@
+========================================
+  BookShelf - App Recensioni Libri
+========================================
+
+REQUISITI
+---------
+- Windows 10/11
+- Flutter SDK (lo script lo installa se hai winget)
+- Per APK Android: Android Studio + Java JDK 17+
+
+COME COMPILARE (metodo semplice)
+---------------------------------
+1. Apri PowerShell come Amministratore
+2. Naviga in questa cartella:
+     cd C:\Users\Black\BookReview
+3. Esegui:
+     Set-ExecutionPolicy Bypass -Scope Process
+     .\SETUP.ps1
+
+Lo script:
+  - Verifica/installa Flutter
+  - Crea il progetto
+  - Compila EXE Windows e/o APK Android
+  - Output in: C:\Users\Black\BookReview\output\
+
+FUNZIONALITA' DELL'APP
+-----------------------
+1. REGISTRAZIONE / LOGIN
+   - Crea un account con username, email e password
+   - Accesso con username O email
+   - Sessione mantenuta tra i riavvii
+
+2. CERCA LIBRI
+   - Cerca per titolo, autore, ISBN
+   - Fonte: Google Books API (copre Amazon, Feltrinelli, IBS,
+     Mondadori, Einaudi, ecc.)
+   - Filtro Italiano / Tutte le lingue
+   - Copertine e info complete (editore, anno, pagine, descrizione)
+
+3. SCRIVI RECENSIONE
+   - Valutazione da 1 a 5 stelle
+   - Titolo recensione (opzionale)
+   - Testo libero (opzionale, max 2000 caratteri)
+   - Data di lettura (opzionale)
+
+4. LE MIE RECENSIONI
+   - Lista di tutti i libri recensiti
+   - Ricerca nelle tue recensioni
+   - Filtro per numero di stelle
+   - Modifica o elimina recensioni
+
+5. STATISTICHE
+   - Totale libri letti
+   - Media voti
+   - Distribuzione stelle
+
+INSTALLAZIONE ANDROID
+---------------------
+1. Abilita "Origini sconosciute" nelle impostazioni Android
+2. Copia BookShelf.apk sul telefono
+3. Apri il file e installa
+   OPPURE via ADB: adb install BookShelf.apk
+
+STRUTTURA FILE
+--------------
+BookReview/
+  SETUP.ps1          <- Script build automatico
+  ISTRUZIONI.txt     <- Questo file
+  src/               <- Codice sorgente Flutter
+    pubspec.yaml
+    lib/
+      main.dart
+      database/      <- SQLite locale
+      models/        <- User, Book, Review
+      screens/       <- Schermate app
+      services/      <- Auth + Google Books API
+      widgets/       <- StarRating, BookCard
+  output/            <- Build compilati (creato dal setup)
+    BookShelf-Windows/
+      book_review.exe
+    BookShelf.apk

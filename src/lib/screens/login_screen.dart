@@ -58,7 +58,7 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await Supabase.instance.client.auth.signInWithOAuth(
         provider,
-        redirectTo: 'io.supabase.bookshelf://login-callback/',
+        redirectTo: 'io.supabase.Voli di Carta://login-callback/',
       );
     } on AuthException catch (e) {
       if (e.message.toLowerCase().contains('not enabled') ||
@@ -147,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                   color: const Color(0xFF1A5276),
                                   fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
-                      Text('BookShelf Community',
+                      Text('Voli di Carta Community',
                           style: TextStyle(
                               color: Colors.grey.shade600, fontSize: 13)),
                       const SizedBox(height: 24),

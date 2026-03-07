@@ -89,7 +89,7 @@ class _CommunityAuthScreenState extends State<CommunityAuthScreen>
                   const SizedBox(height: 24),
                   const Icon(Icons.people_rounded, size: 56, color: Color(0xFF1A5276)),
                   const SizedBox(height: 8),
-                  const Text('BookShelf Community',
+                  const Text('Voli di Carta Community',
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold,
                           color: Color(0xFF1A5276))),
                   const SizedBox(height: 4),

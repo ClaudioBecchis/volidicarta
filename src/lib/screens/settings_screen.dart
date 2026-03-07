@@ -134,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
           Center(
             child: Text(
-              'BookShelf v1.0.0\nClaudio Becchis · polariscore.it',
+              'Voli di Carta v1.0.0\nClaudio Becchis · polariscore.it',
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: Colors.grey.shade400,

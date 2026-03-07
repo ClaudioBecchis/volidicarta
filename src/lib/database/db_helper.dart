@@ -16,7 +16,7 @@ class DbHelper {
 
   Future<Database> _initDb() async {
     final dbPath = await getDatabasesPath();
-    final path = join(dbPath, 'bookshelf.db');
+    final path = join(dbPath, 'volidicarta.db');
     return openDatabase(
       path,
       version: 4,

@@ -42,7 +42,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const Icon(Icons.menu_book_rounded, size: 96, color: Colors.white),
             const SizedBox(height: 20),
             Text(
-              'BookShelf',
+              'Voli di Carta',
               style: Theme.of(context)
                   .textTheme
                   .headlineLarge
