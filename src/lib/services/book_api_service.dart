@@ -62,16 +62,19 @@ class BookApiService {
     try {
       await _throttle();
       final res = await http.get(uri).timeout(const Duration(seconds: 12));
-      if (res.statusCode == 429) {
+      if (res.statusCode == 429 || res.statusCode == 503) {
         if (!isRetry) {
-          // Aspetta 4 secondi e riprova una volta
           await Future.delayed(const Duration(seconds: 4));
           return _fetch(uri, isRetry: true);
         }
+        if (res.statusCode == 429) {
+          return (books: <Book>[], error:
+              'Limite Google Books raggiunto.\n'
+              'Attendi qualche minuto e riprova.');
+        }
         return (books: <Book>[], error:
-            'Limite Google Books raggiunto.\n'
-            'Attendi qualche minuto e riprova, oppure aggiungi\n'
-            'una chiave API gratuita in app_config.dart.');
+            'Google Books non disponibile (503).\n'
+            'Riprova tra qualche secondo.');
       }
       if (res.statusCode != 200) {
         return (books: <Book>[], error: 'Errore server: ${res.statusCode}');
