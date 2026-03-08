@@ -13,12 +13,16 @@ import '../database/db_helper.dart';
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
+  /// Esposto per i test — confronto semver "latest > current"
+  static bool isNewerVersion(String latest, String current) =>
+      _AboutScreenState._isNewerVersion(latest, current);
+
   @override
   State<AboutScreen> createState() => _AboutScreenState();
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  static const _currentVersion = '1.1.0';
+  static const _currentVersion = '1.2.0';
   bool _checking = false;
   bool _downloading = false;
   double _downloadProgress = 0;

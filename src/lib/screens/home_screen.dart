@@ -15,6 +15,7 @@ import 'settings_screen.dart';
 import 'wishlist_screen.dart';
 import '../models/book.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -54,31 +55,31 @@ class _HomeScreenState extends State<HomeScreen> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: _onTabSelected,
-        destinations: const [
+        destinations: [
           NavigationDestination(
-              icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home),
-              label: 'Home'),
+              icon: const Icon(Icons.home_outlined),
+              selectedIcon: const Icon(Icons.home),
+              label: S.of(context).home),
           NavigationDestination(
-              icon: Icon(Icons.search_outlined),
-              selectedIcon: Icon(Icons.search),
-              label: 'Cerca'),
+              icon: const Icon(Icons.search_outlined),
+              selectedIcon: const Icon(Icons.search),
+              label: S.of(context).search),
           NavigationDestination(
-              icon: Icon(Icons.rate_review_outlined),
-              selectedIcon: Icon(Icons.rate_review),
-              label: 'Recensioni'),
+              icon: const Icon(Icons.rate_review_outlined),
+              selectedIcon: const Icon(Icons.rate_review),
+              label: S.of(context).myReviews),
           NavigationDestination(
-              icon: Icon(Icons.bookmark_border),
-              selectedIcon: Icon(Icons.bookmark),
-              label: 'Da leggere'),
+              icon: const Icon(Icons.bookmark_border),
+              selectedIcon: const Icon(Icons.bookmark),
+              label: S.of(context).toRead),
           NavigationDestination(
-              icon: Icon(Icons.bar_chart_outlined),
-              selectedIcon: Icon(Icons.bar_chart),
-              label: 'Statistiche'),
+              icon: const Icon(Icons.bar_chart_outlined),
+              selectedIcon: const Icon(Icons.bar_chart),
+              label: S.of(context).stats),
           NavigationDestination(
-              icon: Icon(Icons.people_outline),
-              selectedIcon: Icon(Icons.people),
-              label: 'Community'),
+              icon: const Icon(Icons.people_outline),
+              selectedIcon: const Icon(Icons.people),
+              label: S.of(context).community),
         ],
       ),
     );
@@ -127,6 +128,7 @@ class _DashboardTabState extends State<_DashboardTab> {
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
+    final s = S.of(context);
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
@@ -268,29 +270,29 @@ class _DashboardTabState extends State<_DashboardTab> {
                   Expanded(
                     child: _QuickCard(
                       icon: Icons.menu_book_rounded,
-                      label: 'Libri letti',
+                      label: s.booksRead,
                       value: '$_total',
-                      color: const Color(0xFF1A5276),
+                      color: AppColors.primary,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _QuickCard(
                       icon: Icons.star_rounded,
-                      label: 'Media voti',
+                      label: s.avgRating,
                       value: _avg != null
                           ? _avg!.toStringAsFixed(1)
                           : '-',
-                      color: const Color(0xFFFFB300),
+                      color: AppColors.amber,
                     ),
                   ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: _QuickCard(
                       icon: Icons.bookmark_rounded,
-                      label: 'Da leggere',
+                      label: s.toRead,
                       value: '$_wishlistCount',
-                      color: const Color(0xFF7C3AED),
+                      color: AppColors.purple,
                     ),
                   ),
                 ],
@@ -298,8 +300,8 @@ class _DashboardTabState extends State<_DashboardTab> {
               // Ultimi libri letti
               if (_recent.isNotEmpty) ...[
                 const SizedBox(height: 20),
-                const Text('Ultimi letti',
-                    style: TextStyle(
+                Text(s.lastRead,
+                    style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 17)),
                 const SizedBox(height: 10),
                 ..._recent.map((r) => _RecentBookTile(
@@ -325,13 +327,13 @@ class _DashboardTabState extends State<_DashboardTab> {
               ],
               const SizedBox(height: 20),
               // Azioni rapide
-              const Text('Cosa vuoi fare?',
-                  style: TextStyle(
+              Text(s.whatToDo,
+                  style: const TextStyle(
                       fontWeight: FontWeight.bold, fontSize: 17)),
               const SizedBox(height: 12),
               _ActionCard(
                 icon: Icons.add_box_outlined,
-                title: 'Aggiungi Libro Letto',
+                title: s.addReadBook,
                 subtitle: 'Inserisci manualmente un libro e la tua recensione',
                 onTap: () async {
                   await Navigator.push(context, MaterialPageRoute(
@@ -341,35 +343,35 @@ class _DashboardTabState extends State<_DashboardTab> {
               const SizedBox(height: 8),
               _ActionCard(
                 icon: Icons.search,
-                title: 'Cerca su Google Books',
+                title: s.searchOnGoogle,
                 subtitle: 'Amazon, Feltrinelli, IBS e tutti gli editori',
                 onTap: () => widget.onTabChange(1),
               ),
               const SizedBox(height: 8),
               _ActionCard(
                 icon: Icons.rate_review_outlined,
-                title: 'Le Mie Recensioni',
+                title: s.myReviewsFull,
                 subtitle: 'Visualizza per autore, genere o tutti',
                 onTap: () => widget.onTabChange(2),
               ),
               const SizedBox(height: 8),
               _ActionCard(
                 icon: Icons.bookmark_border,
-                title: 'Da Leggere',
+                title: s.toRead,
                 subtitle: 'La tua lista di libri da leggere',
                 onTap: () => widget.onTabChange(3),
               ),
               const SizedBox(height: 8),
               _ActionCard(
                 icon: Icons.bar_chart,
-                title: 'Statistiche',
+                title: s.stats,
                 subtitle: 'Vedi le statistiche delle tue letture',
                 onTap: () => widget.onTabChange(4),
               ),
               const SizedBox(height: 8),
               _ActionCard(
                 icon: Icons.people_rounded,
-                title: 'Community',
+                title: s.community,
                 subtitle: 'Scopri le recensioni di altri lettori',
                 onTap: () => widget.onTabChange(5),
               ),
@@ -440,9 +442,9 @@ class _RecentBookTile extends StatelessWidget {
                 ? CachedNetworkImage(
                     imageUrl: review.bookCoverUrl!,
                     fit: BoxFit.cover,
-                    errorWidget: (_, __, ___) => _placeholder(),
+                    errorWidget: (_, __, ___) => _placeholder(context),
                   )
-                : _placeholder(),
+                : _placeholder(context),
           ),
         ),
         title: Text(
@@ -471,8 +473,8 @@ class _RecentBookTile extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() => Container(
-        color: const Color(0xFFD6EAF8),
+  Widget _placeholder(BuildContext ctx) => Container(
+        color: AppColors.chipBg(ctx),
         child: const Center(
             child: Icon(Icons.menu_book,
                 color: Color(0xFF1A5276), size: 20)),

@@ -4,6 +4,7 @@ import '../models/review.dart';
 import '../models/public_review.dart';
 import '../services/auth_service.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 import '../services/supabase_service.dart';
 import '../config/supabase_config.dart';
 import '../database/db_helper.dart';
@@ -192,10 +193,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   @override
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
+    final s = S.of(context);
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
-        title: Text(isEdit ? 'Modifica Recensione' : 'Scrivi Recensione'),
+        title: Text(isEdit ? s.editReview : s.writeReview),
         actions: [
           TextButton(
             onPressed: _saving ? null : _save,
@@ -205,8 +207,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     height: 16,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.white))
-                : const Text('Salva',
-                    style: TextStyle(color: Colors.white, fontSize: 16)),
+                : Text(s.save,
+                    style: const TextStyle(color: Colors.white, fontSize: 16)),
           ),
         ],
       ),
@@ -412,7 +414,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   child: SwitchListTile(
                     secondary: const Icon(Icons.people_rounded,
                         color: Color(0xFF1A5276)),
-                    title: const Text('Condividi nella Community'),
+                    title: Text(s.sharedInCommunity),
                     subtitle: Text(
                       SupabaseService().isLoggedIn
                           ? 'La recensione sarà visibile a tutti'
@@ -434,7 +436,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   onPressed: _saving ? null : _save,
                   icon: const Icon(Icons.save),
                   label: Text(
-                    isEdit ? 'Aggiorna Recensione' : 'Salva Recensione',
+                    isEdit ? s.updateReview : s.saveReview,
                     style: const TextStyle(fontSize: 16),
                   ),
                   style: ElevatedButton.styleFrom(

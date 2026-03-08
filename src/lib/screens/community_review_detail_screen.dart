@@ -102,11 +102,11 @@ class _CommunityReviewDetailScreenState
                           width: 70,
                           height: 100,
                           fit: BoxFit.cover,
-                          errorWidget: (_, __, ___) => _coverPlaceholder(),
+                          errorWidget: (_, __, ___) => _coverPlaceholder(context),
                         ),
                       )
                     else
-                      _coverPlaceholder(),
+                      _coverPlaceholder(context),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
@@ -287,12 +287,12 @@ class _CommunityReviewDetailScreenState
     );
   }
 
-  Widget _coverPlaceholder() {
+  Widget _coverPlaceholder(BuildContext ctx) {
     return Container(
       width: 70,
       height: 100,
       decoration: BoxDecoration(
-        color: const Color(0xFFD6EAF8),
+        color: AppColors.chipBg(ctx),
         borderRadius: BorderRadius.circular(8),
       ),
       child: const Icon(Icons.menu_book,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -119,10 +119,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
             tooltip: 'Condividi',
             onPressed: () {
               final text = '📚 ${book.title} — ${book.authors}';
-              Clipboard.setData(ClipboardData(text: text));
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Copiato negli appunti!')),
-              );
+              Share.share(text);
             },
           ),
           if (_review != null)
@@ -156,10 +153,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                             ? CachedNetworkImage(
                                 imageUrl: book.coverUrl!,
                                 fit: BoxFit.cover,
-                                placeholder: (_, __) => _placeholder(),
-                                errorWidget: (_, __, ___) => _placeholder(),
+                                placeholder: (_, __) => _placeholder(context),
+                                errorWidget: (_, __, ___) => _placeholder(context),
                               )
-                            : _placeholder(),
+                            : _placeholder(context),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -357,8 +354,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     );
   }
 
-  Widget _placeholder() => Container(
-        color: const Color(0xFFD6EAF8),
+  Widget _placeholder(BuildContext ctx) => Container(
+        color: AppColors.chipBg(ctx),
         child: const Center(
           child: Icon(Icons.menu_book, color: Color(0xFF1A5276), size: 36),
         ),
@@ -375,7 +372,7 @@ class _ReviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: const Color(0xFFEAF4FC),
+      color: AppColors.chipBgLight(context),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(

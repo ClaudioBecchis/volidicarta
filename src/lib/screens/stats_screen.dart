@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import '../database/db_helper.dart';
 import '../widgets/star_rating.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -42,7 +43,7 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Statistiche')),
+      appBar: AppBar(title: Text(S.of(context).stats)),
       backgroundColor: AppColors.screenBg(context),
       body: _stats == null
           ? const Center(child: CircularProgressIndicator())
@@ -98,8 +99,8 @@ class _StatsScreenState extends State<StatsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Distribuzione Voti',
-                      style: TextStyle(
+                  Text(S.of(context).ratingDistribution,
+                      style: const TextStyle(
                           fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 16),
                   for (int i = 5; i >= 1; i--)

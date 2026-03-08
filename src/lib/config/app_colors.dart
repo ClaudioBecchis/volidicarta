@@ -14,4 +14,16 @@ abstract class AppColors {
 
   static Color textPrimary(BuildContext ctx) =>
       Theme.of(ctx).colorScheme.onSurface;
+
+  /// Sfondo placeholder copertina e mini-chip (0xFFD6EAF8 in light)
+  static Color chipBg(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFF1A3A50)
+          : const Color(0xFFD6EAF8);
+
+  /// Sfondo card recensione (0xFFEAF4FC in light)
+  static Color chipBgLight(BuildContext ctx) =>
+      Theme.of(ctx).brightness == Brightness.dark
+          ? const Color(0xFF0D2035)
+          : const Color(0xFFEAF4FC);
 }

@@ -4,6 +4,23 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.2.0] - 2026-03-08
+
+### Aggiunto
+- **Filtro lingua con ChoiceChip** (IMP-06): nella schermata Cerca, tre chip selezionabili 🇮🇹 ITA / 🇬🇧 ENG / 🌐 Tutti sostituiscono il vecchio toggle booleano; il filtro si applica sia a Google Books che a Open Library
+- **Condivisione nativa** (IMP-NEW-01): il pulsante Condividi nel dettaglio libro usa ora `share_plus` per aprire il foglio di condivisione nativo del sistema (era: copia negli appunti)
+- **Test reali con sqflite_ffi** (IMP-05): `db_helper_test.dart` con 10 test su statistiche DB e semver comparison, eseguibili su desktop senza dispositivo
+
+### Migliorato
+- **i18n completa** (BUG-12): tutte le stringhe UI di home, ricerca, recensioni, community, wishlist e statistiche ora passano da `S.of(context)` con 10 lingue supportate; aggiunti ~15 nuovi tasti in `app_strings.dart`
+- **Dark mode profonda** (NEW-E): colori decorativi `0xFFD6EAF8` e `0xFFEAF4FC` nelle card placeholder sostituiti con `AppColors.chipBg(ctx)` e `AppColors.chipBgLight(ctx)` — dark-aware in book_card, book_detail, community, my_reviews, home e wishlist
+
+### Corretto
+- **BookApiService.search()**: accetta ora il parametro `langRestrict` (default `'it'`) passato dalla SearchScreen; il fallback Open Library usa il codice lingua corrispondente (`ita`/`eng`)
+- **SearchScreen**: rimosso campo `_italianOnly` obsoleto; `_buildResults()` usa `_langFilter` coerente con il resto dello stato
+
+---
+
 ## [1.1.0] - 2026-03-08
 
 ### Aggiunto

@@ -64,4 +64,28 @@ class S {
   // ── Ricerca ───────────────────────────────────────────────────────────────
   String get searchBooks => _t({'it':'Cerca libri...','en':'Search books...','fr':'Rechercher des livres...','es':'Buscar libros...','de':'Bücher suchen...','pt':'Pesquisar livros...','ru':'Поиск книг...','ar':'البحث عن كتب...','zh':'搜索书籍...','ja':'本を検索...'});
   String get italianOnly => _t({'it':'Solo libri in italiano','en':'Italian books only','fr':'Livres en italien uniquement','es':'Solo libros en italiano','de':'Nur Bücher auf Italienisch','pt':'Apenas livros em italiano','ru':'Только на итальянском','ar':'الكتب الإيطالية فقط','zh':'仅意大利语书籍','ja':'イタリア語の本のみ'});
+  String get searchBookHint => _t({'it':'Titolo, autore, ISBN...','en':'Title, author, ISBN...','fr':'Titre, auteur, ISBN...','es':'Título, autor, ISBN...','de':'Titel, Autor, ISBN...','pt':'Título, autor, ISBN...','ru':'Название, автор, ISBN...','ar':'العنوان، المؤلف، الرقم الدولي...','zh':'书名、作者、ISBN...','ja':'タイトル、著者、ISBN...'});
+
+  // ── Wishlist ──────────────────────────────────────────────────────────────
+  String get toRead => _t({'it':'Da leggere','en':'To Read','fr':'À lire','es':'Por leer','de':'Zu lesen','pt':'Para ler','ru':'Читать','ar':'للقراءة','zh':'待读','ja':'読む予定'});
+  String get addToWishlist => _t({'it':'Aggiungi a "Da leggere"','en':'Add to Reading List','fr':'Ajouter à lire','es':'Añadir a leer','de':'Zur Leseliste','pt':'Adicionar à lista','ru':'В список чтения','ar':'أضف للقراءة','zh':'加入阅读清单','ja':'読書リストに追加'});
+
+  // ── Azioni home ───────────────────────────────────────────────────────────
+  String get addReadBook => _t({'it':'Aggiungi Libro Letto','en':'Add Read Book','fr':'Ajouter un livre lu','es':'Añadir libro leído','de':'Gelesenes Buch hinzufügen','pt':'Adicionar livro lido','ru':'Добавить прочитанную книгу','ar':'أضف كتابًا مقروءًا','zh':'添加已读书籍','ja':'読んだ本を追加'});
+  String get searchOnGoogle => _t({'it':'Cerca su Google Books','en':'Search on Google Books','fr':'Rechercher sur Google Books','es':'Buscar en Google Books','de':'Auf Google Books suchen','pt':'Pesquisar no Google Books','ru':'Искать в Google Books','ar':'البحث في Google Books','zh':'在Google图书搜索','ja':'Google Booksで検索'});
+  String get lastRead => _t({'it':'Ultimi letti','en':'Last Read','fr':'Derniers lus','es':'Últimos leídos','de':'Zuletzt gelesen','pt':'Últimos lidos','ru':'Недавно прочитанные','ar':'آخر ما قرئ','zh':'最近阅读','ja':'最近読んだ本'});
+
+  // ── My Reviews ────────────────────────────────────────────────────────────
+  String get myReviewsFull => _t({'it':'Le Mie Recensioni','en':'My Reviews','fr':'Mes avis','es':'Mis reseñas','de':'Meine Bewertungen','pt':'Minhas resenhas','ru':'Мои рецензии','ar':'مراجعاتي','zh':'我的评论','ja':'マイレビュー'});
+  String get groupBy => _t({'it':'Raggruppa per','en':'Group by','fr':'Grouper par','es':'Agrupar por','de':'Gruppieren nach','pt':'Agrupar por','ru':'Группировать по','ar':'تجميع حسب','zh':'分组','ja':'グループ化'});
+  String get filterByStars => _t({'it':'Filtra per stelle','en':'Filter by stars','fr':'Filtrer par étoiles','es':'Filtrar por estrellas','de':'Nach Sternen filtern','pt':'Filtrar por estrelas','ru':'Фильтр по звёздам','ar':'تصفية بالنجوم','zh':'按星级筛选','ja':'星でフィルター'});
+  String get addBook => _t({'it':'Aggiungi libro','en':'Add book','fr':'Ajouter un livre','es':'Añadir libro','de':'Buch hinzufügen','pt':'Adicionar livro','ru':'Добавить книгу','ar':'أضف كتابًا','zh':'添加书籍','ja':'本を追加'});
+
+  // ── Community ─────────────────────────────────────────────────────────────
+  String get sharedInCommunity => _t({'it':'Condividi nella Community','en':'Share in Community','fr':'Partager dans la communauté','es':'Compartir en la comunidad','de':'In Community teilen','pt':'Compartilhar na comunidade','ru':'Поделиться в сообществе','ar':'مشاركة في المجتمع','zh':'分享到社区','ja':'コミュニティで共有'});
+
+  // ── Dettaglio libro ───────────────────────────────────────────────────────
+  String get bookDetail => _t({'it':'Dettaglio Libro','en':'Book Detail','fr':'Détail du livre','es':'Detalle del libro','de':'Buchdetail','pt':'Detalhe do livro','ru':'Детали книги','ar':'تفاصيل الكتاب','zh':'书籍详情','ja':'本の詳細'});
+  String get description => _t({'it':'Descrizione','en':'Description','fr':'Description','es':'Descripción','de':'Beschreibung','pt':'Descrição','ru':'Описание','ar':'الوصف','zh':'描述','ja':'説明'});
+  String get myReviewCard => _t({'it':'La tua Recensione','en':'Your Review','fr':'Votre avis','es':'Tu reseña','de':'Deine Bewertung','pt':'Sua resenha','ru':'Ваша рецензия','ar':'مراجعتك','zh':'你的评论','ja':'あなたのレビュー'});
 }

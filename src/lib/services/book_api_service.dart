@@ -35,9 +35,9 @@ class BookApiService {
   }
 
   Future<({List<Book> books, String? error})> search(
-      String query, {int maxResults = 15}) async {
+      String query, {int maxResults = 15, String langRestrict = 'it'}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
-    final key = '${query.trim()}|it';
+    final key = '${query.trim()}|$langRestrict';
     if (_cache.containsKey(key)) {
       final entry = _cache[key]!;
       if (DateTime.now().difference(entry.ts) < _cacheTtl) {
@@ -45,9 +45,10 @@ class BookApiService {
       }
       _cache.remove(key);
     }
-    final result = await _searchGoogle(query, maxResults: maxResults, langRestrict: 'it');
+    final result = await _searchGoogle(query, maxResults: maxResults, langRestrict: langRestrict);
     if (result.error != null) {
-      final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: 'ita');
+      final olLang = langRestrict == 'en' ? 'eng' : 'ita';
+      final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: olLang);
       if (fallback.error == null) _addToCache(key, fallback);
       return fallback;
     }

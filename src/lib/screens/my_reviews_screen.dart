@@ -7,6 +7,8 @@ import '../database/db_helper.dart';
 import '../widgets/star_rating.dart';
 import 'book_detail_screen.dart';
 import 'add_book_manual_screen.dart';
+import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 
 enum _GroupBy { none, author, genre }
 
@@ -90,14 +92,15 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Le Mie Recensioni'),
+        title: Text(s.myReviewsFull),
         actions: [
           // Pulsante raggruppamento
           PopupMenuButton<_GroupBy>(
             icon: const Icon(Icons.sort),
-            tooltip: 'Raggruppa per',
+            tooltip: s.groupBy,
             initialValue: _groupBy,
             onSelected: (v) => setState(() { _groupBy = v; _groupedCache = null; }),
             itemBuilder: (_) => const [
@@ -133,7 +136,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
           // Filtro stelle
           PopupMenuButton<int>(
             icon: const Icon(Icons.star_outline),
-            tooltip: 'Filtra per stelle',
+            tooltip: s.filterByStars,
             onSelected: (v) {
               setState(() => _filterRating = v);
               _applyFilter();
@@ -162,8 +165,8 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
           _load();
         },
         icon: const Icon(Icons.add),
-        label: const Text('Aggiungi libro'),
-        backgroundColor: const Color(0xFF1A5276),
+        label: Text(s.addBook),
+        backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
       body: Column(
@@ -409,10 +412,10 @@ class _ReviewTile extends StatelessWidget {
                       ? CachedNetworkImage(
                           imageUrl: review.bookCoverUrl!,
                           fit: BoxFit.cover,
-                          placeholder: (_, __) => _placeholder(),
-                          errorWidget: (_, __, ___) => _placeholder(),
+                          placeholder: (_, __) => _placeholder(context),
+                          errorWidget: (_, __, ___) => _placeholder(context),
                         )
-                      : _placeholder(),
+                      : _placeholder(context),
                 ),
               ),
               const SizedBox(width: 12),
@@ -493,8 +496,8 @@ class _ReviewTile extends StatelessWidget {
     );
   }
 
-  Widget _placeholder() => Container(
-        color: const Color(0xFFD6EAF8),
+  Widget _placeholder(BuildContext ctx) => Container(
+        color: AppColors.chipBg(ctx),
         child: const Center(
           child: Icon(Icons.menu_book, color: Color(0xFF1A5276), size: 24),
         ),

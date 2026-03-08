@@ -272,11 +272,11 @@ class _ReviewCardState extends State<_ReviewCard> {
                         width: 48,
                         height: 68,
                         fit: BoxFit.cover,
-                        errorWidget: (_, __, ___) => _miniPlaceholder(),
+                        errorWidget: (_, __, ___) => _miniPlaceholder(context),
                       ),
                     )
                   else
-                    _miniPlaceholder(),
+                    _miniPlaceholder(context),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Column(
@@ -357,11 +357,11 @@ class _ReviewCardState extends State<_ReviewCard> {
     );
   }
 
-  Widget _miniPlaceholder() => Container(
+  Widget _miniPlaceholder(BuildContext ctx) => Container(
         width: 48,
         height: 68,
         decoration: BoxDecoration(
-          color: const Color(0xFFD6EAF8),
+          color: AppColors.chipBg(ctx),
           borderRadius: BorderRadius.circular(6),
         ),
         child: const Icon(Icons.menu_book,
