@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://claudiobecchis.github.io/volidicarta/sitemap.xml
