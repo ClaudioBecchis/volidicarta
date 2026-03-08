@@ -152,8 +152,9 @@ class _AboutScreenState extends State<AboutScreen> {
       );
       if (confirm != true) return;
 
-      // Avvia l'installer, flush DB e chiudi l'app
+      // Avvia l'installer, attende avvio UAC, flush DB e chiudi l'app
       await Process.start(installer.path, []);
+      await Future.delayed(const Duration(milliseconds: 500));
       await DbHelper().close();
       await SystemNavigator.pop();
     } catch (e) {

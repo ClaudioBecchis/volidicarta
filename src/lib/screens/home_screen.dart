@@ -109,19 +109,23 @@ class _DashboardTabState extends State<_DashboardTab> {
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
-    final results = await Future.wait([
-      DbHelper().getStats(uid),
-      DbHelper().getRecentReviews(uid),
-      DbHelper().wishlistCount(uid),
-    ]);
-    if (mounted) {
-      final stats = results[0] as Map<String, dynamic>;
-      setState(() {
-        _total = stats['total'] as int;
-        _avg = stats['avg'] != null ? (stats['avg'] as num).toDouble() : null;
-        _recent = results[1] as List<Review>;
-        _wishlistCount = results[2] as int;
-      });
+    try {
+      final results = await Future.wait([
+        DbHelper().getStats(uid),
+        DbHelper().getRecentReviews(uid),
+        DbHelper().wishlistCount(uid),
+      ]);
+      if (mounted) {
+        final stats = results[0] as Map<String, dynamic>;
+        setState(() {
+          _total = stats['total'] as int;
+          _avg = stats['avg'] != null ? (stats['avg'] as num).toDouble() : null;
+          _recent = results[1] as List<Review>;
+          _wishlistCount = results[2] as int;
+        });
+      }
+    } catch (e) {
+      debugPrint('Dashboard load error: $e');
     }
   }
 

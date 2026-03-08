@@ -16,6 +16,9 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 - **Dark mode profonda** (NEW-E): colori decorativi `0xFFD6EAF8` e `0xFFEAF4FC` nelle card placeholder sostituiti con `AppColors.chipBg(ctx)` e `AppColors.chipBgLight(ctx)` — dark-aware in book_card, book_detail, community, my_reviews, home e wishlist
 
 ### Corretto
+- **BUG-G** (Windows UAC timing): aggiunto `Future.delayed(500ms)` tra `Process.start()` e `SystemNavigator.pop()` — il prompt UAC non viene più orfano
+- **BUG-H** (crash APK — Dashboard): `_DashboardTab._load()` avvolto in `try/catch` — eccezioni DB non crashano l'app su Android release
+- **BUG-I** (crash APK — Statistiche): `StatsScreen._load()` avvolto in `try/catch` con stato fallback `total=0`
 - **BookApiService.search()**: accetta ora il parametro `langRestrict` (default `'it'`) passato dalla SearchScreen; il fallback Open Library usa il codice lingua corrispondente (`ita`/`eng`)
 - **SearchScreen**: rimosso campo `_italianOnly` obsoleto; `_buildResults()` usa `_langFilter` coerente con il resto dello stato
 

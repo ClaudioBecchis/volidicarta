@@ -26,17 +26,22 @@ class _StatsScreenState extends State<StatsScreen> {
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
-    final results = await Future.wait([
-      DbHelper().getStats(uid),
-      DbHelper().getStatsByGenre(uid),
-      DbHelper().getStatsByYear(uid),
-    ]);
-    if (mounted) {
-      setState(() {
-        _stats = results[0] as Map<String, dynamic>;
-        _byGenre = results[1] as Map<String, int>;
-        _byYear = results[2] as Map<int, int>;
-      });
+    try {
+      final results = await Future.wait([
+        DbHelper().getStats(uid),
+        DbHelper().getStatsByGenre(uid),
+        DbHelper().getStatsByYear(uid),
+      ]);
+      if (mounted) {
+        setState(() {
+          _stats = results[0] as Map<String, dynamic>;
+          _byGenre = results[1] as Map<String, int>;
+          _byYear = results[2] as Map<int, int>;
+        });
+      }
+    } catch (e) {
+      debugPrint('Stats load error: $e');
+      if (mounted) setState(() => _stats = {'total': 0, 'avg': null, 'distribution': <int, int>{}});
     }
   }
 
