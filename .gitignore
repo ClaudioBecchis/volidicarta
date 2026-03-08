@@ -22,3 +22,20 @@ rename_app.ps1
 generate_icons.ps1
 build_windows.ps1
 build_windows.log
+# Web build artifacts nella root (da gh-pages deploy)
+assets/
+canvaskit/
+icons/
+favicon.png
+flutter.js
+flutter_bootstrap.js
+flutter_service_worker.js
+index.html
+main.dart.js
+manifest.json
+robots.txt
+sitemap.xml
+sqflite_sw.js
+sqlite3.wasm
+.last_build_id
+version.json
