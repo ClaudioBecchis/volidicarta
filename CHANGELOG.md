@@ -4,6 +4,28 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.0.9] - 2026-03-08
+
+### Aggiunto
+- **Ultimi 3 libri letti in Dashboard**: sezione "Ultimi letti" con copertina, titolo e voto — tap per aprire il dettaglio
+- **Terzo KPI Dashboard — Da leggere**: contatore wishlist accanto a "Libri letti" e "Media voti"
+
+### Migliorato
+- **Confronto versioni semver**: l'aggiornamento automatico ora usa un confronto semantico corretto (1.0.10 > 1.0.9) invece di semplice disuguaglianza stringa
+- **Chiusura app post-update sicura**: il database viene chiuso prima di avviare l'installer (`DbHelper.close()` + `SystemNavigator.pop()` al posto di `exit(0)` brutale)
+- **toggleLike immutabile**: `PublicReview.toggleLike` usa ora `copyWith` e restituisce un nuovo oggetto invece di mutare lo stato direttamente — il cuore si aggiorna correttamente nella lista senza pull-to-refresh
+- **AVG SQLite cast sicuro alla sorgente**: il cast `num → double` avviene in `DbHelper.getStats()`, tutti i chiamanti ricevono già `double?`
+- **Navigazione Dashboard via callback**: `_DashboardTab` usa `onTabChange` callback invece di `findAncestorStateOfType` (anti-pattern)
+- **AddBookManualScreen**: usa `push` invece di `pushReplacement` — l'utente può tornare al form con il tasto indietro da WriteReviewScreen
+
+### Corretto
+- **BUG-09**: `_onUpgrade` usava `else if` — utenti che saltavano versioni (es. v3→v5) non ricevevano le migrazioni intermediate; ora usa `if` sequenziali indipendenti
+- **BUG-10**: `_saving` in WriteReviewScreen non veniva resettato se si verificava un'eccezione; ora usa `finally` garantendo sempre il reset
+- **BUG-13**: `_load()` in MyReviewsScreen sovrascriveva `_filtered` perdendo i filtri attivi; ora chiama `_applyFilter()` dopo il reload
+- **BUG-06**: mutazione diretta su `PublicReview.isLikedByMe` e `likesCount`; ora modello immutabile con `copyWith`
+
+---
+
 ## [1.0.8] - 2026-03-08
 
 ### Aggiunto

@@ -25,8 +25,8 @@ class _CommunityReviewDetailScreenState
   }
 
   Future<void> _toggleLike() async {
-    await SupabaseService().toggleLike(_review);
-    if (mounted) setState(() {});
+    final updated = await SupabaseService().toggleLike(_review);
+    if (mounted) setState(() => _review = updated);
   }
 
   Future<void> _deleteReview() async {

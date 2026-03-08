@@ -57,12 +57,14 @@ class DbHelper {
       await db.execute('DROP TABLE IF EXISTS reviews');
       await db.execute('DROP TABLE IF EXISTS users');
       await _onCreate(db, newVersion);
-    } else if (oldVersion < 4) {
+      return; // reset completo, le versioni successive sono incluse
+    }
+    if (oldVersion < 4) {
       // v4: aggiunti start_date e end_date
       await db.execute('ALTER TABLE reviews ADD COLUMN start_date TEXT');
       await db.execute('ALTER TABLE reviews ADD COLUMN end_date TEXT');
-      await _createWishlist(db);
-    } else if (oldVersion < 5) {
+    }
+    if (oldVersion < 5) {
       // v5: nuova tabella wishlist
       await _createWishlist(db);
     }
@@ -143,7 +145,8 @@ class DbHelper {
         0;
     final avgRow = await db.rawQuery(
         'SELECT AVG(rating) as avg FROM reviews WHERE user_id = ?', [userId]);
-    final avg = avgRow.first['avg'];
+    final avgRaw = avgRow.first['avg'];
+    final avg = avgRaw != null ? (avgRaw as num).toDouble() : null;
     final dist = <int, int>{};
     for (int i = 1; i <= 5; i++) {
       dist[i] = Sqflite.firstIntValue(await db.rawQuery(
@@ -191,5 +194,20 @@ class DbHelper {
     return Sqflite.firstIntValue(await db.rawQuery(
             'SELECT COUNT(*) FROM wishlist WHERE user_id = ?', [userId])) ??
         0;
+  }
+
+  Future<List<Review>> getRecentReviews(String userId, {int limit = 3}) async {
+    final db = await database;
+    final res = await db.query('reviews',
+        where: 'user_id = ?',
+        whereArgs: [userId],
+        orderBy: 'created_at DESC',
+        limit: limit);
+    return res.map(Review.fromMap).toList();
+  }
+
+  Future<void> close() async {
+    await _db?.close();
+    _db = null;
   }
 }

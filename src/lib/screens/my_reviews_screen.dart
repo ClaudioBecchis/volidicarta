@@ -39,9 +39,10 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
     if (mounted) {
       setState(() {
         _reviews = reviews;
-        _filtered = reviews;
         _loading = false;
+        _groupedCache = null;
       });
+      _applyFilter();
     }
   }
 

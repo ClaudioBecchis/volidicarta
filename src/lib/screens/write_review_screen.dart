@@ -169,7 +169,6 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
-        setState(() => _saving = false);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Errore nel salvataggio: $e'),
@@ -177,6 +176,8 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _saving = false);
     }
   }
 

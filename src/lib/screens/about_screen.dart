@@ -1,11 +1,13 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import '../config/supabase_config.dart';
+import '../database/db_helper.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -15,7 +17,7 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  static const _currentVersion = '1.0.8';
+  static const _currentVersion = '1.0.9';
   bool _checking = false;
   bool _downloading = false;
   double _downloadProgress = 0;
@@ -24,6 +26,22 @@ class _AboutScreenState extends State<AboutScreen> {
   String? _latestVersion;
   String? _downloadUrl;
   String? _expectedSha256;
+
+  static bool _isNewerVersion(String latest, String current) {
+    try {
+      final l = latest.split('.').map(int.parse).toList();
+      final c = current.split('.').map(int.parse).toList();
+      for (int i = 0; i < 3; i++) {
+        final li = i < l.length ? l[i] : 0;
+        final ci = i < c.length ? c[i] : 0;
+        if (li > ci) return true;
+        if (li < ci) return false;
+      }
+      return false;
+    } catch (_) {
+      return latest != current;
+    }
+  }
 
   Future<void> _checkUpdates() async {
     setState(() { _checking = true; _updateMessage = null; _hasUpdate = false; });
@@ -42,7 +60,7 @@ class _AboutScreenState extends State<AboutScreen> {
           _downloadUrl = data.first['download_url'] as String?;
           _expectedSha256 = data.first['sha256_checksum'] as String?;
           _latestVersion = latest;
-          if (latest != _currentVersion) {
+          if (_isNewerVersion(latest, _currentVersion)) {
             setState(() {
               _hasUpdate = true;
               _updateMessage = 'Nuova versione disponibile: v$latest\n\n$notes';
@@ -129,9 +147,10 @@ class _AboutScreenState extends State<AboutScreen> {
       );
       if (confirm != true) return;
 
-      // Avvia l'installer e chiudi l'app
+      // Avvia l'installer, flush DB e chiudi l'app
       await Process.start(installer.path, []);
-      exit(0);
+      await DbHelper().close();
+      await SystemNavigator.pop();
     } catch (e) {
       if (mounted) {
         setState(() {

@@ -188,8 +188,8 @@ class _ReviewCardState extends State<_ReviewCard> {
   }
 
   Future<void> _toggleLike() async {
-    await SupabaseService().toggleLike(_r);
-    if (mounted) setState(() {});
+    final updated = await SupabaseService().toggleLike(_r);
+    if (mounted) setState(() => _r = updated);
   }
 
   @override

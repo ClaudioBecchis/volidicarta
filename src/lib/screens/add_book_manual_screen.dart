@@ -31,7 +31,7 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
     super.dispose();
   }
 
-  void _proceed() {
+  Future<void> _proceed() async {
     if (!_formKey.currentState!.validate()) return;
 
     // Genera un ID univoco basato su titolo+autore+timestamp
@@ -54,10 +54,11 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
           : _coverUrlCtrl.text.trim(),
     );
 
-    Navigator.pushReplacement(
+    final saved = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => WriteReviewScreen(book: book)),
     );
+    if (saved == true && mounted) Navigator.pop(context, true);
   }
 
   @override

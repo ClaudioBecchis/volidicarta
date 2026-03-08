@@ -58,6 +58,45 @@ class PublicReview {
     );
   }
 
+  PublicReview copyWith({
+    String? id,
+    String? userId,
+    String? username,
+    String? bookId,
+    String? bookTitle,
+    String? bookAuthor,
+    String? bookCoverUrl,
+    String? bookPublisher,
+    String? bookYear,
+    String? bookGenre,
+    int? rating,
+    String? reviewTitle,
+    String? reviewBody,
+    String? readDate,
+    String? createdAt,
+    int? likesCount,
+    bool? isLikedByMe,
+  }) =>
+      PublicReview(
+        id: id ?? this.id,
+        userId: userId ?? this.userId,
+        username: username ?? this.username,
+        bookId: bookId ?? this.bookId,
+        bookTitle: bookTitle ?? this.bookTitle,
+        bookAuthor: bookAuthor ?? this.bookAuthor,
+        bookCoverUrl: bookCoverUrl ?? this.bookCoverUrl,
+        bookPublisher: bookPublisher ?? this.bookPublisher,
+        bookYear: bookYear ?? this.bookYear,
+        bookGenre: bookGenre ?? this.bookGenre,
+        rating: rating ?? this.rating,
+        reviewTitle: reviewTitle ?? this.reviewTitle,
+        reviewBody: reviewBody ?? this.reviewBody,
+        readDate: readDate ?? this.readDate,
+        createdAt: createdAt ?? this.createdAt,
+        likesCount: likesCount ?? this.likesCount,
+        isLikedByMe: isLikedByMe ?? this.isLikedByMe,
+      );
+
   Map<String, dynamic> toInsertMap() => {
         'user_id': userId,
         'username': username,

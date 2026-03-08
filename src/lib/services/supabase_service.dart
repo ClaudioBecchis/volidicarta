@@ -147,8 +147,8 @@ class SupabaseService {
 
   // ── Likes ─────────────────────────────────────────────────────────────────
 
-  Future<bool> toggleLike(PublicReview review) async {
-    if (!isLoggedIn) return review.isLikedByMe;
+  Future<PublicReview> toggleLike(PublicReview review) async {
+    if (!isLoggedIn) return review;
     try {
       if (review.isLikedByMe) {
         await _client
@@ -156,19 +156,22 @@ class SupabaseService {
             .delete()
             .eq('user_id', currentUser!.id)
             .eq('review_id', review.id);
-        review.isLikedByMe = false;
-        review.likesCount = (review.likesCount - 1).clamp(0, 9999);
+        return review.copyWith(
+          isLikedByMe: false,
+          likesCount: (review.likesCount - 1).clamp(0, 9999),
+        );
       } else {
         await _client.from('likes').insert({
           'user_id': currentUser!.id,
           'review_id': review.id,
         });
-        review.isLikedByMe = true;
-        review.likesCount++;
+        return review.copyWith(
+          isLikedByMe: true,
+          likesCount: review.likesCount + 1,
+        );
       }
-      return review.isLikedByMe;
     } catch (_) {
-      return review.isLikedByMe;
+      return review;
     }
   }
 
