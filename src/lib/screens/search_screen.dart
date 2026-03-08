@@ -37,13 +37,17 @@ class _SearchScreenState extends State<SearchScreen> {
   Future<void> _loadReviewed() async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
-    final reviews = await DbHelper().getReviewsByUser(uid);
-    final wishlist = await DbHelper().getWishlist(uid);
-    if (mounted) {
-      setState(() {
-        _reviewedMap = {for (final r in reviews) r.bookId: r};
-        _wishlistIds = {for (final w in wishlist) w.bookId};
-      });
+    try {
+      final reviews = await DbHelper().getReviewsByUser(uid);
+      final wishlist = await DbHelper().getWishlist(uid);
+      if (mounted) {
+        setState(() {
+          _reviewedMap = {for (final r in reviews) r.bookId: r};
+          _wishlistIds = {for (final w in wishlist) w.bookId};
+        });
+      }
+    } catch (e) {
+      debugPrint('SearchScreen load error: $e');
     }
   }
 
@@ -61,32 +65,41 @@ class _SearchScreenState extends State<SearchScreen> {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
     final inWish = _wishlistIds.contains(book.id);
-    if (inWish) {
-      await DbHelper().removeFromWishlist(uid, book.id);
-      if (mounted) setState(() => _wishlistIds.remove(book.id));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Rimosso dalla lista "Da leggere"'),
-                duration: Duration(seconds: 2)));
+    try {
+      if (inWish) {
+        await DbHelper().removeFromWishlist(uid, book.id);
+        if (mounted) setState(() => _wishlistIds.remove(book.id));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Rimosso dalla lista "Da leggere"'),
+                  duration: Duration(seconds: 2)));
+        }
+      } else {
+        final wb = WishlistBook(
+          userId: uid,
+          bookId: book.id,
+          bookTitle: book.title,
+          bookAuthor: book.authors,
+          bookCoverUrl: book.coverUrl,
+          bookPublisher: book.publisher,
+          bookYear: book.publishedDate != null && book.publishedDate!.length >= 4
+              ? book.publishedDate!.substring(0, 4)
+              : book.publishedDate,
+          addedAt: DateTime.now().toIso8601String(),
+        );
+        await DbHelper().addToWishlist(wb);
+        if (mounted) setState(() => _wishlistIds.add(book.id));
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Aggiunto a "Da leggere" 🔖'),
+                  duration: Duration(seconds: 2)));
+        }
       }
-    } else {
-      final wb = WishlistBook(
-        userId: uid,
-        bookId: book.id,
-        bookTitle: book.title,
-        bookAuthor: book.authors,
-        bookCoverUrl: book.coverUrl,
-        bookPublisher: book.publisher,
-        bookYear: book.publishedDate != null && book.publishedDate!.length >= 4
-            ? book.publishedDate!.substring(0, 4)
-            : book.publishedDate,
-        addedAt: DateTime.now().toIso8601String(),
-      );
-      await DbHelper().addToWishlist(wb);
-      if (mounted) setState(() => _wishlistIds.add(book.id));
+    } catch (e) {
+      debugPrint('Wishlist toggle error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Aggiunto a "Da leggere" 🔖'),
+            const SnackBar(content: Text('Errore. Riprova.'),
                 duration: Duration(seconds: 2)));
       }
     }

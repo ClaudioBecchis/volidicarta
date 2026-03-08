@@ -37,14 +37,19 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
-    final reviews = await DbHelper().getReviewsByUser(uid);
-    if (mounted) {
-      setState(() {
-        _reviews = reviews;
-        _loading = false;
-        _groupedCache = null;
-      });
-      _applyFilter();
+    try {
+      final reviews = await DbHelper().getReviewsByUser(uid);
+      if (mounted) {
+        setState(() {
+          _reviews = reviews;
+          _loading = false;
+          _groupedCache = null;
+        });
+        _applyFilter();
+      }
+    } catch (e) {
+      debugPrint('MyReviewsScreen load error: $e');
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -375,8 +380,16 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
       ),
     );
     if (confirm == true) {
-      await DbHelper().deleteReview(r.id!);
-      _load();
+      try {
+        await DbHelper().deleteReview(r.id!);
+        _load();
+      } catch (e) {
+        debugPrint('Delete review error: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Errore durante l\'eliminazione')));
+        }
+      }
     }
   }
 }

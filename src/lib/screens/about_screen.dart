@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../config/supabase_config.dart';
 import '../database/db_helper.dart';
 
@@ -22,7 +23,7 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  static const _currentVersion = '1.2.0';
+  String _currentVersion = '';
   bool _checking = false;
   bool _downloading = false;
   double _downloadProgress = 0;
@@ -31,6 +32,23 @@ class _AboutScreenState extends State<AboutScreen> {
   String? _latestVersion;
   String? _downloadUrl;
   String? _expectedSha256;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    try {
+      final info = await PackageInfo.fromPlatform();
+      if (mounted) setState(() => _currentVersion = info.version);
+    } catch (_) {
+      // Fallback: leggi dal pubspec tramite rootBundle è non disponibile qui;
+      // usa stringa statica solo se PackageInfo non è disponibile
+      _currentVersion = '1.3.0';
+    }
+  }
 
   static bool _isNewerVersion(String latest, String current) {
     try {
@@ -222,9 +240,9 @@ class _AboutScreenState extends State<AboutScreen> {
                     color: const Color(0xFF1A5276).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: const Text(
+                  child: Text(
                     'Versione $_currentVersion',
-                    style: TextStyle(
+                    style: const TextStyle(
                         color: Color(0xFF1A5276),
                         fontWeight: FontWeight.w500),
                   ),

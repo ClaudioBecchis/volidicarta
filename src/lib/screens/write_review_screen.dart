@@ -106,10 +106,23 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       return;
     }
     if (!_formKey.currentState!.validate()) return;
+    // BUG-R: valida che endDate non sia precedente a startDate
+    if (_startDate != null && _endDate != null &&
+        _endDate!.compareTo(_startDate!) < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La data di fine non può essere prima dell\'inizio')));
+      return;
+    }
+    // BUG-N: null check su sessione utente
+    final uid = AuthService().currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sessione scaduta. Rieffettua il login.')));
+      return;
+    }
     setState(() => _saving = true);
 
     try {
-      final uid = AuthService().currentUser!.id;
       final now = DateTime.now().toIso8601String();
       final book = widget.book;
 
@@ -147,10 +160,11 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
         await DbHelper().insertReview(review);
       }
 
-      if (_sharePublic && SupabaseConfig.isConfigured && SupabaseService().isLoggedIn) {
+      final supaUid = SupabaseService().currentUser?.id;
+      if (_sharePublic && SupabaseConfig.isConfigured && SupabaseService().isLoggedIn && supaUid != null) {
         final pub = PublicReview(
           id: '',
-          userId: SupabaseService().currentUser!.id,
+          userId: supaUid,
           username: SupabaseService().currentUsername ?? 'Utente',
           bookId: review.bookId,
           bookTitle: review.bookTitle,

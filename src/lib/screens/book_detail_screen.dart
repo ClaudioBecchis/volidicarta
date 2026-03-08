@@ -57,9 +57,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   Future<void> _loadReview() async {
     final uid = AuthService().currentUser?.id;
-    if (uid == null) return;
-    final r = await DbHelper().getReviewForBook(uid, widget.book.id);
-    if (mounted) setState(() { _review = r; _loading = false; });
+    if (uid == null) { if (mounted) setState(() => _loading = false); return; }
+    try {
+      final r = await DbHelper().getReviewForBook(uid, widget.book.id);
+      if (mounted) setState(() { _review = r; _loading = false; });
+    } catch (e) {
+      debugPrint('BookDetail load review error: $e');
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   void _showCoverFullscreen(String url) {
@@ -101,8 +106,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       ),
     );
     if (confirm == true && _review != null) {
-      await DbHelper().deleteReview(_review!.id!);
-      if (mounted) setState(() => _review = null);
+      try {
+        await DbHelper().deleteReview(_review!.id!);
+        if (mounted) setState(() => _review = null);
+      } catch (e) {
+        debugPrint('Delete review error: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Errore durante l\'eliminazione')));
+        }
+      }
     }
   }
 

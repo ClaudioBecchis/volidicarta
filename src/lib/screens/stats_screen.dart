@@ -60,6 +60,7 @@ class _StatsScreenState extends State<StatsScreen> {
   }
 
   Widget _buildBody() {
+    final s = S.of(context);
     final total = _stats!['total'] as int;
     final avg = _stats!['avg'];
     final dist = _stats!['distribution'] as Map<int, int>;
@@ -78,7 +79,7 @@ class _StatsScreenState extends State<StatsScreen> {
               Expanded(
                 child: _StatCard(
                   icon: Icons.menu_book_rounded,
-                  label: 'Libri Recensiti',
+                  label: s.reviewedBooks,
                   value: '$total',
                   color: const Color(0xFF1A5276),
                 ),
@@ -87,7 +88,7 @@ class _StatsScreenState extends State<StatsScreen> {
               Expanded(
                 child: _StatCard(
                   icon: Icons.star_rounded,
-                  label: 'Media Voti',
+                  label: s.avgRatingLabel,
                   value: avgStr,
                   color: const Color(0xFFFFB300),
                 ),
@@ -129,8 +130,8 @@ class _StatsScreenState extends State<StatsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Generi più letti',
-                        style: TextStyle(
+                    Text(s.mostReadGenres,
+                        style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 16),
                     for (final entry in _byGenre.entries)
@@ -155,8 +156,8 @@ class _StatsScreenState extends State<StatsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Libri per anno',
-                        style: TextStyle(
+                    Text(s.booksByYear,
+                        style: const TextStyle(
                             fontWeight: FontWeight.bold, fontSize: 16)),
                     const SizedBox(height: 16),
                     for (final entry in _byYear.entries)
@@ -178,7 +179,7 @@ class _StatsScreenState extends State<StatsScreen> {
                   Icon(Icons.bar_chart,
                       size: 64, color: Colors.grey.shade300),
                   const SizedBox(height: 12),
-                  Text('Scrivi recensioni per vedere le statistiche',
+                  Text(s.writeReviewsForStats,
                       style: TextStyle(color: Colors.grey.shade500)),
                 ],
               ),

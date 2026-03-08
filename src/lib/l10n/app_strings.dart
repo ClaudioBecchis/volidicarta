@@ -59,7 +59,11 @@ class S {
 
   // ── Statistiche ───────────────────────────────────────────────────────────
   String get reviewedBooks => _t({'it':'Libri Recensiti','en':'Reviewed Books','fr':'Livres notés','es':'Libros reseñados','de':'Bewertete Bücher','pt':'Livros avaliados','ru':'Рецензированных','ar':'كتب مراجعة','zh':'已评书籍','ja':'レビュー済み本'});
+  String get avgRatingLabel => _t({'it':'Media Voti','en':'Avg. Rating','fr':'Note Moyenne','es':'Calificación Media','de':'Ø Bewertung','pt':'Média','ru':'Средний рейтинг','ar':'متوسط التقييم','zh':'平均评分','ja':'平均評価'});
   String get ratingDistribution => _t({'it':'Distribuzione Voti','en':'Rating Distribution','fr':'Distribution des notes','es':'Distribución de calificaciones','de':'Bewertungsverteilung','pt':'Distribuição de avaliações','ru':'Распределение рейтингов','ar':'توزيع التقييمات','zh':'评分分布','ja':'評価分布'});
+  String get mostReadGenres => _t({'it':'Generi più letti','en':'Most Read Genres','fr':'Genres les plus lus','es':'Géneros más leídos','de':'Meistgelesene Genres','pt':'Géneros mais lidos','ru':'Самые читаемые жанры','ar':'الأجناس الأكثر قراءة','zh':'最常读类型','ja':'最も読んだジャンル'});
+  String get booksByYear => _t({'it':'Libri per anno','en':'Books by Year','fr':'Livres par année','es':'Libros por año','de':'Bücher pro Jahr','pt':'Livros por ano','ru':'Книги по годам','ar':'الكتب حسب السنة','zh':'按年书籍','ja':'年別の本'});
+  String get writeReviewsForStats => _t({'it':'Scrivi recensioni per vedere le statistiche','en':'Write reviews to see statistics','fr':'Écrivez des avis pour voir les statistiques','es':'Escribe reseñas para ver estadísticas','de':'Bewertungen schreiben um Statistiken zu sehen','pt':'Escreva resenhas para ver estatísticas','ru':'Напишите рецензии для просмотра статистики','ar':'اكتب مراجعات لرؤية الإحصائيات','zh':'写评论以查看统计数据','ja':'統計を見るにはレビューを書いてください'});
 
   // ── Ricerca ───────────────────────────────────────────────────────────────
   String get searchBooks => _t({'it':'Cerca libri...','en':'Search books...','fr':'Rechercher des livres...','es':'Buscar libros...','de':'Bücher suchen...','pt':'Pesquisar livros...','ru':'Поиск книг...','ar':'البحث عن كتب...','zh':'搜索书籍...','ja':'本を検索...'});

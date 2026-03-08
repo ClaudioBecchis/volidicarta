@@ -4,6 +4,26 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.0] - 2026-03-08
+
+### Corretto
+- **BUG-J** 🔴: `SearchScreen._loadReviewed()` avvolto in `try/catch` — crash APK critico su Android release
+- **BUG-K** 🟡: `WishlistScreen._load()` avvolto in `try/catch` con `_loading = false` fallback
+- **BUG-L** 🟡: `MyReviewsScreen._load()` avvolto in `try/catch` con `_loading = false` fallback
+- **BUG-M** 🟡: `BookDetailScreen._loadReview()` avvolto in `try/catch` — lo spinner non rimane più bloccato
+- **BUG-N** 🟡: rimossi entrambi i bang operator `!` su `currentUser` in `WriteReviewScreen._save()` — sessione scaduta mostra messaggio e non crasha
+- **BUG-O** 🟡: `SearchScreen._toggleWishlist()` avvolto in `try/catch` — snackbar di errore in caso di fallimento SQLite
+- **BUG-P** 🟢: `MyReviewsScreen._deleteReview()` avvolto in `try/catch` con snackbar di errore
+- **BUG-Q** 🟢: `BookDetailScreen._deleteReview()` avvolto in `try/catch` con snackbar di errore
+- **BUG-R** 🟢: `WriteReviewScreen._save()` — validazione `endDate >= startDate` prima del salvataggio
+
+### Migliorato
+- **BUG-S** 🟢: `StatsScreen` — 5 stringhe hardcoded localizzate via nuovi tasti `app_strings.dart`: `avgRatingLabel`, `mostReadGenres`, `booksByYear`, `writeReviewsForStats`
+- **BUG-T** 🟢: `WishlistScreen` AppBar usa `S.of(context).toRead` invece di `'Da Leggere'` hardcoded
+- **BUG-U** 🟢: `AboutScreen` legge la versione a runtime da `package_info_plus` — nessun più disallineamento manuale tra `pubspec.yaml` e `_currentVersion`
+
+---
+
 ## [1.2.0] - 2026-03-08
 
 ### Aggiunto

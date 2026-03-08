@@ -6,6 +6,7 @@ import '../services/auth_service.dart';
 import '../database/db_helper.dart';
 import 'write_review_screen.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({super.key});
@@ -37,10 +38,15 @@ class _WishlistScreenState extends State<WishlistScreen> {
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
-    final books = await DbHelper().getWishlist(uid);
-    if (mounted) {
-      setState(() { _books = books; _loading = false; });
-      _applyFilter();
+    try {
+      final books = await DbHelper().getWishlist(uid);
+      if (mounted) {
+        setState(() { _books = books; _loading = false; });
+        _applyFilter();
+      }
+    } catch (e) {
+      debugPrint('WishlistScreen load error: $e');
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -109,7 +115,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
-        title: const Text('Da Leggere'),
+        title: Text(S.of(context).toRead),
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.sort),
