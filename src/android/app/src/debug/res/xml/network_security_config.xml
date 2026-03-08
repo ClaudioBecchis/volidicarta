@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network Security Configuration — DEBUG ONLY
+  Sovrascrive il config di release durante le build di sviluppo:
+  - Cleartext consentito (Flutter VM service, proxy di debug)
+  - CA utente affidabili (Charles, mitmproxy, Burp Suite)
+  NON viene incluso nell'APK di release.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system"/>
+            <certificates src="user"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

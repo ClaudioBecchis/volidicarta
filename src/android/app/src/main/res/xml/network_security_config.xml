@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Network Security Configuration — RELEASE
+  - Cleartext (HTTP) vietato
+  - Solo CA di sistema affidabili (nessuna CA utente)
+  - Comportamento equivalente ai default Android 9+, ma dichiarato esplicitamente
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>
