@@ -93,7 +93,7 @@ class _CommunityReviewDetailScreenState
                               padding: EdgeInsets.zero,
                               visualDensity: VisualDensity.compact,
                               backgroundColor:
-                                  const Color(0xFF1A5276).withOpacity(0.1),
+                                  const Color(0xFF1A5276).withValues(alpha: 0.1),
                               labelStyle:
                                   const TextStyle(color: Color(0xFF1A5276)),
                             ),
@@ -121,7 +121,7 @@ class _CommunityReviewDetailScreenState
                         CircleAvatar(
                           radius: 18,
                           backgroundColor:
-                              const Color(0xFF1A5276).withOpacity(0.15),
+                              const Color(0xFF1A5276).withValues(alpha: 0.15),
                           child: Text(
                             _review.username.isNotEmpty
                                 ? _review.username[0].toUpperCase()

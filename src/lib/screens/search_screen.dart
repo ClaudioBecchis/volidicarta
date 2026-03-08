@@ -65,8 +65,8 @@ class _SearchScreenState extends State<SearchScreen> {
       if (mounted) setState(() => _wishlistIds.remove(book.id));
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Rimosso dalla lista "Da leggere"'),
-                duration: const Duration(seconds: 2)));
+            const SnackBar(content: Text('Rimosso dalla lista "Da leggere"'),
+                duration: Duration(seconds: 2)));
       }
     } else {
       final wb = WishlistBook(
@@ -124,7 +124,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 Switch(
                   value: _italianOnly,
                   onChanged: (v) => setState(() => _italianOnly = v),
-                  activeColor: Colors.white,
+                  activeThumbColor: Colors.white,
                   activeTrackColor: Colors.white30,
                 ),
               ],

@@ -95,13 +95,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             horizontal: 12, vertical: 10),
                         decoration: BoxDecoration(
                           color: selected
-                              ? const Color(0xFF1A5276).withOpacity(0.1)
+                              ? const Color(0xFF1A5276).withValues(alpha: 0.1)
                               : Colors.transparent,
                           borderRadius: BorderRadius.circular(8),
                           border: selected
                               ? Border.all(
                                   color: const Color(0xFF1A5276)
-                                      .withOpacity(0.4))
+                                      .withValues(alpha: 0.4))
                               : null,
                         ),
                         child: Row(
@@ -134,7 +134,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           const SizedBox(height: 24),
           Center(
             child: Text(
-              'Voli di Carta v1.0.0\nClaudio Becchis · polariscore.it',
+              'Voli di Carta v1.0.2\nClaudio Becchis · polariscore.it',
               textAlign: TextAlign.center,
               style: TextStyle(
                   color: Colors.grey.shade400,
@@ -180,12 +180,12 @@ class _ThemeOption extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
         decoration: BoxDecoration(
           color: selected
-              ? const Color(0xFF1A5276).withOpacity(0.1)
+              ? const Color(0xFF1A5276).withValues(alpha: 0.1)
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: selected
               ? Border.all(
-                  color: const Color(0xFF1A5276).withOpacity(0.4))
+                  color: const Color(0xFF1A5276).withValues(alpha: 0.4))
               : null,
         ),
         child: Row(

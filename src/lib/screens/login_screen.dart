@@ -11,78 +11,13 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _OAuthButton extends StatelessWidget {
-  final String label;
-  final IconData icon;
-  final Color color;
-  final bool loading;
-  final VoidCallback onTap;
-
-  const _OAuthButton({
-    required this.label,
-    required this.icon,
-    required this.color,
-    required this.loading,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: loading ? null : onTap,
-        icon: Icon(icon, color: color, size: 22),
-        label: Text(label, style: TextStyle(color: color, fontSize: 14)),
-        style: OutlinedButton.styleFrom(
-          side: BorderSide(color: color.withOpacity(0.4)),
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      ),
-    );
-  }
-}
-
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   bool _loading = false;
   bool _obscure = true;
-  bool _oauthLoading = false;
   String? _error;
-
-  Future<void> _oauthLogin(OAuthProvider provider) async {
-    setState(() { _oauthLoading = true; _error = null; });
-    try {
-      await Supabase.instance.client.auth.signInWithOAuth(
-        provider,
-        redirectTo: 'io.supabase.Voli di Carta://login-callback/',
-      );
-    } on AuthException catch (e) {
-      if (e.message.toLowerCase().contains('not enabled') ||
-          e.message.toLowerCase().contains('unsupported provider')) {
-        if (mounted) {
-          setState(() { _error = null; });
-          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-            content: Text('Accesso social non ancora attivo. Usa email e password.'),
-            backgroundColor: Color(0xFF1A5276),
-          ));
-        }
-      } else {
-        if (mounted) setState(() => _error = e.message);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-          content: Text('Accesso social non ancora attivo. Usa email e password.'),
-          backgroundColor: Color(0xFF1A5276),
-        ));
-      }
-    }
-    if (mounted) setState(() => _oauthLoading = false);
-  }
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;

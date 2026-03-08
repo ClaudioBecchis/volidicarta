@@ -314,7 +314,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                           style: TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
-                        value: _genres.contains(_genre) ? _genre : null,
+                        initialValue: _genres.contains(_genre) ? _genre : null,
                         hint: const Text('Seleziona un genere'),
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Icons.category_outlined),
@@ -398,7 +398,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                     onChanged: SupabaseService().isLoggedIn
                         ? (v) => setState(() => _sharePublic = v)
                         : null,
-                    activeColor: const Color(0xFF1A5276),
+                    activeThumbColor: const Color(0xFF1A5276),
                   ),
                 ),
               ],

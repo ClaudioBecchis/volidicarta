@@ -204,10 +204,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF1A5276).withOpacity(0.07),
+                          color: const Color(0xFF1A5276).withValues(alpha: 0.07),
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
-                              color: const Color(0xFF1A5276).withOpacity(0.2)),
+                              color: const Color(0xFF1A5276).withValues(alpha: 0.2)),
                         ),
                         child: Row(
                           crossAxisAlignment: CrossAxisAlignment.start,

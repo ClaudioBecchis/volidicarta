@@ -76,10 +76,10 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1A5276).withOpacity(0.08),
+                  color: const Color(0xFF1A5276).withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                      color: const Color(0xFF1A5276).withOpacity(0.2)),
+                      color: const Color(0xFF1A5276).withValues(alpha: 0.2)),
                 ),
                 child: Row(
                   children: [

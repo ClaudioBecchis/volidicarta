@@ -145,7 +145,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFF1A5276).withOpacity(0.3),
+                        color: const Color(0xFF1A5276).withValues(alpha: 0.3),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),
@@ -174,7 +174,7 @@ class _AboutScreenState extends State<AboutScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1A5276).withOpacity(0.1),
+                    color: const Color(0xFF1A5276).withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text(
@@ -307,19 +307,19 @@ class _AboutScreenState extends State<AboutScreen> {
                 const Divider(),
                 const SizedBox(height: 20),
                 // Funzionalità
-                _FeatureRow(
+                const _FeatureRow(
                     icon: Icons.search,
                     text: 'Ricerca su Google Books (Amazon, Feltrinelli, IBS...)'),
-                _FeatureRow(
+                const _FeatureRow(
                     icon: Icons.star_rounded,
                     text: 'Recensioni con valutazione a stelle'),
-                _FeatureRow(
+                const _FeatureRow(
                     icon: Icons.category_outlined,
                     text: 'Organizzazione per Autore e Genere'),
-                _FeatureRow(
+                const _FeatureRow(
                     icon: Icons.bar_chart,
                     text: 'Statistiche di lettura personali'),
-                _FeatureRow(
+                const _FeatureRow(
                     icon: Icons.lock_outline,
                     text: 'Dati salvati localmente sul dispositivo'),
                 const SizedBox(height: 32),

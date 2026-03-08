@@ -162,9 +162,10 @@ class _DashboardTabState extends State<_DashboardTab> {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const AboutScreen()));
               } else if (v == 'logout') {
+                final nav = Navigator.of(context);
                 await AuthService().logout();
                 if (mounted) {
-                  Navigator.pushReplacement(context,
+                  nav.pushReplacement(
                       MaterialPageRoute(builder: (_) => const LoginScreen()));
                 }
               }
@@ -373,7 +374,7 @@ class _ActionCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: const Color(0xFF1A5276).withOpacity(0.1),
+          backgroundColor: const Color(0xFF1A5276).withValues(alpha: 0.1),
           child: Icon(icon, color: const Color(0xFF1A5276)),
         ),
         title: Text(title,

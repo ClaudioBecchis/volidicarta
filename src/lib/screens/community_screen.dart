@@ -17,7 +17,6 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   List<PublicReview> _reviews = [];
   bool _loading = true;
-  bool _isLoggedIn = false;
   String? _username;
 
   @override
@@ -28,7 +27,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _load() async {
     setState(() => _loading = true);
-    _isLoggedIn = AuthService().isLoggedIn;
     _username = AuthService().currentUser?.username;
     final r = await SupabaseService().fetchFeed();
     if (mounted) setState(() { _reviews = r; _loading = false; });
@@ -170,7 +168,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                   CircleAvatar(
                     radius: 16,
                     backgroundColor:
-                        const Color(0xFF1A5276).withOpacity(0.15),
+                        const Color(0xFF1A5276).withValues(alpha: 0.15),
                     child: Text(
                       _r.username.isNotEmpty
                           ? _r.username[0].toUpperCase()
@@ -200,7 +198,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: const Color(0xFF1A5276).withOpacity(0.08),
+                        color: const Color(0xFF1A5276).withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(20),
                       ),
                       child: Text(_r.bookGenre!,

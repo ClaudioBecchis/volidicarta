@@ -291,7 +291,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                   const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               margin: const EdgeInsets.only(top: 8),
               decoration: BoxDecoration(
-                color: const Color(0xFF1A5276).withOpacity(0.08),
+                color: const Color(0xFF1A5276).withValues(alpha: 0.08),
               ),
               child: Row(
                 children: [
@@ -433,7 +433,7 @@ class _ReviewTile extends StatelessWidget {
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
                           color:
-                              const Color(0xFF1A5276).withOpacity(0.1),
+                              const Color(0xFF1A5276).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
