@@ -12,7 +12,7 @@ class BookApiService {
   // Ultimo timestamp di chiamata API
   static DateTime? _lastCall;
   // Intervallo minimo tra chiamate (senza chiave API)
-  static const _minInterval = Duration(milliseconds: 1500);
+  static const _minInterval = Duration(milliseconds: 500);
 
   String _addKey(String url) {
     if (AppConfig.hasGoogleApiKey) {
@@ -33,7 +33,7 @@ class BookApiService {
   }
 
   Future<({List<Book> books, String? error})> search(
-      String query, {int maxResults = 20}) async {
+      String query, {int maxResults = 15}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
     final key = '${query.trim()}|it';
     if (_cache.containsKey(key)) return _cache[key]!;
@@ -46,7 +46,7 @@ class BookApiService {
   }
 
   Future<({List<Book> books, String? error})> searchAll(
-      String query, {int maxResults = 20}) async {
+      String query, {int maxResults = 15}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
     final key = '${query.trim()}|all';
     if (_cache.containsKey(key)) return _cache[key]!;
@@ -61,7 +61,7 @@ class BookApiService {
   Future<({List<Book> books, String? error})> _fetch(Uri uri, {bool isRetry = false}) async {
     try {
       await _throttle();
-      final res = await http.get(uri).timeout(const Duration(seconds: 12));
+      final res = await http.get(uri).timeout(const Duration(seconds: 7));
       if (res.statusCode == 429 || res.statusCode == 503) {
         if (!isRetry) {
           await Future.delayed(const Duration(seconds: 4));
