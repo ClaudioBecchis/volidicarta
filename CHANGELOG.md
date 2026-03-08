@@ -4,6 +4,15 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.0.3] - 2026-03-08
+
+### Corretto
+- **Fix crash Android all'avvio**: rimossi import incompatibili (`sqflite_common_ffi_web`) dall'APK Android tramite conditional imports per piattaforma
+- **R8 minification disabilitato**: evita che il compilatore Android rimuova codice necessario a runtime
+- **ProGuard rules** aggiunte per Flutter, Supabase, SQLite, Kotlin
+
+---
+
 ## [1.0.2] - 2026-03-07
 
 ### Migliorato
