@@ -1,16 +1,25 @@
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'utils/db_init_stub.dart'
-    if (dart.library.html) 'utils/db_init_web.dart'
-    if (dart.library.io) 'utils/db_init_io.dart';
 import 'config/supabase_config.dart';
 import 'services/settings_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initDatabase();
+  if (kIsWeb) {
+    databaseFactory = databaseFactoryFfiWeb;
+  } else if (defaultTargetPlatform == TargetPlatform.windows ||
+      defaultTargetPlatform == TargetPlatform.linux ||
+      defaultTargetPlatform == TargetPlatform.macOS) {
+    sqfliteFfiInit();
+    databaseFactory = databaseFactoryFfi;
+  }
+  // Android/iOS: sqflite nativo, nessuna inizializzazione necessaria
   if (SupabaseConfig.isConfigured) {
     await Supabase.initialize(
       url: SupabaseConfig.url,
@@ -60,6 +69,13 @@ class _BookReviewAppState extends State<BookReviewApp> {
       supportedLocales: SettingsService.supportedLanguages
           .map((l) => Locale(l['code']!))
           .toList(),
+      localeResolutionCallback: (locale, supported) {
+        if (locale == null) return const Locale('it');
+        for (final s in supported) {
+          if (s.languageCode == locale.languageCode) return s;
+        }
+        return const Locale('it');
+      },
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
       home: const SplashScreen(),

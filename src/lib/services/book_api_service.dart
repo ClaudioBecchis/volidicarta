@@ -5,13 +5,15 @@ import '../models/book.dart';
 import '../config/app_config.dart';
 
 class BookApiService {
-  static const _base = 'https://www.googleapis.com/books/v1/volumes';
+  static const _googleBase = 'https://www.googleapis.com/books/v1/volumes';
+  static const _openLibBase = 'https://openlibrary.org/search.json';
 
-  // Cache in memoria: chiave = query+lang, valore = risultato
-  static final _cache = <String, ({List<Book> books, String? error})>{};
-  // Ultimo timestamp di chiamata API
+  // Cache in memoria: chiave = query+lang, valore = risultato (max 100 voci, TTL 30 min)
+  static final _cache = <String, ({List<Book> books, String? error, DateTime ts})>{};
+  static const _cacheMaxSize = 100;
+  static const _cacheTtl = Duration(minutes: 30);
+  // Ultimo timestamp di chiamata Google Books
   static DateTime? _lastCall;
-  // Intervallo minimo tra chiamate (senza chiave API)
   static const _minInterval = Duration(milliseconds: 500);
 
   String _addKey(String url) {
@@ -22,7 +24,7 @@ class BookApiService {
   }
 
   Future<void> _throttle() async {
-    if (AppConfig.hasGoogleApiKey) return; // con chiave non serve
+    if (AppConfig.hasGoogleApiKey) return;
     if (_lastCall != null) {
       final elapsed = DateTime.now().difference(_lastCall!);
       if (elapsed < _minInterval) {
@@ -36,12 +38,20 @@ class BookApiService {
       String query, {int maxResults = 15}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
     final key = '${query.trim()}|it';
-    if (_cache.containsKey(key)) return _cache[key]!;
-    final encoded = Uri.encodeQueryComponent(query.trim());
-    final uri = Uri.parse(_addKey(
-        '$_base?q=$encoded&maxResults=$maxResults&langRestrict=it&printType=books'));
-    final result = await _fetch(uri);
-    if (result.error == null) _cache[key] = result;
+    if (_cache.containsKey(key)) {
+      final entry = _cache[key]!;
+      if (DateTime.now().difference(entry.ts) < _cacheTtl) {
+        return (books: entry.books, error: entry.error);
+      }
+      _cache.remove(key);
+    }
+    final result = await _searchGoogle(query, maxResults: maxResults, langRestrict: 'it');
+    if (result.error != null) {
+      final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: 'ita');
+      if (fallback.error == null) _addToCache(key, fallback);
+      return fallback;
+    }
+    _addToCache(key, result);
     return result;
   }
 
@@ -49,32 +59,49 @@ class BookApiService {
       String query, {int maxResults = 15}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
     final key = '${query.trim()}|all';
-    if (_cache.containsKey(key)) return _cache[key]!;
-    final encoded = Uri.encodeQueryComponent(query.trim());
-    final uri = Uri.parse(_addKey(
-        '$_base?q=$encoded&maxResults=$maxResults&printType=books'));
-    final result = await _fetch(uri);
-    if (result.error == null) _cache[key] = result;
+    if (_cache.containsKey(key)) {
+      final entry = _cache[key]!;
+      if (DateTime.now().difference(entry.ts) < _cacheTtl) {
+        return (books: entry.books, error: entry.error);
+      }
+      _cache.remove(key);
+    }
+    final result = await _searchGoogle(query, maxResults: maxResults);
+    if (result.error != null) {
+      final fallback = await _searchOpenLibrary(query, maxResults: maxResults);
+      if (fallback.error == null) _addToCache(key, fallback);
+      return fallback;
+    }
+    _addToCache(key, result);
     return result;
   }
 
-  Future<({List<Book> books, String? error})> _fetch(Uri uri, {bool isRetry = false}) async {
+  void _addToCache(String key, ({List<Book> books, String? error}) value) {
+    if (_cache.length >= _cacheMaxSize) {
+      _cache.remove(_cache.keys.first);
+    }
+    _cache[key] = (books: value.books, error: value.error, ts: DateTime.now());
+  }
+
+  Future<({List<Book> books, String? error})> _searchGoogle(
+      String query, {int maxResults = 15, String? langRestrict}) async {
+    final encoded = Uri.encodeQueryComponent(query.trim());
+    var url = '$_googleBase?q=$encoded&maxResults=$maxResults&printType=books';
+    if (langRestrict != null) url += '&langRestrict=$langRestrict';
+    final uri = Uri.parse(_addKey(url));
+    return _fetchGoogle(uri);
+  }
+
+  Future<({List<Book> books, String? error})> _fetchGoogle(Uri uri, {bool isRetry = false}) async {
     try {
       await _throttle();
       final res = await http.get(uri).timeout(const Duration(seconds: 7));
       if (res.statusCode == 429 || res.statusCode == 503) {
         if (!isRetry) {
-          await Future.delayed(const Duration(seconds: 4));
-          return _fetch(uri, isRetry: true);
+          await Future.delayed(const Duration(seconds: 3));
+          return _fetchGoogle(uri, isRetry: true);
         }
-        if (res.statusCode == 429) {
-          return (books: <Book>[], error:
-              'Limite Google Books raggiunto.\n'
-              'Attendi qualche minuto e riprova.');
-        }
-        return (books: <Book>[], error:
-            'Google Books non disponibile (503).\n'
-            'Riprova tra qualche secondo.');
+        return (books: <Book>[], error: 'google_limit');
       }
       if (res.statusCode != 200) {
         return (books: <Book>[], error: 'Errore server: ${res.statusCode}');
@@ -82,8 +109,29 @@ class BookApiService {
       final data = jsonDecode(res.body);
       final items = data['items'] as List?;
       if (items == null) return (books: <Book>[], error: null);
+      return (books: items.map((j) => Book.fromGoogleApi(j)).toList(), error: null);
+    } on TimeoutException {
+      return (books: <Book>[], error: 'timeout');
+    } catch (e) {
+      return (books: <Book>[], error: 'Errore rete: ${e.toString()}');
+    }
+  }
+
+  Future<({List<Book> books, String? error})> _searchOpenLibrary(
+      String query, {int maxResults = 15, String? lang}) async {
+    try {
+      final encoded = Uri.encodeQueryComponent(query.trim());
+      var url = '$_openLibBase?q=$encoded&limit=$maxResults&fields=key,title,author_name,cover_i,isbn,publisher,first_publish_year,number_of_pages_median,subject';
+      if (lang != null) url += '&language=$lang';
+      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
+      if (res.statusCode != 200) {
+        return (books: <Book>[], error: 'Open Library non disponibile (${res.statusCode}).');
+      }
+      final data = jsonDecode(res.body);
+      final docs = data['docs'] as List?;
+      if (docs == null || docs.isEmpty) return (books: <Book>[], error: null);
       return (
-        books: items.map((j) => Book.fromGoogleApi(j)).toList(),
+        books: docs.map((j) => Book.fromOpenLibrary(j as Map<String, dynamic>)).toList(),
         error: null
       );
     } on TimeoutException {
@@ -95,7 +143,8 @@ class BookApiService {
 
   Future<Book?> getById(String id) async {
     try {
-      final uri = Uri.parse('$_base/$id');
+      if (id.startsWith('ol_')) return null;
+      final uri = Uri.parse(_addKey('$_googleBase/$id'));
       final res = await http.get(uri).timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) return null;
       return Book.fromGoogleApi(jsonDecode(res.body));

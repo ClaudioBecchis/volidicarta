@@ -49,27 +49,11 @@ class AuthService {
     }
   }
 
-  Future<String?> login(String emailOrUsername, String password) async {
-    emailOrUsername = emailOrUsername.trim();
-    String email = emailOrUsername;
-
-    // Se è uno username (non contiene @), cerca l'email nel profilo
-    if (!emailOrUsername.contains('@')) {
-      try {
-        final profile = await _client
-            .from('profiles')
-            .select('id')
-            .eq('username', emailOrUsername)
-            .maybeSingle();
-        if (profile == null) return 'Username non trovato';
-        // Recupera email dall'auth admin — non disponibile lato client.
-        // Chiediamo all'utente di usare l'email.
-        return 'Accedi con la tua email (non username)';
-      } catch (_) {
-        return 'Username non trovato';
-      }
+  Future<String?> login(String email, String password) async {
+    email = email.trim();
+    if (!email.contains('@')) {
+      return 'Inserisci la tua email per accedere';
     }
-
     try {
       await _client.auth.signInWithPassword(email: email, password: password);
       return null;

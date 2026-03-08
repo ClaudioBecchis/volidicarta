@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../models/book.dart';
 import '../models/review.dart';
 import '../services/auth_service.dart';
@@ -19,11 +21,36 @@ class BookDetailScreen extends StatefulWidget {
 class _BookDetailScreenState extends State<BookDetailScreen> {
   Review? _review;
   bool _loading = true;
+  String? _fetchedDescription;
 
   @override
   void initState() {
     super.initState();
     _loadReview();
+    _loadDescriptionIfNeeded();
+  }
+
+  Future<void> _loadDescriptionIfNeeded() async {
+    final book = widget.book;
+    if (book.description != null) return;
+    // Open Library: recupera descrizione dalla Works API
+    if (book.id.startsWith('ol_') && book.previewLink != null) {
+      try {
+        final worksUrl = '${book.previewLink}.json';
+        final res = await http.get(Uri.parse(worksUrl))
+            .timeout(const Duration(seconds: 8));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          String? desc;
+          final raw = data['description'];
+          if (raw is String) { desc = raw; }
+          else if (raw is Map) { desc = raw['value'] as String?; }
+          if (desc != null && mounted) {
+            setState(() { _fetchedDescription = desc; });
+          }
+        }
+      } catch (_) {}
+    }
   }
 
   Future<void> _loadReview() async {
@@ -228,12 +255,14 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     }
                   },
                   icon: const Icon(Icons.preview_outlined),
-                  label: const Text('Anteprima su Google Books'),
+                  label: Text(book.id.startsWith('ol_')
+                      ? 'Apri su Open Library'
+                      : 'Anteprima su Google Books'),
                 ),
               ),
             ],
             // Descrizione
-            if (book.description != null) ...[
+            if (book.description != null || _fetchedDescription != null) ...[
               const SizedBox(height: 12),
               Card(
                 shape: RoundedRectangleBorder(
@@ -247,7 +276,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                           style: TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 8),
-                      _ExpandableText(text: book.description!),
+                      _ExpandableText(text: book.description ?? _fetchedDescription!),
                     ],
                   ),
                 ),

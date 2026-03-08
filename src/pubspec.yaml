@@ -1,7 +1,7 @@
 name: book_review
 description: Voli di Carta - App per recensire i libri letti
 publish_to: 'none'
-version: 1.0.3+4
+version: 1.0.8+9
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
@@ -21,7 +21,6 @@ dependencies:
   cached_network_image: ^3.3.1
   shared_preferences: ^2.2.3
   intl: ^0.20.2
-  flutter_rating_bar: ^4.0.1
   cupertino_icons: ^1.0.6
   supabase_flutter: ^2.5.0
   url_launcher: ^6.3.1

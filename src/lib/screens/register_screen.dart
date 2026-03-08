@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
-
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -18,6 +18,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
+  late final TapGestureRecognizer _privacyTapRec;
   bool _loading = false;
   bool _obscure1 = true;
   bool _obscure2 = true;
@@ -25,7 +26,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _error;
 
   @override
+  void initState() {
+    super.initState();
+    _privacyTapRec = TapGestureRecognizer()..onTap = _showPrivacyDialog;
+  }
+
+  @override
   void dispose() {
+    _privacyTapRec.dispose();
     _usernameCtrl.dispose();
     _emailCtrl.dispose();
     _passCtrl.dispose();
@@ -47,9 +55,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() { _loading = false; _error = err; });
     } else {
       if (!mounted) return;
-      // Supabase autoconfirm attivo: l'utente è già loggato dopo la registrazione.
-      Navigator.pushReplacement(context,
-          MaterialPageRoute(builder: (_) => const HomeScreen()));
+      final session = Supabase.instance.client.auth.currentSession;
+      if (session != null) {
+        Navigator.pushReplacement(context,
+            MaterialPageRoute(builder: (_) => const HomeScreen()));
+      } else {
+        setState(() => _loading = false);
+        showDialog(
+          context: context,
+          builder: (_) => AlertDialog(
+            title: const Text('Registrazione completata!'),
+            content: const Text(
+                'Controlla la tua email e clicca sul link di conferma per attivare l\'account.'),
+            actions: [
+              TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('OK')),
+            ],
+          ),
+        );
+      }
     }
   }
 
@@ -252,8 +277,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                     style: const TextStyle(
                                         color: Color(0xFF1A5276),
                                         decoration: TextDecoration.underline),
-                                    recognizer: TapGestureRecognizer()
-                                      ..onTap = _showPrivacyDialog,
+                                    recognizer: _privacyTapRec,
                                   ),
                                 ],
                               ),

@@ -20,15 +20,27 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
+  final _dashboardKey = GlobalKey<_DashboardTabState>();
 
-  final _pages = const [
-    _DashboardTab(),
-    SearchScreen(),
-    MyReviewsScreen(),
-    WishlistScreen(),
-    StatsScreen(),
-    CommunityScreen(),
-  ];
+  late final List<Widget> _pages;
+
+  @override
+  void initState() {
+    super.initState();
+    _pages = [
+      _DashboardTab(key: _dashboardKey),
+      const SearchScreen(),
+      const MyReviewsScreen(),
+      const WishlistScreen(),
+      const StatsScreen(),
+      const CommunityScreen(),
+    ];
+  }
+
+  void _onTabSelected(int i) {
+    setState(() => _tab = i);
+    if (i == 0) _dashboardKey.currentState?._load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: IndexedStack(index: _tab, children: _pages),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab,
-        onDestinationSelected: (i) => setState(() => _tab = i),
+        onDestinationSelected: _onTabSelected,
         destinations: const [
           NavigationDestination(
               icon: Icon(Icons.home_outlined),
@@ -69,7 +81,7 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
 class _DashboardTab extends StatefulWidget {
-  const _DashboardTab();
+  const _DashboardTab({super.key});
 
   @override
   State<_DashboardTab> createState() => _DashboardTabState();
@@ -92,7 +104,8 @@ class _DashboardTabState extends State<_DashboardTab> {
     if (mounted) {
       setState(() {
         _total = stats['total'];
-        _avg = stats['avg'] != null ? (stats['avg'] as double) : null;
+        final rawAvg = stats['avg'];
+        _avg = rawAvg != null ? (rawAvg as num).toDouble() : null;
       });
     }
   }
@@ -163,6 +176,25 @@ class _DashboardTabState extends State<_DashboardTab> {
                     MaterialPageRoute(builder: (_) => const AboutScreen()));
               } else if (v == 'logout') {
                 final nav = Navigator.of(context);
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (_) => AlertDialog(
+                    title: const Text('Disconnetti'),
+                    content: const Text(
+                        'Sei sicuro di voler uscire dall\'account community?'),
+                    actions: [
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, false),
+                          child: const Text('Annulla')),
+                      TextButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: TextButton.styleFrom(
+                              foregroundColor: Colors.red),
+                          child: const Text('Disconnetti')),
+                    ],
+                  ),
+                );
+                if (confirm != true) return;
                 await AuthService().logout();
                 if (mounted) {
                   nav.pushReplacement(

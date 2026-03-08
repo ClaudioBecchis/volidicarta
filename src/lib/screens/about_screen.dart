@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import '../config/supabase_config.dart';
 
@@ -14,7 +15,7 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  static const _currentVersion = '1.0.3';
+  static const _currentVersion = '1.0.8';
   bool _checking = false;
   bool _downloading = false;
   double _downloadProgress = 0;
@@ -22,12 +23,13 @@ class _AboutScreenState extends State<AboutScreen> {
   bool _hasUpdate = false;
   String? _latestVersion;
   String? _downloadUrl;
+  String? _expectedSha256;
 
   Future<void> _checkUpdates() async {
     setState(() { _checking = true; _updateMessage = null; _hasUpdate = false; });
     try {
       final uri = Uri.parse(
-          '${SupabaseConfig.url}/rest/v1/app_version?select=version,release_notes,download_url&order=id.desc&limit=1');
+          '${SupabaseConfig.url}/rest/v1/app_version?select=version,release_notes,download_url,sha256_checksum&order=id.desc&limit=1');
       final res = await http.get(uri, headers: {
         'apikey': SupabaseConfig.anonKey,
         'Authorization': 'Bearer ${SupabaseConfig.anonKey}',
@@ -38,6 +40,7 @@ class _AboutScreenState extends State<AboutScreen> {
           final latest = data.first['version'] as String;
           final notes = data.first['release_notes'] as String? ?? '';
           _downloadUrl = data.first['download_url'] as String?;
+          _expectedSha256 = data.first['sha256_checksum'] as String?;
           _latestVersion = latest;
           if (latest != _currentVersion) {
             setState(() {
@@ -91,6 +94,23 @@ class _AboutScreenState extends State<AboutScreen> {
         }
       }
       await installer.writeAsBytes(bytes);
+
+      // Verifica SHA-256 integrità
+      if (_expectedSha256 != null && _expectedSha256!.isNotEmpty) {
+        final digest = sha256.convert(await installer.readAsBytes());
+        if (digest.toString() != _expectedSha256) {
+          await installer.delete();
+          if (mounted) {
+            setState(() {
+              _downloading = false;
+              _updateMessage = 'Verifica integrità fallita. Download corrotto o manomesso.\nScarica manualmente da:\n$_downloadUrl';
+              _hasUpdate = true;
+            });
+          }
+          return;
+        }
+      }
+
       if (!mounted) return;
       setState(() { _downloading = false; _downloadProgress = 1; });
 
@@ -110,7 +130,7 @@ class _AboutScreenState extends State<AboutScreen> {
       if (confirm != true) return;
 
       // Avvia l'installer e chiudi l'app
-      await Process.start(installer.path, [], runInShell: false);
+      await Process.start(installer.path, []);
       exit(0);
     } catch (e) {
       if (mounted) {

@@ -248,6 +248,18 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
                           hintText: 'https://...',
                         ),
                         keyboardType: TextInputType.url,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return null;
+                          final url = v.trim();
+                          if (!url.startsWith('http://') &&
+                              !url.startsWith('https://')) {
+                            return 'L\'URL deve iniziare con http:// o https://';
+                          }
+                          if (Uri.tryParse(url) == null) {
+                            return 'URL non valido';
+                          }
+                          return null;
+                        },
                       ),
                     ],
                   ),

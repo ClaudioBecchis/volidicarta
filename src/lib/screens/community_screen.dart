@@ -17,19 +17,59 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   List<PublicReview> _reviews = [];
   bool _loading = true;
+  bool _loadingMore = false;
+  bool _hasMore = true;
   String? _username;
+  static const _pageSize = 20;
+  final _scrollCtrl = ScrollController();
 
   @override
   void initState() {
     super.initState();
     if (SupabaseConfig.isConfigured) _load();
+    _scrollCtrl.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollCtrl.position.pixels >=
+            _scrollCtrl.position.maxScrollExtent - 200 &&
+        !_loadingMore &&
+        _hasMore) {
+      _loadMore();
+    }
   }
 
   Future<void> _load() async {
-    setState(() => _loading = true);
+    setState(() { _loading = true; _hasMore = true; });
     _username = AuthService().currentUser?.username;
-    final r = await SupabaseService().fetchFeed();
-    if (mounted) setState(() { _reviews = r; _loading = false; });
+    final r = await SupabaseService().fetchFeed(limit: _pageSize);
+    if (mounted) {
+      setState(() {
+        _reviews = r;
+        _loading = false;
+        _hasMore = r.length >= _pageSize;
+      });
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loadingMore || !_hasMore) return;
+    setState(() => _loadingMore = true);
+    final r = await SupabaseService()
+        .fetchFeed(limit: _pageSize, offset: _reviews.length);
+    if (mounted) {
+      setState(() {
+        _reviews.addAll(r);
+        _loadingMore = false;
+        _hasMore = r.length >= _pageSize;
+      });
+    }
   }
 
   @override
@@ -59,13 +99,21 @@ class _CommunityScreenState extends State<CommunityScreen> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView.builder(
+                    controller: _scrollCtrl,
                     padding: const EdgeInsets.only(top: 8, bottom: 80),
-                    itemCount: _reviews.length,
-                    itemBuilder: (_, i) =>
-                        _ReviewCard(review: _reviews[i], onRefresh: _load),
+                    itemCount: _reviews.length + (_loadingMore ? 1 : 0),
+                    itemBuilder: (_, i) {
+                      if (i == _reviews.length) {
+                        return const Padding(
+                          padding: EdgeInsets.all(16),
+                          child: Center(child: CircularProgressIndicator()),
+                        );
+                      }
+                      return _ReviewCard(
+                          review: _reviews[i], onRefresh: _load);
+                    },
                   ),
                 ),
-      floatingActionButton: null,
     );
   }
 

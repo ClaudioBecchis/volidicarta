@@ -42,7 +42,7 @@ class _StatsScreenState extends State<StatsScreen> {
     final avg = _stats!['avg'];
     final dist = _stats!['distribution'] as Map<int, int>;
     final avgStr = avg != null
-        ? (avg as double).toStringAsFixed(1)
+        ? (avg as num).toDouble().toStringAsFixed(1)
         : '-';
 
     return SingleChildScrollView(

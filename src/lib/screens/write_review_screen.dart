@@ -57,8 +57,19 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     }
   }
 
-  String _fmt(DateTime d) =>
-      '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+  // Formato ISO 8601 per storage interno e Supabase
+  String _toIso(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
+
+  // Formato dd/MM/yyyy solo per la UI
+  String _displayDate(String iso) {
+    try {
+      final d = DateTime.parse(iso);
+      return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    } catch (_) {
+      return iso; // fallback per date già in formato vecchio
+    }
+  }
 
   Future<void> _pickStartDate() async {
     final now = DateTime.now();
@@ -70,7 +81,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       locale: const Locale('it', 'IT'),
       helpText: 'Data inizio lettura',
     );
-    if (d != null) setState(() => _startDate = _fmt(d));
+    if (d != null) setState(() => _startDate = _toIso(d));
   }
 
   Future<void> _pickEndDate() async {
@@ -83,7 +94,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
       locale: const Locale('it', 'IT'),
       helpText: 'Data fine lettura',
     );
-    if (d != null) setState(() => _endDate = _fmt(d));
+    if (d != null) setState(() => _endDate = _toIso(d));
   }
 
   Future<void> _save() async {
@@ -94,67 +105,79 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     }
     if (!_formKey.currentState!.validate()) return;
     setState(() => _saving = true);
-    final uid = AuthService().currentUser!.id;
-    final now = DateTime.now().toIso8601String();
-    final book = widget.book;
 
-    Review review;
-    if (widget.existing != null) {
-      review = widget.existing!.copyWith(
-        rating: _rating,
-        reviewTitle: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
-        reviewBody: _bodyCtrl.text.trim().isEmpty ? null : _bodyCtrl.text.trim(),
-        startDate: _startDate,
-        endDate: _endDate,
-        bookGenre: _genre,
-      );
-      await DbHelper().updateReview(review);
-    } else {
-      review = Review(
-        userId: uid,
-        bookId: book.id,
-        bookTitle: book.title,
-        bookAuthor: book.authors,
-        bookCoverUrl: book.coverUrl,
-        bookPublisher: book.publisher,
-        bookYear: book.publishedDate != null && book.publishedDate!.length >= 4
-            ? book.publishedDate!.substring(0, 4)
-            : book.publishedDate,
-        bookGenre: _genre,
-        rating: _rating,
-        reviewTitle: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
-        reviewBody: _bodyCtrl.text.trim().isEmpty ? null : _bodyCtrl.text.trim(),
-        startDate: _startDate,
-        endDate: _endDate,
-        createdAt: now,
-        updatedAt: now,
-      );
-      await DbHelper().insertReview(review);
+    try {
+      final uid = AuthService().currentUser!.id;
+      final now = DateTime.now().toIso8601String();
+      final book = widget.book;
+
+      Review review;
+      if (widget.existing != null) {
+        review = widget.existing!.copyWith(
+          rating: _rating,
+          reviewTitle: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
+          reviewBody: _bodyCtrl.text.trim().isEmpty ? null : _bodyCtrl.text.trim(),
+          startDate: _startDate,
+          endDate: _endDate,
+          bookGenre: _genre,
+        );
+        await DbHelper().updateReview(review);
+      } else {
+        review = Review(
+          userId: uid,
+          bookId: book.id,
+          bookTitle: book.title,
+          bookAuthor: book.authors,
+          bookCoverUrl: book.coverUrl,
+          bookPublisher: book.publisher,
+          bookYear: book.publishedDate != null && book.publishedDate!.length >= 4
+              ? book.publishedDate!.substring(0, 4)
+              : book.publishedDate,
+          bookGenre: _genre,
+          rating: _rating,
+          reviewTitle: _titleCtrl.text.trim().isEmpty ? null : _titleCtrl.text.trim(),
+          reviewBody: _bodyCtrl.text.trim().isEmpty ? null : _bodyCtrl.text.trim(),
+          startDate: _startDate,
+          endDate: _endDate,
+          createdAt: now,
+          updatedAt: now,
+        );
+        await DbHelper().insertReview(review);
+      }
+
+      if (_sharePublic && SupabaseConfig.isConfigured && SupabaseService().isLoggedIn) {
+        final pub = PublicReview(
+          id: '',
+          userId: SupabaseService().currentUser!.id,
+          username: SupabaseService().currentUsername ?? 'Utente',
+          bookId: review.bookId,
+          bookTitle: review.bookTitle,
+          bookAuthor: review.bookAuthor,
+          bookCoverUrl: review.bookCoverUrl,
+          bookPublisher: review.bookPublisher,
+          bookYear: review.bookYear,
+          bookGenre: review.bookGenre,
+          rating: review.rating,
+          reviewTitle: review.reviewTitle,
+          reviewBody: review.reviewBody,
+          readDate: review.endDate,
+          createdAt: review.createdAt ?? DateTime.now().toIso8601String(),
+        );
+        await SupabaseService().publishReview(pub);
+      }
+
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        setState(() => _saving = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Errore nel salvataggio: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
-
-    // Condividi nella community (Supabase)
-    if (_sharePublic && SupabaseConfig.isConfigured && SupabaseService().isLoggedIn) {
-      final pub = PublicReview(
-        id: '',
-        userId: SupabaseService().currentUser!.id,
-        username: SupabaseService().currentUsername ?? 'Utente',
-        bookId: review.bookId,
-        bookTitle: review.bookTitle,
-        bookAuthor: review.bookAuthor,
-        bookCoverUrl: review.bookCoverUrl,
-        bookPublisher: review.bookPublisher,
-        bookYear: review.bookYear,
-        bookGenre: review.bookGenre,
-        rating: review.rating,
-        reviewTitle: review.reviewTitle,
-        reviewBody: review.reviewBody,
-        readDate: review.endDate,
-        createdAt: review.createdAt ?? DateTime.now().toIso8601String(),
-      );
-      await SupabaseService().publishReview(pub);
-    }
-
-    if (mounted) Navigator.pop(context, true);
   }
 
   @override
@@ -339,7 +362,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   leading: const Icon(Icons.play_circle_outline,
                       color: Color(0xFF1A5276)),
                   title: const Text('Inizio lettura (opzionale)'),
-                  subtitle: Text(_startDate ?? 'Non specificata'),
+                  subtitle: Text(_startDate != null ? _displayDate(_startDate!) : 'Non specificata'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -363,7 +386,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                   leading: const Icon(Icons.stop_circle_outlined,
                       color: Color(0xFF1A5276)),
                   title: const Text('Fine lettura (opzionale)'),
-                  subtitle: Text(_endDate ?? 'Non specificata'),
+                  subtitle: Text(_endDate != null ? _displayDate(_endDate!) : 'Non specificata'),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [

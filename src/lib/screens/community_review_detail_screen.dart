@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/public_review.dart';
 import '../services/supabase_service.dart';
 import '../widgets/star_rating.dart';
+import '../utils/date_format.dart';
 
 class CommunityReviewDetailScreen extends StatefulWidget {
   final PublicReview review;
@@ -28,11 +29,56 @@ class _CommunityReviewDetailScreenState
     if (mounted) setState(() {});
   }
 
+  Future<void> _deleteReview() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Elimina dalla Community'),
+        content: const Text(
+            'Vuoi rimuovere questa recensione dalla community? Rimarrà nel tuo diario personale.'),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annulla')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Elimina')),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    try {
+      await SupabaseService().deletePublicReview(_review.id);
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+              content: Text('Errore eliminazione: $e'),
+              backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isMyReview =
+        SupabaseService().currentUser?.id == _review.userId;
     return Scaffold(
       backgroundColor: const Color(0xFFEBF5FB),
-      appBar: AppBar(title: const Text('Recensione')),
+      appBar: AppBar(
+        title: const Text('Recensione'),
+        actions: [
+          if (isMyReview)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              tooltip: 'Elimina dalla community',
+              onPressed: _deleteReview,
+            ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -253,12 +299,5 @@ class _CommunityReviewDetailScreenState
     );
   }
 
-  String _formatDate(String iso) {
-    try {
-      final d = DateTime.parse(iso);
-      return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
-    } catch (_) {
-      return iso;
-    }
-  }
+  String _formatDate(String iso) => formatDateForDisplay(iso);
 }

@@ -138,6 +138,7 @@ class _SearchScreenState extends State<SearchScreen> {
             padding: const EdgeInsets.all(12),
             child: TextField(
               controller: _ctrl,
+              style: const TextStyle(color: Colors.black87),
               decoration: InputDecoration(
                 hintText: 'Titolo, autore, ISBN...',
                 prefixIcon: const Icon(Icons.search),

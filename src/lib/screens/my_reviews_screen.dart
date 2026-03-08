@@ -24,6 +24,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
   final _searchCtrl = TextEditingController();
   int _filterRating = 0;
   _GroupBy _groupBy = _GroupBy.none;
+  Map<String, List<Review>>? _groupedCache;
 
   @override
   void initState() {
@@ -58,11 +59,16 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
             _filterRating == 0 || r.rating == _filterRating;
         return matchText && matchRating;
       }).toList();
+      _groupedCache = null;
     });
   }
 
-  // Raggruppa la lista per chiave
+  // Raggruppa la lista per chiave (memoizzata)
   Map<String, List<Review>> _grouped() {
+    return _groupedCache ??= _buildGrouped();
+  }
+
+  Map<String, List<Review>> _buildGrouped() {
     final Map<String, List<Review>> map = {};
     for (final r in _filtered) {
       final key = _groupBy == _GroupBy.author
@@ -92,7 +98,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
             icon: const Icon(Icons.sort),
             tooltip: 'Raggruppa per',
             initialValue: _groupBy,
-            onSelected: (v) => setState(() => _groupBy = v),
+            onSelected: (v) => setState(() { _groupBy = v; _groupedCache = null; }),
             itemBuilder: (_) => const [
               PopupMenuItem(
                 value: _GroupBy.none,

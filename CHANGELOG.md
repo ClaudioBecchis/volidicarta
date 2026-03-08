@@ -4,6 +4,59 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.0.8] - 2026-03-08
+
+### Aggiunto
+- **Paginazione infinita nella Community**: il feed carica automaticamente altri 20 risultati quando si scorre fino in fondo, senza ricaricare tutta la lista
+- **Elimina dalla Community**: pulsante per rimuovere la propria recensione dalla community direttamente dalla schermata di dettaglio (la recensione rimane nel diario personale)
+- **Conferma logout**: dialogo di conferma prima di disconnettersi dall'account community
+- **Utility date condivisa**: funzione `formatDateForDisplay()` centralizzata in `utils/date_format.dart` usata in tutta l'app
+
+### Migliorato
+- **Accessibilità stelle**: widget `StarRatingDisplay` e `StarRatingPicker` ora includono etichette semantiche per screen reader e area di tocco minima 48dp per ogni stella
+- **Cache ricerche con scadenza (TTL 30 min)**: le ricerche in cache ora scadono dopo 30 minuti, evitando risultati obsoleti
+- **Memoizzazione raggruppamento recensioni**: il raggruppamento per autore/genere nella lista recensioni è ora calcolato una sola volta per stato, migliorando le performance su grandi librerie
+- **Validazione URL copertina**: nel form "Aggiungi libro manualmente", l'URL copertina viene validato (deve iniziare con `http://` o `https://`)
+- **Risoluzione locale fallback**: se la lingua di sistema non è supportata, l'app usa l'italiano come fallback invece di causare errori
+- **Verifica integrità aggiornamento (SHA-256)**: l'installer scaricato viene verificato tramite checksum prima dell'installazione (richiede campo `sha256_checksum` nella tabella Supabase)
+- **Gestione errori salvataggio recensione**: errori durante il salvataggio mostrano un messaggio rosso dettagliato invece di bloccare silenziosamente l'interfaccia
+
+### Corretto
+- **BUG-01**: memory leak `StreamSubscription` su `LoginScreen` — ora cancellata correttamente nel `dispose()`
+- **BUG-02**: `TapGestureRecognizer` su `RegisterScreen` non veniva deallocato — ora gestito nel `dispose()`
+- **BUG-03**: `SQLite AVG()` restituisce `num` invece di `double` — cast esplicito in `HomeScreen` e `StatsScreen`
+- **BUG-04**: date salvate in formato `dd/MM/yyyy` invece di ISO 8601 — ora sempre `YYYY-MM-DD` internamente, con conversione per la UI
+- **BUG-07**: tentativo di login con username (ramo morto) rimosso da `AuthService`
+- **BUG-08**: dopo la registrazione, se la sessione è già attiva, navigazione diretta a `HomeScreen`
+
+### Rimosso
+- Dipendenza `flutter_rating_bar` rimossa (non usata, sostituita da widget personalizzato)
+
+---
+
+## [1.0.6] - 2026-03-08
+
+### Migliorato
+- **Descrizione libri Open Library**: caricata automaticamente dalla Works API quando si apre il dettaglio libro
+- **Pulsante anteprima**: mostra "Apri su Open Library" per i libri provenienti da Open Library
+- **Testo ricerca**: colore scuro forzato nella casella di ricerca per leggibilità in qualsiasi tema
+
+---
+
+## [1.0.5] - 2026-03-08
+
+### Migliorato
+- **Fallback automatico su Open Library**: se Google Books restituisce errore 429 (limite raggiunto), l'app cerca automaticamente su Open Library (Internet Archive) senza mostrare errori all'utente
+
+---
+
+## [1.0.4] - 2026-03-08
+
+### Corretto
+- **Fix crash Windows**: ripristinato approccio originale con import diretti e check runtime della piattaforma; i conditional imports introdotti in v1.0.3 causavano crash all'avvio su Windows
+
+---
+
 ## [1.0.3] - 2026-03-08
 
 ### Corretto
