@@ -4,6 +4,23 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.1.0] - 2026-03-08
+
+### Aggiunto
+- **Dark mode completa**: tutte le 12 schermate ora rispettano il tema scuro/chiaro del sistema — nessuna schermata rimane con lo sfondo azzurro fisso
+- **Statistiche per genere**: nuova card "Generi più letti" con barre proporzionali (top 8 generi)
+- **Statistiche per anno**: nuova card "Libri per anno" con barre orizzontali (ultimi 5 anni)
+- **Ricerca e ordinamento Wishlist**: barra di ricerca per titolo/autore + menu ordinamento (data, titolo, autore)
+- **Pulsante Condividi su dettaglio libro**: copia titolo e autore negli appunti con un tap
+- **`app_colors.dart`**: centralizzazione colori — `AppColors.screenBg(context)`, `primary`, `secondary`, `amber`, `purple`
+
+### Corretto
+- **NEW-B**: `CommunityScreen._load()` e `_loadMore()` — aggiunto `if (!mounted) return` prima di ogni `setState` iniziale
+- **NEW-C**: `StatsScreen` — aggiunto `RefreshIndicator` con `AlwaysScrollableScrollPhysics` (pull-to-refresh)
+- **NEW-D**: cast `avg` esplicito in `home_screen.dart` — `(stats['avg'] as num).toDouble()` coerente con `stats_screen.dart`
+
+---
+
 ## [1.0.9] - 2026-03-08
 
 ### Aggiunto

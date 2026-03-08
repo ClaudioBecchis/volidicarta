@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/supabase_service.dart';
+import '../config/app_colors.dart';
 
 class CommunityAuthScreen extends StatefulWidget {
   const CommunityAuthScreen({super.key});
@@ -73,7 +74,7 @@ class _CommunityAuthScreenState extends State<CommunityAuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(title: const Text('Accedi alla Community')),
       body: Center(
         child: SingleChildScrollView(

@@ -5,6 +5,7 @@ import '../models/wishlist_book.dart';
 import '../services/auth_service.dart';
 import '../database/db_helper.dart';
 import 'write_review_screen.dart';
+import '../config/app_colors.dart';
 
 class WishlistScreen extends StatefulWidget {
   const WishlistScreen({super.key});
@@ -15,26 +16,58 @@ class WishlistScreen extends StatefulWidget {
 
 class _WishlistScreenState extends State<WishlistScreen> {
   List<WishlistBook> _books = [];
+  List<WishlistBook> _filtered = [];
   bool _loading = true;
+  String _sortBy = 'date';
+  final _searchCtrl = TextEditingController();
 
   @override
   void initState() {
     super.initState();
+    _searchCtrl.addListener(_applyFilter);
     _load();
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
     final books = await DbHelper().getWishlist(uid);
-    if (mounted) setState(() { _books = books; _loading = false; });
+    if (mounted) {
+      setState(() { _books = books; _loading = false; });
+      _applyFilter();
+    }
+  }
+
+  void _applyFilter() {
+    final q = _searchCtrl.text.toLowerCase();
+    final result = _books.where((b) =>
+      b.bookTitle.toLowerCase().contains(q) ||
+      b.bookAuthor.toLowerCase().contains(q)
+    ).toList();
+    result.sort((a, b) {
+      switch (_sortBy) {
+        case 'title':  return a.bookTitle.compareTo(b.bookTitle);
+        case 'author': return a.bookAuthor.compareTo(b.bookAuthor);
+        default:       return b.addedAt.compareTo(a.addedAt);
+      }
+    });
+    if (mounted) setState(() => _filtered = result);
   }
 
   Future<void> _remove(WishlistBook book) async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
     await DbHelper().removeFromWishlist(uid, book.bookId);
-    if (mounted) setState(() => _books.removeWhere((b) => b.bookId == book.bookId));
+    if (mounted) {
+      setState(() => _books.removeWhere((b) => b.bookId == book.bookId));
+      _applyFilter();
+    }
   }
 
   Future<void> _startReview(WishlistBook wb) async {
@@ -74,35 +107,78 @@ class _WishlistScreenState extends State<WishlistScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
         title: const Text('Da Leggere'),
         actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.sort),
+            tooltip: 'Ordina',
+            onSelected: (v) { _sortBy = v; _applyFilter(); },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'date',   child: Text('Per data aggiunta')),
+              PopupMenuItem(value: 'title',  child: Text('Per titolo')),
+              PopupMenuItem(value: 'author', child: Text('Per autore')),
+            ],
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: Center(
-              child: Text('${_books.length} libri',
+              child: Text('${_filtered.length} libri',
                   style: const TextStyle(color: Colors.white70, fontSize: 13)),
             ),
           ),
         ],
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+            child: TextField(
+              controller: _searchCtrl,
+              style: const TextStyle(color: Colors.white),
+              decoration: InputDecoration(
+                hintText: 'Cerca titolo o autore…',
+                hintStyle: const TextStyle(color: Colors.white60),
+                prefixIcon: const Icon(Icons.search, color: Colors.white70),
+                suffixIcon: _searchCtrl.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.clear, color: Colors.white70),
+                        onPressed: () { _searchCtrl.clear(); _applyFilter(); },
+                      ),
+                filled: true,
+                fillColor: Colors.white12,
+                contentPadding: EdgeInsets.zero,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(24),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _books.isEmpty
               ? _buildEmpty()
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount: _books.length,
-                    itemBuilder: (_, i) => _WishCard(
-                      book: _books[i],
-                      onReview: () => _startReview(_books[i]),
-                      onRemove: () => _remove(_books[i]),
+              : _filtered.isEmpty
+                  ? Center(
+                      child: Text('Nessun risultato',
+                          style: TextStyle(color: Colors.grey.shade500)),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(12),
+                        itemCount: _filtered.length,
+                        itemBuilder: (_, i) => _WishCard(
+                          book: _filtered[i],
+                          onReview: () => _startReview(_filtered[i]),
+                          onRemove: () => _remove(_filtered[i]),
+                        ),
+                      ),
                     ),
-                  ),
-                ),
     );
   }
 

@@ -3,6 +3,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import '../models/public_review.dart';
 import '../services/supabase_service.dart';
 import '../widgets/star_rating.dart';
+import '../config/app_colors.dart';
 import '../utils/date_format.dart';
 
 class CommunityReviewDetailScreen extends StatefulWidget {
@@ -67,7 +68,7 @@ class _CommunityReviewDetailScreenState
     final isMyReview =
         SupabaseService().currentUser?.id == _review.userId;
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
         title: const Text('Recensione'),
         actions: [

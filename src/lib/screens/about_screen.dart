@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import '../config/app_colors.dart';
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -17,7 +18,7 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  static const _currentVersion = '1.0.9';
+  static const _currentVersion = '1.1.0';
   bool _checking = false;
   bool _downloading = false;
   double _downloadProgress = 0;
@@ -165,7 +166,7 @@ class _AboutScreenState extends State<AboutScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(title: const Text('Info App')),
       body: Center(
         child: SingleChildScrollView(

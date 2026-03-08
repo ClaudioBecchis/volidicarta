@@ -3,6 +3,7 @@ import '../models/book.dart';
 import '../models/review.dart';
 import '../models/public_review.dart';
 import '../services/auth_service.dart';
+import '../config/app_colors.dart';
 import '../services/supabase_service.dart';
 import '../config/supabase_config.dart';
 import '../database/db_helper.dart';
@@ -192,7 +193,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
   Widget build(BuildContext context) {
     final isEdit = widget.existing != null;
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
         title: Text(isEdit ? 'Modifica Recensione' : 'Scrivi Recensione'),
         actions: [

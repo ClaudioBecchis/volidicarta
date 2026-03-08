@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
@@ -9,6 +10,7 @@ import '../services/auth_service.dart';
 import '../database/db_helper.dart';
 import '../widgets/star_rating.dart';
 import 'write_review_screen.dart';
+import '../config/app_colors.dart';
 
 class BookDetailScreen extends StatefulWidget {
   final Book book;
@@ -108,10 +110,21 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Widget build(BuildContext context) {
     final book = widget.book;
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
         title: const Text('Dettaglio Libro'),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share_outlined),
+            tooltip: 'Condividi',
+            onPressed: () {
+              final text = '📚 ${book.title} — ${book.authors}';
+              Clipboard.setData(ClipboardData(text: text));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Copiato negli appunti!')),
+              );
+            },
+          ),
           if (_review != null)
             IconButton(
               icon: const Icon(Icons.delete_outline),

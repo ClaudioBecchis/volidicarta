@@ -3,6 +3,7 @@ import 'package:flutter/gestures.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
+import '../config/app_colors.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -119,7 +120,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

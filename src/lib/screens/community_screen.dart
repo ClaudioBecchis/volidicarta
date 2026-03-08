@@ -6,6 +6,7 @@ import '../services/supabase_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/star_rating.dart';
 import 'community_review_detail_screen.dart';
+import '../config/app_colors.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -46,6 +47,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Future<void> _load() async {
+    if (!mounted) return;
     setState(() { _loading = true; _hasMore = true; });
     _username = AuthService().currentUser?.username;
     final r = await SupabaseService().fetchFeed(limit: _pageSize);
@@ -60,6 +62,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _loadMore() async {
     if (_loadingMore || !_hasMore) return;
+    if (!mounted) return;
     setState(() => _loadingMore = true);
     final r = await SupabaseService()
         .fetchFeed(limit: _pageSize, offset: _reviews.length);
@@ -77,7 +80,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     if (!SupabaseConfig.isConfigured) return _notConfiguredView();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
         title: const Text('Community'),
         actions: [
@@ -139,7 +142,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Widget _notConfiguredView() {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(title: const Text('Community')),
       body: Center(
         child: Padding(

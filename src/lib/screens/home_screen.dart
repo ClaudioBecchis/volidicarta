@@ -14,6 +14,7 @@ import 'community_screen.dart';
 import 'settings_screen.dart';
 import 'wishlist_screen.dart';
 import '../models/book.dart';
+import '../config/app_colors.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -116,7 +117,7 @@ class _DashboardTabState extends State<_DashboardTab> {
       final stats = results[0] as Map<String, dynamic>;
       setState(() {
         _total = stats['total'] as int;
-        _avg = stats['avg'] as double?;
+        _avg = stats['avg'] != null ? (stats['avg'] as num).toDouble() : null;
         _recent = results[1] as List<Review>;
         _wishlistCount = results[2] as int;
       });
@@ -127,7 +128,7 @@ class _DashboardTabState extends State<_DashboardTab> {
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
         title: const Text('Voli di Carta'),
         actions: [

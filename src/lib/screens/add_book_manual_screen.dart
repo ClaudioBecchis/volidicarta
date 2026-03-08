@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/book.dart';
 import 'write_review_screen.dart';
+import '../config/app_colors.dart';
 
 class AddBookManualScreen extends StatefulWidget {
   const AddBookManualScreen({super.key});
@@ -64,7 +65,7 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFEBF5FB),
+      backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(title: const Text('Aggiungi Libro Manualmente')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

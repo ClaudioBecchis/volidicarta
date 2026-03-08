@@ -196,6 +196,26 @@ class DbHelper {
         0;
   }
 
+  Future<Map<String, int>> getStatsByGenre(String userId) async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT book_genre, COUNT(*) as cnt FROM reviews
+      WHERE user_id = ? AND book_genre IS NOT NULL AND book_genre != ''
+      GROUP BY book_genre ORDER BY cnt DESC LIMIT 8
+    ''', [userId]);
+    return {for (final r in rows) r['book_genre'] as String: r['cnt'] as int};
+  }
+
+  Future<Map<int, int>> getStatsByYear(String userId) async {
+    final db = await database;
+    final rows = await db.rawQuery('''
+      SELECT SUBSTR(created_at, 1, 4) as yr, COUNT(*) as cnt
+      FROM reviews WHERE user_id = ?
+      GROUP BY yr ORDER BY yr DESC LIMIT 5
+    ''', [userId]);
+    return {for (final r in rows) int.parse(r['yr'] as String): r['cnt'] as int};
+  }
+
   Future<List<Review>> getRecentReviews(String userId, {int limit = 3}) async {
     final db = await database;
     final res = await db.query('reviews',
