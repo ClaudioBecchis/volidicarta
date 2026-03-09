@@ -27,6 +27,9 @@ void main() async {
       await Supabase.initialize(
         url: SupabaseConfig.url,
         anonKey: SupabaseConfig.anonKey,
+        authOptions: const FlutterAuthClientOptions(
+          detectSessionInUri: false,
+        ),
       );
     } catch (e) {
       debugPrint('Supabase init error: $e');
