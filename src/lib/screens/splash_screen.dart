@@ -6,6 +6,8 @@ import '../config/supabase_config.dart';
 import '../services/auth_service.dart';
 import '../services/crash_service.dart';
 import '../services/review_sync_service.dart';
+import '../services/update_service.dart';
+import '../widgets/update_dialog.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -46,6 +48,25 @@ class _SplashScreenState extends State<SplashScreen> {
         await _checkAndReportCrash();
       } catch (e) {
         debugPrint('Crash report dialog error: $e');
+      }
+    }
+
+    // Check aggiornamento automatico (Android e Windows)
+    if (!kIsWeb && (isAndroid || isWindows) && mounted) {
+      try {
+        String currentVersion = '';
+        try {
+          final info = await PackageInfo.fromPlatform();
+          currentVersion = info.version;
+        } catch (_) {}
+        if (currentVersion.isNotEmpty) {
+          final update = await UpdateService().checkForUpdate(currentVersion);
+          if (update != null && update.isNewerAvailable && mounted) {
+            await UpdateDialog.showIfNeeded(context, update);
+          }
+        }
+      } catch (e) {
+        debugPrint('Update check error: $e');
       }
     }
 

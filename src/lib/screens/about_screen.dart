@@ -1,17 +1,12 @@
-import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import '../config/app_colors.dart';
-import 'package:flutter/services.dart' show SystemNavigator;
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
-import '../database/db_helper.dart';
 import '../services/crash_service.dart';
+import '../services/update_service.dart';
+import '../widgets/update_dialog.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -27,13 +22,8 @@ class AboutScreen extends StatefulWidget {
 class _AboutScreenState extends State<AboutScreen> {
   String _currentVersion = '';
   bool _checking = false;
-  bool _downloading = false;
-  double _downloadProgress = 0;
   String? _updateMessage;
   bool _hasUpdate = false;
-  String? _latestVersion;
-  String? _downloadUrl;
-  String? _expectedSha256;
 
   @override
   void initState() {
@@ -75,31 +65,18 @@ class _AboutScreenState extends State<AboutScreen> {
     }
     setState(() { _checking = true; _updateMessage = null; _hasUpdate = false; });
     try {
-      final uri = Uri.parse(
-          '${SupabaseConfig.url}/rest/v1/app_version?select=version,release_notes,download_url,sha256_checksum&order=id.desc&limit=1');
-      final res = await http.get(uri, headers: {
-        'apikey': SupabaseConfig.anonKey,
-        'Authorization': 'Bearer ${SupabaseConfig.anonKey}',
-      }).timeout(const Duration(seconds: 10));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as List;
-        if (data.isNotEmpty) {
-          final latest = data.first['version'] as String;
-          final notes = data.first['release_notes'] as String? ?? '';
-          _downloadUrl = data.first['download_url'] as String?;
-          _expectedSha256 = data.first['sha256_checksum'] as String?;
-          _latestVersion = latest;
-          if (_isNewerVersion(latest, _currentVersion)) {
-            setState(() {
-              _hasUpdate = true;
-              _updateMessage = 'Nuova versione disponibile: v$latest\n\n$notes';
-            });
-          } else {
-            setState(() => _updateMessage = 'Sei già alla versione più recente (v$latest).');
-          }
-        }
-      } else {
+      final update = await UpdateService().checkForUpdate(_currentVersion);
+      if (!mounted) return;
+      if (update == null) {
         setState(() => _updateMessage = 'Impossibile verificare gli aggiornamenti.');
+      } else if (update.isNewerAvailable) {
+        setState(() {
+          _hasUpdate = true;
+          _updateMessage = 'Nuova versione disponibile: v${update.latestVersion}';
+        });
+        await UpdateDialog.showIfNeeded(context, update);
+      } else {
+        setState(() => _updateMessage = 'Sei già alla versione più recente (v${update.latestVersion}).');
       }
     } catch (_) {
       setState(() => _updateMessage = 'Errore di rete. Controlla la connessione.');
@@ -159,89 +136,6 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-  Future<void> _downloadAndInstall() async {
-    if (_downloadUrl == null) return;
-    // Su web: apri link nel browser
-    if (kIsWeb) {
-      // non possiamo installare su web, ma possiamo mostrare il link
-      setState(() => _updateMessage = 'Scarica la nuova versione dal sito:\n$_downloadUrl');
-      return;
-    }
-    // Solo Windows supporta install automatico
-    if (defaultTargetPlatform != TargetPlatform.windows) {
-      setState(() => _updateMessage = 'Aggiornamento automatico disponibile solo su Windows.\nScarica manualmente da:\n$_downloadUrl');
-      return;
-    }
-
-    setState(() { _downloading = true; _downloadProgress = 0; });
-    try {
-      final tmpDir = await getTemporaryDirectory();
-      final installer = File('${tmpDir.path}\\VoliDiCarta_v${_latestVersion}_Setup.exe');
-
-      final req = http.Request('GET', Uri.parse(_downloadUrl!));
-      final response = await req.send().timeout(const Duration(minutes: 5));
-      final total = response.contentLength ?? 0;
-      int received = 0;
-      final bytes = <int>[];
-
-      await for (final chunk in response.stream) {
-        bytes.addAll(chunk);
-        received += chunk.length;
-        if (total > 0 && mounted) {
-          setState(() => _downloadProgress = received / total);
-        }
-      }
-      await installer.writeAsBytes(bytes);
-
-      // Verifica SHA-256 integrità
-      if (_expectedSha256 != null && _expectedSha256!.isNotEmpty) {
-        final digest = sha256.convert(await installer.readAsBytes());
-        if (digest.toString() != _expectedSha256) {
-          await installer.delete();
-          if (mounted) {
-            setState(() {
-              _downloading = false;
-              _updateMessage = 'Verifica integrità fallita. Download corrotto o manomesso.\nScarica manualmente da:\n$_downloadUrl';
-              _hasUpdate = true;
-            });
-          }
-          return;
-        }
-      }
-
-      if (!mounted) return;
-      setState(() { _downloading = false; _downloadProgress = 1; });
-
-      // Mostra conferma prima di avviare l'installer
-      final confirm = await showDialog<bool>(
-        context: context,
-        barrierDismissible: false,
-        builder: (_) => AlertDialog(
-          title: const Text('Aggiornamento scaricato'),
-          content: Text('L\'installer di v${_latestVersion ?? ''} è pronto.\n\nVerrà avviato il wizard di installazione. L\'app si chiuderà.'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
-            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Installa ora')),
-          ],
-        ),
-      );
-      if (confirm != true) return;
-
-      // Avvia l'installer, attende avvio UAC, flush DB e chiudi l'app
-      await Process.start(installer.path, []);
-      await Future.delayed(const Duration(milliseconds: 500));
-      await DbHelper().close();
-      await SystemNavigator.pop();
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _downloading = false;
-          _updateMessage = 'Download fallito: ${e.toString()}\n\nScarica manualmente da:\n$_downloadUrl';
-          _hasUpdate = true;
-        });
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -349,42 +243,6 @@ class _AboutScreenState extends State<AboutScreen> {
                                   fontSize: 13)),
                         ),
                       ],
-                    ),
-                  ),
-                ],
-                if (_downloading) ...[
-                  const SizedBox(height: 12),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: _downloadProgress > 0 ? _downloadProgress : null,
-                      minHeight: 8,
-                      backgroundColor: Colors.grey.shade200,
-                      color: const Color(0xFF1A5276),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    _downloadProgress > 0
-                        ? 'Download: ${(_downloadProgress * 100).toStringAsFixed(0)}%'
-                        : 'Download in corso...',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-                if (_hasUpdate && _downloadUrl != null && !_downloading) ...[
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _downloadAndInstall,
-                      icon: const Icon(Icons.download_rounded),
-                      label: const Text('Installa Aggiornamento'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF1A5276),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
                     ),
                   ),
                 ],

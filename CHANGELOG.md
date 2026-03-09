@@ -4,6 +4,16 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.7] - 2026-03-09
+
+### Aggiunto
+- **AUTO-UPDATE**: Popup automatico all'avvio quando è disponibile una nuova versione
+- **Android**: bottone "Scarica APK" apre direttamente il browser per il download
+- **Windows**: download automatico + verifica SHA-256 + avvio installer (come prima)
+- Refactoring: `UpdateService` + `UpdateDialog` riutilizzabili, codice duplicato rimosso da AboutScreen
+
+---
+
 ## [1.3.6] - 2026-03-09
 
 ### Aggiunto
