@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import '../models/book.dart';
 import '../models/review.dart';
+import '../models/wishlist_book.dart';
 import '../services/auth_service.dart';
 import '../database/db_helper.dart';
 import '../services/review_sync_service.dart';
@@ -26,12 +27,21 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Review? _review;
   bool _loading = true;
   String? _fetchedDescription;
+  bool _inWishlist = false;
 
   @override
   void initState() {
     super.initState();
     _loadReview();
     _loadDescriptionIfNeeded();
+    _loadWishlistState();
+  }
+
+  Future<void> _loadWishlistState() async {
+    final uid = AuthService().currentUser?.id;
+    if (uid == null) return;
+    final inW = await DbHelper().isInWishlist(uid, widget.book.id);
+    if (mounted) setState(() => _inWishlist = inW);
   }
 
   Future<void> _loadDescriptionIfNeeded() async {
@@ -90,6 +100,158 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     );
   }
 
+  Future<void> _addToWishlist() async {
+    final uid = AuthService().currentUser?.id;
+    if (uid == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Accedi per aggiungere alla lista "Da leggere"')));
+      return;
+    }
+    final book = widget.book;
+    final wb = WishlistBook(
+      userId: uid,
+      bookId: book.id,
+      bookTitle: book.title,
+      bookAuthor: book.authors,
+      bookCoverUrl: book.coverUrl,
+      bookPublisher: book.publisher,
+      bookYear: book.publishedDate != null && book.publishedDate!.length >= 4
+          ? book.publishedDate!.substring(0, 4)
+          : book.publishedDate,
+      bookGenre: book.categories,
+      addedAt: DateTime.now().toIso8601String(),
+    );
+    await DbHelper().addToWishlist(wb);
+    if (mounted) {
+      setState(() => _inWishlist = true);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Aggiunto a "Da leggere" 🔖'),
+              duration: Duration(seconds: 2)));
+    }
+  }
+
+  Future<void> _removeFromWishlist() async {
+    final uid = AuthService().currentUser?.id;
+    if (uid == null) return;
+    await DbHelper().removeFromWishlist(uid, widget.book.id);
+    if (mounted) {
+      setState(() => _inWishlist = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Rimosso dalla lista "Da leggere"'),
+              duration: Duration(seconds: 2)));
+    }
+  }
+
+  void _showBuyOptions() {
+    final book = widget.book;
+    final query = Uri.encodeComponent('${book.title} ${book.authors}');
+    final titleOnly = Uri.encodeComponent(book.title);
+
+    final stores = [
+      (
+        name: 'Amazon',
+        icon: Icons.shopping_cart_outlined,
+        color: const Color(0xFFFF9900),
+        url: 'https://www.amazon.it/s?k=$query',
+      ),
+      (
+        name: 'Feltrinelli',
+        icon: Icons.store_outlined,
+        color: const Color(0xFFE30613),
+        url: 'https://www.lafeltrinelli.it/ricerca?q=$titleOnly',
+      ),
+      (
+        name: 'IBS',
+        icon: Icons.book_outlined,
+        color: const Color(0xFF0055A5),
+        url: 'https://www.ibs.it/search/?ts=as&query=$titleOnly',
+      ),
+      (
+        name: 'Libraccio',
+        icon: Icons.local_library_outlined,
+        color: const Color(0xFF2E7D32),
+        url: 'https://www.libraccio.it/search?q=$titleOnly',
+      ),
+      (
+        name: 'Mondadori Store',
+        icon: Icons.storefront_outlined,
+        color: const Color(0xFF6B1FA2),
+        url: 'https://www.mondadoristore.it/ricerca?q=$titleOnly',
+      ),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
+      builder: (ctx) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 4),
+                child: Row(
+                  children: [
+                    const Icon(Icons.shopping_bag_outlined, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Acquista "${book.title}"',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(height: 12),
+              ...stores.map((s) => ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: s.color.withValues(alpha: 0.12),
+                      child: Icon(s.icon, color: s.color, size: 20),
+                    ),
+                    title: Text(s.name,
+                        style: const TextStyle(fontWeight: FontWeight.w600)),
+                    trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey),
+                    onTap: () async {
+                      Navigator.pop(ctx);
+                      final uri = Uri.parse(s.url);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                      if (!mounted) return;
+                      if (!_inWishlist) {
+                        final add = await showDialog<bool>(
+                          context: context,
+                          builder: (_) => AlertDialog(
+                            title: const Text('Aggiunto alla lista?'),
+                            content: const Text(
+                                'Vuoi aggiungere il libro alla lista "Da leggere"?'),
+                            actions: [
+                              TextButton(
+                                  onPressed: () => Navigator.pop(context, false),
+                                  child: const Text('No')),
+                              ElevatedButton(
+                                  onPressed: () => Navigator.pop(context, true),
+                                  child: const Text('Sì, aggiungi')),
+                            ],
+                          ),
+                        );
+                        if (add == true && mounted) await _addToWishlist();
+                      }
+                    },
+                  )),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   Future<void> _deleteReview() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -131,6 +293,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       appBar: AppBar(
         title: const Text('Dettaglio Libro'),
         actions: [
+          IconButton(
+            icon: Icon(_inWishlist ? Icons.bookmark : Icons.bookmark_border),
+            tooltip: _inWishlist ? 'Rimuovi da "Da leggere"' : 'Aggiungi a "Da leggere"',
+            onPressed: _inWishlist ? _removeFromWishlist : _addToWishlist,
+          ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
             tooltip: 'Condividi',
@@ -268,26 +435,41 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                 ),
               ),
             ],
-            // Pulsante Anteprima Google Books
-            if (book.previewLink != null) ...[
-              const SizedBox(height: 8),
-              SizedBox(
-                width: double.infinity,
-                child: OutlinedButton.icon(
-                  onPressed: () async {
-                    final uri = Uri.parse(book.previewLink!);
-                    if (await canLaunchUrl(uri)) {
-                      await launchUrl(uri,
-                          mode: LaunchMode.externalApplication);
-                    }
-                  },
-                  icon: const Icon(Icons.preview_outlined),
-                  label: Text(book.id.startsWith('ol_')
-                      ? 'Apri su Open Library'
-                      : 'Anteprima su Google Books'),
+            // Pulsanti azioni
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _showBuyOptions,
+                    icon: const Icon(Icons.shopping_bag_outlined),
+                    label: const Text('Acquista'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF1A5276),
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
                 ),
-              ),
-            ],
+                if (book.previewLink != null) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final uri = Uri.parse(book.previewLink!);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri,
+                              mode: LaunchMode.externalApplication);
+                        }
+                      },
+                      icon: const Icon(Icons.preview_outlined),
+                      label: Text(book.id.startsWith('ol_')
+                          ? 'Open Library'
+                          : 'Anteprima'),
+                    ),
+                  ),
+                ],
+              ],
+            ),
             // Descrizione
             if (book.description != null || _fetchedDescription != null) ...[
               const SizedBox(height: 12),

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 import '../models/book.dart';
 import '../models/review.dart';
 import '../models/wishlist_book.dart';
@@ -18,6 +20,9 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  static const _historyKey = 'search_history';
+  static const _historyMax = 15;
+
   final _ctrl = TextEditingController();
   final _api = BookApiService();
   List<Book> _results = [];
@@ -27,11 +32,52 @@ class _SearchScreenState extends State<SearchScreen> {
   String _langFilter = 'it'; // 'it', 'en', 'all'
   Map<String, Review> _reviewedMap = {}; // bookId → Review
   Set<String> _wishlistIds = {}; // bookId → in wishlist
+  List<String> _history = [];
 
   @override
   void initState() {
     super.initState();
     _loadReviewed();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_historyKey);
+      if (raw != null && mounted) {
+        setState(() => _history = List<String>.from(jsonDecode(raw)));
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _addToHistory(String query) async {
+    if (query.isEmpty) return;
+    final updated = [query, ..._history.where((h) => h != query)]
+        .take(_historyMax)
+        .toList();
+    if (mounted) setState(() => _history = updated);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_historyKey, jsonEncode(updated));
+    } catch (_) {}
+  }
+
+  Future<void> _removeFromHistory(int index) async {
+    final updated = List<String>.from(_history)..removeAt(index);
+    if (mounted) setState(() => _history = updated);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_historyKey, jsonEncode(updated));
+    } catch (_) {}
+  }
+
+  Future<void> _clearHistory() async {
+    if (mounted) setState(() => _history = []);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_historyKey);
+    } catch (_) {}
   }
 
   Future<void> _loadReviewed() async {
@@ -51,14 +97,20 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  Future<void> _search() async {
-    final q = _ctrl.text.trim();
+  Future<void> _search([String? overrideQuery]) async {
+    final q = (overrideQuery ?? _ctrl.text).trim();
     if (q.isEmpty) return;
+    if (overrideQuery != null) {
+      _ctrl.text = overrideQuery;
+    }
     setState(() { _loading = true; _searched = true; _error = null; });
     final res = _langFilter == 'all'
         ? await _api.searchAll(q)
         : await _api.search(q, langRestrict: _langFilter);
-    if (mounted) setState(() { _results = res.books; _error = res.error; _loading = false; });
+    if (mounted) {
+      setState(() { _results = res.books; _error = res.error; _loading = false; });
+      if (res.books.isNotEmpty || res.error == null) _addToHistory(q);
+    }
   }
 
   Future<void> _toggleWishlist(Book book) async {
@@ -144,8 +196,7 @@ class _SearchScreenState extends State<SearchScreen> {
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _ctrl.clear();
-                          setState(
-                              () { _results = []; _searched = false; });
+                          setState(() { _results = []; _searched = false; _error = null; });
                         },
                       )
                     : null,
@@ -205,20 +256,64 @@ class _SearchScreenState extends State<SearchScreen> {
       return const Center(child: CircularProgressIndicator());
     }
     if (!_searched) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.search, size: 64, color: Colors.grey.shade300),
-            const SizedBox(height: 12),
-            Text('Cerca un libro per titolo o autore',
-                style: TextStyle(color: Colors.grey.shade500)),
-            const SizedBox(height: 8),
-            Text('Fonte: Google Books (Amazon, Feltrinelli, IBS...)',
-                style: TextStyle(
-                    color: Colors.grey.shade400, fontSize: 12)),
-          ],
-        ),
+      if (_history.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.search, size: 64, color: Colors.grey.shade300),
+              const SizedBox(height: 12),
+              Text('Cerca un libro per titolo o autore',
+                  style: TextStyle(color: Colors.grey.shade500)),
+              const SizedBox(height: 8),
+              Text('Fonte: Google Books (Amazon, Feltrinelli, IBS...)',
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
+            ],
+          ),
+        );
+      }
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 8, 4),
+            child: Row(
+              children: [
+                const Icon(Icons.history, size: 16, color: Colors.grey),
+                const SizedBox(width: 6),
+                const Expanded(
+                  child: Text('Ricerche recenti',
+                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                ),
+                TextButton(
+                  onPressed: _clearHistory,
+                  style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                  child: Text('Cancella tutto',
+                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView.builder(
+              itemCount: _history.length,
+              itemBuilder: (_, i) => ListTile(
+                dense: true,
+                leading: const Icon(Icons.history, color: Colors.grey, size: 20),
+                title: Text(_history[i], style: const TextStyle(fontSize: 14)),
+                trailing: IconButton(
+                  icon: Icon(Icons.close, size: 18, color: Colors.grey.shade400),
+                  onPressed: () => _removeFromHistory(i),
+                  tooltip: 'Rimuovi',
+                ),
+                onTap: () => _search(_history[i]),
+              ),
+            ),
+          ),
+        ],
       );
     }
     if (_error != null) {
