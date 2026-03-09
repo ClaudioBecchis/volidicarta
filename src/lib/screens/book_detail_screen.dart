@@ -144,38 +144,42 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   void _showBuyOptions() {
     final book = widget.book;
-    final query = Uri.encodeComponent('${book.title} ${book.authors}');
+    // ISBN è la ricerca più precisa; fallback al solo titolo
+    final searchTerm = book.isbn != null && book.isbn!.isNotEmpty
+        ? book.isbn!
+        : book.title;
+    final q = Uri.encodeComponent(searchTerm);
 
     final stores = [
       (
         name: 'Amazon',
         icon: Icons.shopping_cart_outlined,
         color: const Color(0xFFFF9900),
-        url: 'https://www.amazon.it/s?k=$query&i=stripbooks',
+        url: 'https://www.amazon.it/s?k=$q&i=stripbooks',
       ),
       (
         name: 'Feltrinelli',
         icon: Icons.store_outlined,
         color: const Color(0xFFE30613),
-        url: 'https://www.lafeltrinelli.it/search/?query=$query&filterProduct_type_description=Libri',
+        url: 'https://www.lafeltrinelli.it/search/?query=$q&filterProduct_type_description=Libri',
       ),
       (
         name: 'IBS',
         icon: Icons.book_outlined,
         color: const Color(0xFF0055A5),
-        url: 'https://www.ibs.it/search/?ts=as&query=$query',
+        url: 'https://www.ibs.it/search/?ts=as&query=$q',
       ),
       (
         name: 'Unilibro',
         icon: Icons.local_library_outlined,
         color: const Color(0xFF2E7D32),
-        url: 'https://www.unilibro.it/libri/ricerca?cerca=$query',
+        url: 'https://www.unilibro.it/libri/ricerca?cerca=$q',
       ),
       (
         name: 'Mondadori Store',
         icon: Icons.storefront_outlined,
         color: const Color(0xFF6B1FA2),
-        url: 'https://www.mondadoristore.it/search?q=$query',
+        url: 'https://www.mondadoristore.it/search?q=$q',
       ),
     ];
 
