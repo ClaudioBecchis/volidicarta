@@ -145,38 +145,37 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   void _showBuyOptions() {
     final book = widget.book;
     final query = Uri.encodeComponent('${book.title} ${book.authors}');
-    final titleOnly = Uri.encodeComponent(book.title);
 
     final stores = [
       (
         name: 'Amazon',
         icon: Icons.shopping_cart_outlined,
         color: const Color(0xFFFF9900),
-        url: 'https://www.amazon.it/s?k=$query',
+        url: 'https://www.amazon.it/s?k=$query&i=stripbooks',
       ),
       (
         name: 'Feltrinelli',
         icon: Icons.store_outlined,
         color: const Color(0xFFE30613),
-        url: 'https://www.lafeltrinelli.it/ricerca?q=$titleOnly',
+        url: 'https://www.lafeltrinelli.it/search/?query=$query&filterProduct_type_description=Libri',
       ),
       (
         name: 'IBS',
         icon: Icons.book_outlined,
         color: const Color(0xFF0055A5),
-        url: 'https://www.ibs.it/search/?ts=as&query=$titleOnly',
+        url: 'https://www.ibs.it/search/?ts=as&query=$query',
       ),
       (
-        name: 'Libraccio',
+        name: 'Unilibro',
         icon: Icons.local_library_outlined,
         color: const Color(0xFF2E7D32),
-        url: 'https://www.libraccio.it/search?q=$titleOnly',
+        url: 'https://www.unilibro.it/libri/ricerca?cerca=$query',
       ),
       (
         name: 'Mondadori Store',
         icon: Icons.storefront_outlined,
         color: const Color(0xFF6B1FA2),
-        url: 'https://www.mondadoristore.it/ricerca?q=$titleOnly',
+        url: 'https://www.mondadoristore.it/search?q=$query',
       ),
     ];
 
