@@ -11,6 +11,7 @@ import '../database/db_helper.dart';
 import '../widgets/star_rating.dart';
 import 'write_review_screen.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 
 class BookDetailScreen extends StatefulWidget {
   final Book book;
@@ -93,7 +94,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Elimina Recensione'),
-        content: const Text('Sei sicuro di voler eliminare questa recensione?'),
+        content: Text(S.of(context).deleteReviewConfirm),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -354,7 +355,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                             _loadReview();
                           },
                           icon: const Icon(Icons.edit),
-                          label: const Text('Scrivi la tua recensione'),
+                          label: Text(S.of(context).writeYourReview),
                         ),
                       ),
                     ],

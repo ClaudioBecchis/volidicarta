@@ -110,14 +110,14 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
     if (_startDate != null && _endDate != null &&
         _endDate!.compareTo(_startDate!) < 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La data di fine non può essere prima dell\'inizio')));
+        SnackBar(content: Text(S.of(context).endDateBeforeStart)));
       return;
     }
     // BUG-N: null check su sessione utente
     final uid = AuthService().currentUser?.id;
     if (uid == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sessione scaduta. Rieffettua il login.')));
+        SnackBar(content: Text(S.of(context).sessionExpired)));
       return;
     }
     setState(() => _saving = true);
@@ -356,7 +356,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                       const SizedBox(height: 10),
                       DropdownButtonFormField<String>(
                         initialValue: _genres.contains(_genre) ? _genre : null,
-                        hint: const Text('Seleziona un genere'),
+                        hint: Text(S.of(context).selectGenre),
                         decoration: const InputDecoration(
                           prefixIcon: Icon(Icons.category_outlined),
                           border: OutlineInputBorder(),

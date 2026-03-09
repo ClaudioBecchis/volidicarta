@@ -147,7 +147,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
               _applyFilter();
             },
             itemBuilder: (_) => [
-              const PopupMenuItem(value: 0, child: Text('Tutte le stelle')),
+              PopupMenuItem(value: 0, child: Text(s.allStars)),
               for (int i = 5; i >= 1; i--)
                 PopupMenuItem(
                   value: i,
@@ -244,13 +244,13 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                 ],
               ),
             ),
-          Expanded(child: _buildList()),
+          Expanded(child: _buildList(context)),
         ],
       ),
     );
   }
 
-  Widget _buildList() {
+  Widget _buildList(BuildContext context) {
     if (_loading) return const Center(child: CircularProgressIndicator());
     if (_reviews.isEmpty) {
       return Center(
@@ -264,7 +264,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
                 style:
                     TextStyle(color: Colors.grey.shade500, fontSize: 16)),
             const SizedBox(height: 8),
-            Text('Cerca un libro o aggiungilo manualmente!',
+            Text(S.of(context).searchOrAddManually,
                 style: TextStyle(color: Colors.grey.shade400)),
           ],
         ),

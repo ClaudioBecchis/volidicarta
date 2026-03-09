@@ -7,6 +7,7 @@ import '../services/auth_service.dart';
 import '../widgets/star_rating.dart';
 import 'community_review_detail_screen.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 
 class CommunityScreen extends StatefulWidget {
   const CommunityScreen({super.key});
@@ -50,13 +51,18 @@ class _CommunityScreenState extends State<CommunityScreen> {
     if (!mounted) return;
     setState(() { _loading = true; _hasMore = true; });
     _username = AuthService().currentUser?.username;
-    final r = await SupabaseService().fetchFeed(limit: _pageSize);
-    if (mounted) {
-      setState(() {
-        _reviews = r;
-        _loading = false;
-        _hasMore = r.length >= _pageSize;
-      });
+    try {
+      final r = await SupabaseService().fetchFeed(limit: _pageSize);
+      if (mounted) {
+        setState(() {
+          _reviews = r;
+          _loading = false;
+          _hasMore = r.length >= _pageSize;
+        });
+      }
+    } catch (e) {
+      debugPrint('Community load error: $e');
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -64,14 +70,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
     if (_loadingMore || !_hasMore) return;
     if (!mounted) return;
     setState(() => _loadingMore = true);
-    final r = await SupabaseService()
-        .fetchFeed(limit: _pageSize, offset: _reviews.length);
-    if (mounted) {
-      setState(() {
-        _reviews.addAll(r);
-        _loadingMore = false;
-        _hasMore = r.length >= _pageSize;
-      });
+    try {
+      final r = await SupabaseService()
+          .fetchFeed(limit: _pageSize, offset: _reviews.length);
+      if (mounted) {
+        setState(() {
+          _reviews.addAll(r);
+          _loadingMore = false;
+          _hasMore = r.length >= _pageSize;
+        });
+      }
+    } catch (e) {
+      debugPrint('Community loadMore error: $e');
+      if (mounted) setState(() => _loadingMore = false);
     }
   }
 
@@ -131,7 +142,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           Text('Nessuna recensione ancora',
               style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
           const SizedBox(height: 8),
-          Text('Sii il primo a condividere!',
+          Text(S.of(context).beFirstToShare,
               style: TextStyle(color: Colors.grey.shade400)),
           const SizedBox(height: 24),
           const SizedBox.shrink(),

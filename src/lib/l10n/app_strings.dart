@@ -92,4 +92,23 @@ class S {
   String get bookDetail => _t({'it':'Dettaglio Libro','en':'Book Detail','fr':'Détail du livre','es':'Detalle del libro','de':'Buchdetail','pt':'Detalhe do livro','ru':'Детали книги','ar':'تفاصيل الكتاب','zh':'书籍详情','ja':'本の詳細'});
   String get description => _t({'it':'Descrizione','en':'Description','fr':'Description','es':'Descripción','de':'Beschreibung','pt':'Descrição','ru':'Описание','ar':'الوصف','zh':'描述','ja':'説明'});
   String get myReviewCard => _t({'it':'La tua Recensione','en':'Your Review','fr':'Votre avis','es':'Tu reseña','de':'Deine Bewertung','pt':'Sua resenha','ru':'Ваша рецензия','ar':'مراجعتك','zh':'你的评论','ja':'あなたのレビュー'});
+  String get deleteReviewConfirm => _t({'it':'Sei sicuro di voler eliminare questa recensione?','en':'Are you sure you want to delete this review?','fr':'Êtes-vous sûr de vouloir supprimer cet avis?','es':'¿Estás seguro de que quieres eliminar esta reseña?','de':'Möchten Sie diese Bewertung wirklich löschen?','pt':'Tem certeza de que deseja excluir esta resenha?','ru':'Вы уверены, что хотите удалить эту рецензию?','ar':'هل أنت متأكد من حذف هذه المراجعة؟','zh':'您确定要删除此评论吗？','ja':'このレビューを削除してもよろしいですか？'});
+  String get writeYourReview => _t({'it':'Scrivi la tua recensione','en':'Write your review','fr':'Écrire votre avis','es':'Escribe tu reseña','de':'Bewertung schreiben','pt':'Escrever sua resenha','ru':'Написать рецензию','ar':'اكتب مراجعتك','zh':'写下您的评论','ja':'レビューを書く'});
+
+  // ── Validazione / Errori ──────────────────────────────────────────────────
+  String get endDateBeforeStart => _t({'it':'La data di fine non può essere prima dell\'inizio','en':'End date cannot be before start date','fr':'La date de fin ne peut pas être avant la date de début','es':'La fecha de fin no puede ser antes de la de inicio','de':'Enddatum kann nicht vor dem Startdatum liegen','pt':'A data de fim não pode ser antes da data de início','ru':'Дата окончания не может быть раньше даты начала','ar':'لا يمكن أن يكون تاريخ الانتهاء قبل تاريخ البدء','zh':'结束日期不能早于开始日期','ja':'終了日は開始日より前にできません'});
+  String get sessionExpired => _t({'it':'Sessione scaduta. Rieffettua il login.','en':'Session expired. Please log in again.','fr':'Session expirée. Veuillez vous reconnecter.','es':'Sesión expirada. Vuelve a iniciar sesión.','de':'Sitzung abgelaufen. Bitte erneut anmelden.','pt':'Sessão expirada. Faça login novamente.','ru':'Сессия истекла. Войдите снова.','ar':'انتهت الجلسة. سجل دخولك مرة أخرى.','zh':'会话已过期。请重新登录。','ja':'セッションが期限切れです。再ログインしてください。'});
+
+  // ── Generi / Selezione ────────────────────────────────────────────────────
+  String get selectGenre => _t({'it':'Seleziona un genere','en':'Select a genre','fr':'Sélectionner un genre','es':'Seleccionar un género','de':'Genre auswählen','pt':'Selecionar um gênero','ru':'Выберите жанр','ar':'اختر النوع','zh':'选择类型','ja':'ジャンルを選択'});
+
+  // ── Community ─────────────────────────────────────────────────────────────
+  String get beFirstToShare => _t({'it':'Sii il primo a condividere!','en':'Be the first to share!','fr':'Soyez le premier à partager!','es':'¡Sé el primero en compartir!','de':'Sei der erste, der teilt!','pt':'Seja o primeiro a compartilhar!','ru':'Будьте первым, кто поделится!','ar':'كن أول من يشارك!','zh':'成为第一个分享的人！','ja':'最初に共有しましょう！'});
+
+  // ── My Reviews ────────────────────────────────────────────────────────────
+  String get allStars => _t({'it':'Tutte le stelle','en':'All stars','fr':'Toutes les étoiles','es':'Todas las estrellas','de':'Alle Sterne','pt':'Todas as estrelas','ru':'Все звёзды','ar':'جميع النجوم','zh':'所有星级','ja':'全ての星'});
+  String get searchOrAddManually => _t({'it':'Cerca un libro o aggiungilo manualmente!','en':'Search a book or add it manually!','fr':'Recherchez un livre ou ajoutez-le manuellement!','es':'¡Busca un libro o añádelo manualmente!','de':'Suche ein Buch oder füge es manuell hinzu!','pt':'Pesquise um livro ou adicione-o manualmente!','ru':'Найдите книгу или добавьте вручную!','ar':'ابحث عن كتاب أو أضفه يدويًا!','zh':'搜索书籍或手动添加！','ja':'本を検索するか手動で追加してください！'});
+
+  // ── Wishlist ──────────────────────────────────────────────────────────────
+  String get yesRemove => _t({'it':'Sì, rimuovi','en':'Yes, remove','fr':'Oui, supprimer','es':'Sí, eliminar','de':'Ja, entfernen','pt':'Sim, remover','ru':'Да, удалить','ar':'نعم، احذف','zh':'是，删除','ja':'はい、削除'});
 }

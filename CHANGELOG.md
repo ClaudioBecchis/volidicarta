@@ -4,6 +4,16 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.2] - 2026-03-09
+
+### Corretto
+- **BUG-Y** 🟢: CommunityScreen._load() e _loadMore() try/catch con fallback
+- **BUG-Z** 🟢: rimosso community_auth_screen.dart (dead code)
+- **BUG-I18N** 🟢: 10 stringhe hardcoded localizzate in 10 lingue (book_detail, write_review, community, my_reviews, wishlist)
+- **BUG-DB** 🔴: db_helper su Windows usa getApplicationSupportDirectory() — fix SQLITE_CANTOPEN (code 14)
+
+---
+
 ## [1.3.1] - 2026-03-09
 
 ### Corretto

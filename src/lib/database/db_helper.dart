@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/review.dart';
@@ -16,7 +19,17 @@ class DbHelper {
   }
 
   Future<Database> _initDb() async {
-    final dbPath = await getDatabasesPath();
+    final String dbPath;
+    if (!kIsWeb &&
+        (defaultTargetPlatform == TargetPlatform.windows ||
+         defaultTargetPlatform == TargetPlatform.linux ||
+         defaultTargetPlatform == TargetPlatform.macOS)) {
+      final dir = await getApplicationSupportDirectory();
+      await Directory(dir.path).create(recursive: true);
+      dbPath = dir.path;
+    } else {
+      dbPath = await getDatabasesPath();
+    }
     final path = join(dbPath, 'volidicarta.db');
     return openDatabase(
       path,

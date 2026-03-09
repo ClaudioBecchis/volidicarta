@@ -109,7 +109,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
           content: Text('Vuoi rimuovere "${wb.bookTitle}" dalla lista "Da leggere"?'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No, tienilo')),
-            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sì, rimuovi')),
+            ElevatedButton(onPressed: () => Navigator.pop(context, true), child: Text(S.of(context).yesRemove)),
           ],
         ),
       );
