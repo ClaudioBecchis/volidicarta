@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/supabase_config.dart';
 import '../models/public_review.dart';
 
 class SupabaseService {
@@ -6,11 +7,12 @@ class SupabaseService {
   factory SupabaseService() => _instance;
   SupabaseService._();
 
-  SupabaseClient get _client => Supabase.instance.client;
+  SupabaseClient? get _client =>
+      SupabaseConfig.isConfigured ? Supabase.instance.client : null;
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 
-  User? get currentUser => _client.auth.currentUser;
+  User? get currentUser => _client?.auth.currentUser;
   bool get isLoggedIn => currentUser != null;
 
   String? get currentUsername {
@@ -19,15 +21,17 @@ class SupabaseService {
   }
 
   Future<String?> signUp(String username, String email, String password) async {
+    final c = _client;
+    if (c == null) return 'Community non disponibile in questa build.';
     try {
-      final res = await _client.auth.signUp(
+      final res = await c.auth.signUp(
         email: email,
         password: password,
         data: {'username': username},
       );
       if (res.user == null) return 'Registrazione fallita';
       // Create profile row
-      await _client.from('profiles').upsert({
+      await c.from('profiles').upsert({
         'id': res.user!.id,
         'username': username,
       });
@@ -40,8 +44,10 @@ class SupabaseService {
   }
 
   Future<String?> signIn(String email, String password) async {
+    final c = _client;
+    if (c == null) return 'Community non disponibile in questa build.';
     try {
-      await _client.auth.signInWithPassword(email: email, password: password);
+      await c.auth.signInWithPassword(email: email, password: password);
       return null;
     } on AuthException catch (e) {
       return _translateAuthError(e.message);
@@ -51,7 +57,7 @@ class SupabaseService {
   }
 
   Future<void> signOut() async {
-    await _client.auth.signOut();
+    await _client?.auth.signOut();
   }
 
   String _translateAuthError(String msg) {
@@ -72,8 +78,10 @@ class SupabaseService {
   // ── Feed ──────────────────────────────────────────────────────────────────
 
   Future<List<PublicReview>> fetchFeed({int limit = 30, int offset = 0}) async {
+    final c = _client;
+    if (c == null) return [];
     try {
-      final data = await _client
+      final data = await c
           .from('public_reviews')
           .select()
           .order('created_at', ascending: false)
@@ -84,7 +92,7 @@ class SupabaseService {
       // Se l'utente è loggato, recupera i like
       if (isLoggedIn && reviews.isNotEmpty) {
         final ids = reviews.map((r) => r.id).toList();
-        final likes = await _client
+        final likes = await c
             .from('likes')
             .select('review_id')
             .eq('user_id', currentUser!.id)
@@ -102,8 +110,10 @@ class SupabaseService {
 
   Future<List<PublicReview>> fetchMyPublicReviews() async {
     if (!isLoggedIn) return [];
+    final c = _client;
+    if (c == null) return [];
     try {
-      final data = await _client
+      final data = await c
           .from('public_reviews')
           .select()
           .eq('user_id', currentUser!.id)
@@ -118,9 +128,11 @@ class SupabaseService {
 
   Future<String?> publishReview(PublicReview review) async {
     if (!isLoggedIn) return 'Accedi alla community per condividere';
+    final c = _client;
+    if (c == null) return 'Community non disponibile in questa build.';
     try {
       // Controlla se già pubblicata
-      final existing = await _client
+      final existing = await c
           .from('public_reviews')
           .select('id')
           .eq('user_id', currentUser!.id)
@@ -128,12 +140,12 @@ class SupabaseService {
           .maybeSingle();
       if (existing != null) {
         // Aggiorna
-        await _client
+        await c
             .from('public_reviews')
             .update(review.toInsertMap())
             .eq('id', existing['id'] as String);
       } else {
-        await _client.from('public_reviews').insert(review.toInsertMap());
+        await c.from('public_reviews').insert(review.toInsertMap());
       }
       return null;
     } catch (e) {
@@ -142,16 +154,18 @@ class SupabaseService {
   }
 
   Future<void> deletePublicReview(String reviewId) async {
-    await _client.from('public_reviews').delete().eq('id', reviewId);
+    await _client?.from('public_reviews').delete().eq('id', reviewId);
   }
 
   // ── Likes ─────────────────────────────────────────────────────────────────
 
   Future<PublicReview> toggleLike(PublicReview review) async {
     if (!isLoggedIn) return review;
+    final c = _client;
+    if (c == null) return review;
     try {
       if (review.isLikedByMe) {
-        await _client
+        await c
             .from('likes')
             .delete()
             .eq('user_id', currentUser!.id)
@@ -161,7 +175,7 @@ class SupabaseService {
           likesCount: (review.likesCount - 1).clamp(0, 9999),
         );
       } else {
-        await _client.from('likes').insert({
+        await c.from('likes').insert({
           'user_id': currentUser!.id,
           'review_id': review.id,
         });
@@ -178,16 +192,20 @@ class SupabaseService {
   // ── Profile ───────────────────────────────────────────────────────────────
 
   Future<Map<String, dynamic>?> fetchProfile(String userId) async {
+    final c = _client;
+    if (c == null) return null;
     try {
-      return await _client.from('profiles').select().eq('id', userId).single();
+      return await c.from('profiles').select().eq('id', userId).single();
     } catch (_) {
       return null;
     }
   }
 
   Future<List<PublicReview>> fetchUserReviews(String userId) async {
+    final c = _client;
+    if (c == null) return [];
     try {
-      final data = await _client
+      final data = await c
           .from('public_reviews')
           .select()
           .eq('user_id', userId)

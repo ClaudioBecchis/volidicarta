@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart' show Supabase, SupabaseClient, AuthException;
+import '../config/supabase_config.dart';
 import '../models/user.dart';
 
 /// Unico sistema di autenticazione — Supabase.
@@ -8,10 +9,11 @@ class AuthService {
   AuthService._();
   factory AuthService() => _instance;
 
-  SupabaseClient get _client => Supabase.instance.client;
+  SupabaseClient? get _client =>
+      SupabaseConfig.isConfigured ? Supabase.instance.client : null;
 
   User? get currentUser {
-    final u = _client.auth.currentUser;
+    final u = _client?.auth.currentUser;
     if (u == null) return null;
     return User(
       id: u.id,
@@ -20,7 +22,7 @@ class AuthService {
     );
   }
 
-  bool get isLoggedIn => _client.auth.currentUser != null;
+  bool get isLoggedIn => _client?.auth.currentUser != null;
 
   /// Chiamata all'avvio: Supabase ripristina la sessione automaticamente.
   Future<void> loadSession() async {
@@ -31,9 +33,10 @@ class AuthService {
   Future<String?> register(String username, String email, String password) async {
     username = username.trim();
     email = email.trim().toLowerCase();
-
+    final c = _client;
+    if (c == null) return 'Community non disponibile in questa build.';
     try {
-      final res = await _client.auth.signUp(
+      final res = await c.auth.signUp(
         email: email,
         password: password,
         data: {'username': username},
@@ -54,8 +57,10 @@ class AuthService {
     if (!email.contains('@')) {
       return 'Inserisci la tua email per accedere';
     }
+    final c = _client;
+    if (c == null) return 'Community non disponibile in questa build.';
     try {
-      await _client.auth.signInWithPassword(email: email, password: password);
+      await c.auth.signInWithPassword(email: email, password: password);
       return null;
     } on AuthException catch (e) {
       return _translateError(e.message);
@@ -65,7 +70,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
-    await _client.auth.signOut();
+    await _client?.auth.signOut();
   }
 
   String _translateError(String msg) {
