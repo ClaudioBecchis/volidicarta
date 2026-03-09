@@ -302,129 +302,93 @@ class _DashboardTabState extends State<_DashboardTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Banner principale
-              Container(
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF1A5276), Color(0xFF2471A3)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16),
-                ),
+              // Banner principale con immagine
+              ClipRRect(
+                borderRadius: BorderRadius.circular(16),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Corpo principale
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+                    // Immagine banner
+                    Image.asset(
+                      'assets/icon/banner.png',
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                    // Striscia stats sotto il banner
+                    Container(
+                      width: double.infinity,
+                      color: const Color(0xFF154360),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 8),
                       child: Row(
                         children: [
-                          const Icon(Icons.menu_book_rounded,
-                              color: Colors.white, size: 44),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: user != null
-                                ? Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        _total == 0
-                                            ? 'Inizia a leggere!'
-                                            : '$_total ${_total == 1 ? 'libro letto' : 'libri letti'}',
-                                        style: const TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        _avg != null
-                                            ? 'Voto medio: ${_avg!.toStringAsFixed(1)} ★'
-                                            : 'Aggiungi la tua prima recensione',
-                                        style: const TextStyle(
-                                            color: Colors.white70, fontSize: 13),
-                                      ),
-                                    ],
-                                  )
-                                : Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      const Text(
-                                        'Voli di Carta',
-                                        style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 22,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                      const SizedBox(height: 4),
-                                      const Text(
-                                        'Le tue recensioni, sempre con te',
-                                        style: TextStyle(
-                                            color: Colors.white70, fontSize: 13),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      ElevatedButton.icon(
-                                        onPressed: () async {
-                                          await Navigator.push(context,
-                                              MaterialPageRoute(
-                                                  builder: (_) => const LoginScreen()));
-                                          setState(() {});
-                                          _load();
-                                        },
-                                        icon: const Icon(Icons.login, size: 15),
-                                        label: const Text('Accedi / Registrati',
-                                            style: TextStyle(fontSize: 13)),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: Colors.white,
-                                          foregroundColor: const Color(0xFF1A5276),
-                                          padding: const EdgeInsets.symmetric(
-                                              horizontal: 14, vertical: 8),
-                                          minimumSize: Size.zero,
-                                          tapTargetSize:
-                                              MaterialTapTargetSize.shrinkWrap,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Striscia community stats (sempre visibile se Supabase configurato)
-                    if (SupabaseConfig.isConfigured)
-                      Container(
-                        width: double.infinity,
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF154360),
-                          borderRadius: BorderRadius.vertical(
-                              bottom: Radius.circular(16)),
-                        ),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child: Row(
-                          children: [
-                            const Icon(Icons.people_rounded,
+                          if (user != null) ...[
+                            const Icon(Icons.menu_book_rounded,
                                 color: Colors.white54, size: 13),
                             const SizedBox(width: 4),
+                            Text(
+                              _total == 0
+                                  ? 'Nessun libro ancora'
+                                  : '$_total ${_total == 1 ? 'libro letto' : 'libri letti'}',
+                              style: const TextStyle(
+                                  color: Colors.white70, fontSize: 11),
+                            ),
+                            if (_avg != null) ...[
+                              const SizedBox(width: 10),
+                              const Icon(Icons.star_rounded,
+                                  color: Color(0xFFFFB300), size: 13),
+                              const SizedBox(width: 3),
+                              Text('${_avg!.toStringAsFixed(1)} medio',
+                                  style: const TextStyle(
+                                      color: Colors.white70, fontSize: 11)),
+                            ],
+                            const Spacer(),
+                          ] else ...[
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                await Navigator.push(context,
+                                    MaterialPageRoute(
+                                        builder: (_) => const LoginScreen()));
+                                setState(() {});
+                                _load();
+                              },
+                              icon: const Icon(Icons.login, size: 14),
+                              label: const Text('Accedi',
+                                  style: TextStyle(fontSize: 12)),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: const Color(0xFF1A5276),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 6),
+                                minimumSize: Size.zero,
+                                tapTargetSize:
+                                    MaterialTapTargetSize.shrinkWrap,
+                              ),
+                            ),
+                            const Spacer(),
+                          ],
+                          if (SupabaseConfig.isConfigured) ...[
+                            const Icon(Icons.people_rounded,
+                                color: Colors.white38, size: 13),
+                            const SizedBox(width: 3),
                             Text('$_communityUsers iscritti',
                                 style: const TextStyle(
-                                    color: Colors.white60, fontSize: 11)),
-                            const SizedBox(width: 12),
+                                    color: Colors.white54, fontSize: 11)),
+                            const SizedBox(width: 8),
                             Container(
-                              width: 7, height: 7,
+                              width: 7,
+                              height: 7,
                               decoration: const BoxDecoration(
                                   color: Color(0xFF2ECC71),
                                   shape: BoxShape.circle),
                             ),
-                            const SizedBox(width: 4),
-                            Text('$_onlineUsers online ora',
+                            const SizedBox(width: 3),
+                            Text('$_onlineUsers online',
                                 style: const TextStyle(
-                                    color: Colors.white60, fontSize: 11)),
+                                    color: Colors.white54, fontSize: 11)),
                           ],
-                        ),
+                        ],
                       ),
+                    ),
                   ],
                 ),
               ),
