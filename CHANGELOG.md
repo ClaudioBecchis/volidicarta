@@ -4,6 +4,24 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.4] - 2026-03-09
+
+### Aggiunto
+- **BUG-REPORT**: Bottone "Segnala un Bug" nella schermata Info App — apre una issue GitHub precompilata con versione, piattaforma e ultimo crash registrato
+- **BUG-REPORT**: Dialog di crash report all'avvio su Android e Windows — se l'app è crashata nella sessione precedente, propone di segnalarlo su GitHub
+
+---
+
+## [1.3.3] - 2026-03-09
+
+### Corretto
+- **BUG-NEW-A** 🔴: `AuthService._client` e `SupabaseService._client` resi nullable con guard `SupabaseConfig.isConfigured` — fix crash per tutti i 2 service che accedevano a `Supabase.instance` senza guard
+- **BUG-NEW-B** 🟡: `CrashService` creato — handler globale Flutter (`FlutterError.onError` + `PlatformDispatcher.instance.onError`) che salva l'ultimo crash in `SharedPreferences`; installato in `main()` prima di `runApp()`
+- **BUG-NEW-C** 🟠: `android:allowBackup="false"` aggiunto al `AndroidManifest.xml` principale — fix sicurezza Aikido; nota: richiede disinstallazione e reinstallazione dell'APK
+- **BUG-NEW-D** 🟠: `android:networkSecurityConfig` esplicito aggiunto ai manifest debug e profile — fix warning Aikido "convalida non corretta del certificato SSL"
+
+---
+
 ## [1.3.2] - 2026-03-09
 
 ### Corretto

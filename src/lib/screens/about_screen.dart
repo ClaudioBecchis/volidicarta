@@ -8,8 +8,10 @@ import 'dart:convert';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
 import '../database/db_helper.dart';
+import '../services/crash_service.dart';
 
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
@@ -103,6 +105,57 @@ class _AboutScreenState extends State<AboutScreen> {
       setState(() => _updateMessage = 'Errore di rete. Controlla la connessione.');
     } finally {
       if (mounted) setState(() => _checking = false);
+    }
+  }
+
+  Future<void> _reportBug() async {
+    final crash = await CrashService.load();
+    final platform = kIsWeb
+        ? 'Web'
+        : defaultTargetPlatform == TargetPlatform.android
+            ? 'Android'
+            : defaultTargetPlatform == TargetPlatform.windows
+                ? 'Windows'
+                : defaultTargetPlatform == TargetPlatform.iOS
+                    ? 'iOS'
+                    : defaultTargetPlatform == TargetPlatform.macOS
+                        ? 'macOS'
+                        : defaultTargetPlatform == TargetPlatform.linux
+                            ? 'Linux'
+                            : 'Unknown';
+    final title = Uri.encodeComponent('Bug su $platform v$_currentVersion');
+    final body = Uri.encodeComponent([
+      '## Descrizione del problema',
+      '',
+      '_Descrivi qui cosa stavi facendo quando si è verificato il problema._',
+      '',
+      '## Informazioni',
+      '- **Versione**: $_currentVersion',
+      '- **Piattaforma**: $platform',
+      if (crash != null) ...[
+        '',
+        '## Ultimo crash registrato (${crash.time})',
+        '```',
+        crash.error,
+        '```',
+        '<details><summary>Stack trace</summary>',
+        '',
+        '```',
+        crash.stack.length > 2000 ? crash.stack.substring(0, 2000) : crash.stack,
+        '```',
+        '</details>',
+      ] else ...[
+        '- **Crash registrato**: nessuno',
+      ],
+    ].join('\n'));
+    final uri = Uri.parse(
+        'https://github.com/ClaudioBecchis/volidicarta/issues/new?title=$title&body=$body');
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } else if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossibile aprire il browser')),
+      );
     }
   }
 
@@ -335,6 +388,17 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                   ),
                 ],
+                const SizedBox(height: 12),
+                // Segnala Bug
+                OutlinedButton.icon(
+                  onPressed: _reportBug,
+                  icon: const Icon(Icons.bug_report_outlined),
+                  label: const Text('Segnala un Bug'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.red.shade700,
+                    side: BorderSide(color: Colors.red.shade300),
+                  ),
+                ),
                 // Divider
                 const Divider(),
                 const SizedBox(height: 24),
