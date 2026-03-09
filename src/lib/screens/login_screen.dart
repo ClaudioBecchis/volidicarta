@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/supabase_config.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import '../config/app_colors.dart';
@@ -20,7 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _obscure = true;
   String? _error;
-  late final StreamSubscription<AuthState> _authSub;
+  StreamSubscription<AuthState>? _authSub;
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
@@ -38,17 +39,19 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-      if (data.event == AuthChangeEvent.signedIn && mounted) {
-        Navigator.pushReplacement(
-            context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-      }
-    });
+    if (SupabaseConfig.isConfigured) {
+      _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
+        if (data.event == AuthChangeEvent.signedIn && mounted) {
+          Navigator.pushReplacement(
+              context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+        }
+      });
+    }
   }
 
   @override
   void dispose() {
-    _authSub.cancel();
+    _authSub?.cancel();
     _emailCtrl.dispose();
     _passCtrl.dispose();
     super.dispose();

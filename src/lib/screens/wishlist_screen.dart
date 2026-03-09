@@ -69,10 +69,18 @@ class _WishlistScreenState extends State<WishlistScreen> {
   Future<void> _remove(WishlistBook book) async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) return;
-    await DbHelper().removeFromWishlist(uid, book.bookId);
-    if (mounted) {
-      setState(() => _books.removeWhere((b) => b.bookId == book.bookId));
-      _applyFilter();
+    try {
+      await DbHelper().removeFromWishlist(uid, book.bookId);
+      if (mounted) {
+        setState(() => _books.removeWhere((b) => b.bookId == book.bookId));
+        _applyFilter();
+      }
+    } catch (e) {
+      debugPrint('Remove wishlist error: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Errore durante la rimozione')));
+      }
     }
   }
 

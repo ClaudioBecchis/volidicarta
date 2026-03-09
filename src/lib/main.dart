@@ -21,12 +21,20 @@ void main() async {
   }
   // Android/iOS: sqflite nativo, nessuna inizializzazione necessaria
   if (SupabaseConfig.isConfigured) {
-    await Supabase.initialize(
-      url: SupabaseConfig.url,
-      anonKey: SupabaseConfig.anonKey,
-    );
+    try {
+      await Supabase.initialize(
+        url: SupabaseConfig.url,
+        anonKey: SupabaseConfig.anonKey,
+      );
+    } catch (e) {
+      debugPrint('Supabase init error: $e');
+    }
   }
-  await SettingsService().load();
+  try {
+    await SettingsService().load();
+  } catch (e) {
+    debugPrint('SettingsService load error: $e');
+  }
   runApp(const BookReviewApp());
 }
 

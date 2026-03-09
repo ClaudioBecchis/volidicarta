@@ -4,6 +4,18 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.1] - 2026-03-09
+
+### Corretto
+- **BUG-V** 🔴: `LoginScreen.initState()` — `Supabase.instance` acceduto senza guard; ora avvolto in `if (SupabaseConfig.isConfigured)` — causa diretta del crash all'avvio su Android; `_authSub` cambiato da `late final` a nullable
+- **BUG-V** 🔴: `RegisterScreen._register()` — `Supabase.instance.client.auth.currentSession` protetto da guard `SupabaseConfig.isConfigured`
+- **BUG-V** 🔴: `main()` — `Supabase.initialize()` e `SettingsService.load()` avvolti in `try/catch`; `SplashScreen._init()` con guard `isConfigured` prima di `AuthService().isLoggedIn`
+- **BUG-W** 🟡: `WishlistScreen._remove()` — `removeFromWishlist()` avvolto in `try/catch` con snackbar di errore
+- **BUG-X** 🟢: `AboutScreen._checkUpdates()` — guard `SupabaseConfig.isConfigured` prima della chiamata HTTP; messaggio dedicato se Supabase non configurato
+- `AndroidManifest.xml` — aggiunta voce `<queries>` per `share_plus` (Android 11+ richiede visibilità esplicita degli intent `ACTION_SEND`)
+
+---
+
 ## [1.3.0] - 2026-03-08
 
 ### Corretto

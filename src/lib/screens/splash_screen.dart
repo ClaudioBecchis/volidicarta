@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../config/supabase_config.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
@@ -19,14 +20,19 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _init() async {
     await Future.delayed(const Duration(milliseconds: 800));
-    await AuthService().loadSession();
+    try {
+      await AuthService().loadSession();
+    } catch (e) {
+      debugPrint('SplashScreen init error: $e');
+    }
     if (!mounted) return;
+    final isLoggedIn = SupabaseConfig.isConfigured
+        ? AuthService().isLoggedIn
+        : false;
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => AuthService().isLoggedIn
-            ? const HomeScreen()
-            : const LoginScreen(),
+        builder: (_) => isLoggedIn ? const HomeScreen() : const LoginScreen(),
       ),
     );
   }

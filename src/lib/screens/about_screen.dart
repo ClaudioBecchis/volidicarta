@@ -67,6 +67,10 @@ class _AboutScreenState extends State<AboutScreen> {
   }
 
   Future<void> _checkUpdates() async {
+    if (!SupabaseConfig.isConfigured) {
+      setState(() => _updateMessage = 'Aggiornamenti non disponibili in questa build.');
+      return;
+    }
     setState(() { _checking = true; _updateMessage = null; _hasUpdate = false; });
     try {
       final uri = Uri.parse(
