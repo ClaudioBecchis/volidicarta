@@ -110,7 +110,7 @@ class _SplashScreenState extends State<SplashScreen> {
         final info = await PackageInfo.fromPlatform();
         version = info.version;
       } catch (_) {}
-      final platform = isAndroid(defaultTargetPlatform) ? 'Android' : 'Windows';
+      final platform = _isAndroidPlatform(defaultTargetPlatform) ? 'Android' : 'Windows';
       final title = Uri.encodeComponent('Bug su $platform${version.isNotEmpty ? ' v$version' : ''}');
       final body = Uri.encodeComponent([
         '## Descrizione del problema',
@@ -140,7 +140,7 @@ class _SplashScreenState extends State<SplashScreen> {
     }
   }
 
-  static bool isAndroid(TargetPlatform p) => p == TargetPlatform.android;
+  static bool _isAndroidPlatform(TargetPlatform p) => p == TargetPlatform.android;
 
   @override
   Widget build(BuildContext context) {
