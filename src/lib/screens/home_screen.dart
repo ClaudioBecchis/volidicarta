@@ -392,8 +392,8 @@ class _DashboardTabState extends State<_DashboardTab> {
                         ],
                       ),
                     ),
-                    // Striscia community stats
-                    if (_communityUsers > 0 || _onlineUsers > 0)
+                    // Striscia community stats (sempre visibile se Supabase configurato)
+                    if (SupabaseConfig.isConfigured)
                       Container(
                         width: double.infinity,
                         decoration: const BoxDecoration(
