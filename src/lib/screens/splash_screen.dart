@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
 import '../services/auth_service.dart';
 import '../services/crash_service.dart';
+import '../services/review_sync_service.dart';
 import 'home_screen.dart';
 import 'login_screen.dart';
 
@@ -30,6 +31,12 @@ class _SplashScreenState extends State<SplashScreen> {
       debugPrint('SplashScreen init error: $e');
     }
     if (!mounted) return;
+
+    // Sync recensioni dal cloud (se loggato)
+    final uid = AuthService().currentUser?.id;
+    if (uid != null && SupabaseConfig.isInitialized) {
+      ReviewSyncService().syncFromCloud(uid);
+    }
 
     // Mostra dialog crash report su Android e Windows (non su Web)
     final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;

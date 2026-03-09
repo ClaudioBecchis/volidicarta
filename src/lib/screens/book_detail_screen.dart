@@ -8,6 +8,7 @@ import '../models/book.dart';
 import '../models/review.dart';
 import '../services/auth_service.dart';
 import '../database/db_helper.dart';
+import '../services/review_sync_service.dart';
 import '../widgets/star_rating.dart';
 import 'write_review_screen.dart';
 import '../config/app_colors.dart';
@@ -108,7 +109,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     );
     if (confirm == true && _review != null) {
       try {
-        await DbHelper().deleteReview(_review!.id!);
+        final r = _review!;
+        await DbHelper().deleteReview(r.id!);
+        ReviewSyncService().delete(r.userId, r.bookId);
         if (mounted) setState(() => _review = null);
       } catch (e) {
         debugPrint('Delete review error: $e');

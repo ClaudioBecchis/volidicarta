@@ -8,6 +8,7 @@ import '../l10n/app_strings.dart';
 import '../services/supabase_service.dart';
 import '../config/supabase_config.dart';
 import '../database/db_helper.dart';
+import '../services/review_sync_service.dart';
 import '../widgets/star_rating.dart';
 
 class WriteReviewScreen extends StatefulWidget {
@@ -137,6 +138,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           bookGenre: _genre,
         );
         await DbHelper().updateReview(review);
+        ReviewSyncService().upsert(review);
       } else {
         review = Review(
           userId: uid,
@@ -158,6 +160,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           updatedAt: now,
         );
         await DbHelper().insertReview(review);
+        ReviewSyncService().upsert(review);
       }
 
       final supaUid = SupabaseService().currentUser?.id;

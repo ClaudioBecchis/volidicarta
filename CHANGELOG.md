@@ -4,6 +4,15 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.6] - 2026-03-09
+
+### Aggiunto
+- **SYNC CLOUD**: Le recensioni vengono sincronizzate automaticamente su Supabase — accessibili da qualsiasi dispositivo con lo stesso account
+- All'avvio: download automatico delle recensioni dal cloud (merge intelligente, vince la versione più recente)
+- Ad ogni salvataggio/modifica/eliminazione: sync immediata in background su Supabase
+
+---
+
 ## [1.3.5] - 2026-03-09
 
 ### Aggiunto

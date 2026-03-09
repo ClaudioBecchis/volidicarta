@@ -4,6 +4,7 @@ import '../models/review.dart';
 import '../models/book.dart';
 import '../services/auth_service.dart';
 import '../database/db_helper.dart';
+import '../services/review_sync_service.dart';
 import '../widgets/star_rating.dart';
 import 'book_detail_screen.dart';
 import 'add_book_manual_screen.dart';
@@ -382,6 +383,7 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
     if (confirm == true) {
       try {
         await DbHelper().deleteReview(r.id!);
+        ReviewSyncService().delete(r.userId, r.bookId);
         _load();
       } catch (e) {
         debugPrint('Delete review error: $e');
