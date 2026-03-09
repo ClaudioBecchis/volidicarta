@@ -4,6 +4,15 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.5] - 2026-03-09
+
+### Aggiunto
+- **FORUM**: Sezione Forum nella Community — thread con categorie (Consigli, Discussioni, Domande, Off-topic), risposte, like; ogni utente può creare, eliminare i propri thread e rispondere
+- **COMMUNITY STATS**: Banner iscritti/online nella schermata Community — mostra il numero totale di iscritti e quanti sono online negli ultimi 5 minuti (pallino verde)
+- **PRESENCE TRACKING**: Heartbeat automatico `update_presence()` all'apertura della Community — tiene traccia degli utenti attivi
+
+---
+
 ## [1.3.4] - 2026-03-09
 
 ### Aggiunto

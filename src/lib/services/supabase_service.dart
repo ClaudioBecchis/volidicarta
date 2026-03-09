@@ -215,4 +215,29 @@ class SupabaseService {
       return [];
     }
   }
+
+  // ── Presence ──────────────────────────────────────────────────────────────
+
+  Future<void> updatePresence() async {
+    final c = _client;
+    if (c == null) return;
+    try {
+      await c.rpc('update_presence');
+    } catch (_) {}
+  }
+
+  Future<({int totalUsers, int onlineUsers})> getCommunityStats() async {
+    final c = _client;
+    if (c == null) return (totalUsers: 0, onlineUsers: 0);
+    try {
+      final data = await c.rpc('get_community_stats');
+      final m = data as Map<String, dynamic>;
+      return (
+        totalUsers: (m['total_users'] as num?)?.toInt() ?? 0,
+        onlineUsers: (m['online_users'] as num?)?.toInt() ?? 0,
+      );
+    } catch (_) {
+      return (totalUsers: 0, onlineUsers: 0);
+    }
+  }
 }

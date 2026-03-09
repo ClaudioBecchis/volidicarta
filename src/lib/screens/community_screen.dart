@@ -6,6 +6,7 @@ import '../services/supabase_service.dart';
 import '../services/auth_service.dart';
 import '../widgets/star_rating.dart';
 import 'community_review_detail_screen.dart';
+import 'forum_screen.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
 
@@ -16,7 +17,9 @@ class CommunityScreen extends StatefulWidget {
   State<CommunityScreen> createState() => _CommunityScreenState();
 }
 
-class _CommunityScreenState extends State<CommunityScreen> {
+class _CommunityScreenState extends State<CommunityScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
   List<PublicReview> _reviews = [];
   bool _loading = true;
   bool _loadingMore = false;
@@ -24,16 +27,36 @@ class _CommunityScreenState extends State<CommunityScreen> {
   String? _username;
   static const _pageSize = 20;
   final _scrollCtrl = ScrollController();
+  int _totalUsers = 0;
+  int _onlineUsers = 0;
 
   @override
   void initState() {
     super.initState();
-    if (SupabaseConfig.isConfigured) _load();
+    _tabController = TabController(length: 2, vsync: this);
+    if (SupabaseConfig.isConfigured) {
+      _load();
+      _loadStats();
+      SupabaseService().updatePresence();
+    }
     _scrollCtrl.addListener(_onScroll);
+  }
+
+  Future<void> _loadStats() async {
+    try {
+      final stats = await SupabaseService().getCommunityStats();
+      if (mounted) {
+        setState(() {
+          _totalUsers = stats.totalUsers;
+          _onlineUsers = stats.onlineUsers;
+        });
+      }
+    } catch (_) {}
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
     _scrollCtrl.dispose();
     super.dispose();
   }
@@ -105,29 +128,84 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
           ),
         ],
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _reviews.isEmpty
-              ? _emptyView()
-              : RefreshIndicator(
-                  onRefresh: _load,
-                  child: ListView.builder(
-                    controller: _scrollCtrl,
-                    padding: const EdgeInsets.only(top: 8, bottom: 80),
-                    itemCount: _reviews.length + (_loadingMore ? 1 : 0),
-                    itemBuilder: (_, i) {
-                      if (i == _reviews.length) {
-                        return const Padding(
-                          padding: EdgeInsets.all(16),
-                          child: Center(child: CircularProgressIndicator()),
-                        );
-                      }
-                      return _ReviewCard(
-                          review: _reviews[i], onRefresh: _load);
-                    },
-                  ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(72),
+          child: Column(
+            children: [
+              // Banner statistiche
+              Container(
+                width: double.infinity,
+                color: const Color(0xFF154360),
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.people_rounded,
+                        color: Colors.white60, size: 14),
+                    const SizedBox(width: 4),
+                    Text('$_totalUsers iscritti',
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12)),
+                    const SizedBox(width: 16),
+                    Container(
+                      width: 7,
+                      height: 7,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2ECC71),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    Text('$_onlineUsers online',
+                        style: const TextStyle(
+                            color: Colors.white70, fontSize: 12)),
+                  ],
                 ),
+              ),
+              TabBar(
+                controller: _tabController,
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white60,
+                tabs: const [
+                  Tab(icon: Icon(Icons.rate_review_outlined, size: 18), text: 'Recensioni'),
+                  Tab(icon: Icon(Icons.forum_outlined, size: 18), text: 'Forum'),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // ── Tab 1: Feed recensioni ──────────────────────────────────────
+          _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _reviews.isEmpty
+                  ? _emptyView()
+                  : RefreshIndicator(
+                      onRefresh: _load,
+                      child: ListView.builder(
+                        controller: _scrollCtrl,
+                        padding: const EdgeInsets.only(top: 8, bottom: 80),
+                        itemCount: _reviews.length + (_loadingMore ? 1 : 0),
+                        itemBuilder: (_, i) {
+                          if (i == _reviews.length) {
+                            return const Padding(
+                              padding: EdgeInsets.all(16),
+                              child: Center(child: CircularProgressIndicator()),
+                            );
+                          }
+                          return _ReviewCard(
+                              review: _reviews[i], onRefresh: _load);
+                        },
+                      ),
+                    ),
+          // ── Tab 2: Forum ────────────────────────────────────────────────
+          const ForumScreen(),
+        ],
+      ),
     );
   }
 

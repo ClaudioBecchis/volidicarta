@@ -87,3 +87,148 @@ create index if not exists idx_reviews_created on public_reviews(created_at desc
 create index if not exists idx_reviews_user on public_reviews(user_id);
 create index if not exists idx_likes_review on likes(review_id);
 create index if not exists idx_likes_user on likes(user_id);
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- FORUM
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- ── Tabelle ──────────────────────────────────────────────────────────────
+
+create table if not exists forum_threads (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users not null,
+  username text not null,
+  title text not null,
+  body text,
+  category text not null default 'Generale',
+  created_at timestamptz default now(),
+  replies_count int default 0,
+  likes_count int default 0
+);
+
+create table if not exists forum_replies (
+  id uuid default gen_random_uuid() primary key,
+  thread_id uuid references forum_threads on delete cascade not null,
+  user_id uuid references auth.users not null,
+  username text not null,
+  body text not null,
+  created_at timestamptz default now(),
+  likes_count int default 0
+);
+
+create table if not exists forum_thread_likes (
+  user_id uuid references auth.users not null,
+  thread_id uuid references forum_threads on delete cascade not null,
+  primary key (user_id, thread_id)
+);
+
+create table if not exists forum_reply_likes (
+  user_id uuid references auth.users not null,
+  reply_id uuid references forum_replies on delete cascade not null,
+  primary key (user_id, reply_id)
+);
+
+-- ── RLS ──────────────────────────────────────────────────────────────────
+
+alter table forum_threads enable row level security;
+alter table forum_replies enable row level security;
+alter table forum_thread_likes enable row level security;
+alter table forum_reply_likes enable row level security;
+
+-- forum_threads
+create policy "ft_select" on forum_threads for select using (true);
+create policy "ft_insert" on forum_threads for insert with check (auth.uid() = user_id);
+create policy "ft_delete" on forum_threads for delete using (auth.uid() = user_id);
+
+-- forum_replies
+create policy "fr_select" on forum_replies for select using (true);
+create policy "fr_insert" on forum_replies for insert with check (auth.uid() = user_id);
+create policy "fr_delete" on forum_replies for delete using (auth.uid() = user_id);
+
+-- forum_thread_likes
+create policy "ftl_select" on forum_thread_likes for select using (true);
+create policy "ftl_insert" on forum_thread_likes for insert with check (auth.uid() = user_id);
+create policy "ftl_delete" on forum_thread_likes for delete using (auth.uid() = user_id);
+
+-- forum_reply_likes
+create policy "frl_select" on forum_reply_likes for select using (true);
+create policy "frl_insert" on forum_reply_likes for insert with check (auth.uid() = user_id);
+create policy "frl_delete" on forum_reply_likes for delete using (auth.uid() = user_id);
+
+-- ── Funzioni per aggiornare contatori ────────────────────────────────────
+
+create or replace function update_forum_thread_likes_count()
+returns trigger as $$
+begin
+  if TG_OP = 'INSERT' then
+    update forum_threads set likes_count = likes_count + 1 where id = NEW.thread_id;
+  elsif TG_OP = 'DELETE' then
+    update forum_threads set likes_count = greatest(0, likes_count - 1) where id = OLD.thread_id;
+  end if;
+  return null;
+end;
+$$ language plpgsql security definer set search_path = '';
+
+create trigger forum_thread_likes_count_trigger
+after insert or delete on forum_thread_likes
+for each row execute function update_forum_thread_likes_count();
+
+create or replace function update_forum_reply_likes_count()
+returns trigger as $$
+begin
+  if TG_OP = 'INSERT' then
+    update forum_replies set likes_count = likes_count + 1 where id = NEW.reply_id;
+  elsif TG_OP = 'DELETE' then
+    update forum_replies set likes_count = greatest(0, likes_count - 1) where id = OLD.reply_id;
+  end if;
+  return null;
+end;
+$$ language plpgsql security definer set search_path = '';
+
+create trigger forum_reply_likes_count_trigger
+after insert or delete on forum_reply_likes
+for each row execute function update_forum_reply_likes_count();
+
+-- ── RPC per replies_count ─────────────────────────────────────────────────
+
+create or replace function increment_replies_count(thread_id_param uuid)
+returns void as $$
+  update forum_threads set replies_count = replies_count + 1 where id = thread_id_param;
+$$ language sql security definer set search_path = '';
+
+create or replace function decrement_replies_count(thread_id_param uuid)
+returns void as $$
+  update forum_threads set replies_count = greatest(0, replies_count - 1) where id = thread_id_param;
+$$ language sql security definer set search_path = '';
+
+-- ── Indici ────────────────────────────────────────────────────────────────
+
+create index if not exists idx_forum_threads_created on forum_threads(created_at desc);
+create index if not exists idx_forum_threads_category on forum_threads(category);
+create index if not exists idx_forum_replies_thread on forum_replies(thread_id, created_at);
+create index if not exists idx_forum_thread_likes_thread on forum_thread_likes(thread_id);
+create index if not exists idx_forum_reply_likes_reply on forum_reply_likes(reply_id);
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- USER PRESENCE (utenti online)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+-- Aggiunge last_seen alla tabella profiles
+alter table profiles add column if not exists last_seen timestamptz;
+
+-- RPC: aggiorna last_seen dell'utente corrente
+create or replace function update_presence()
+returns void as $$
+  update profiles set last_seen = now() where id = auth.uid();
+$$ language sql security definer set search_path = '';
+
+-- RPC: restituisce contatori community
+create or replace function get_community_stats()
+returns json as $$
+  select json_build_object(
+    'total_users', (select count(*) from profiles),
+    'online_users', (select count(*) from profiles where last_seen > now() - interval '5 minutes')
+  );
+$$ language sql security invoker set search_path = '';
