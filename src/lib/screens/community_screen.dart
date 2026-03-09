@@ -29,6 +29,8 @@ class _CommunityScreenState extends State<CommunityScreen>
   final _scrollCtrl = ScrollController();
   int _totalUsers = 0;
   int _onlineUsers = 0;
+  int _offlineUsers = 0;
+  int _anonOnline = 0;
 
   @override
   void initState() {
@@ -49,6 +51,8 @@ class _CommunityScreenState extends State<CommunityScreen>
         setState(() {
           _totalUsers = stats.totalUsers;
           _onlineUsers = stats.onlineUsers;
+          _offlineUsers = stats.offlineUsers;
+          _anonOnline = stats.anonOnline;
         });
       }
     } catch (_) {}
@@ -136,29 +140,33 @@ class _CommunityScreenState extends State<CommunityScreen>
               Container(
                 width: double.infinity,
                 color: const Color(0xFF154360),
-                padding: const EdgeInsets.symmetric(vertical: 6),
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.people_rounded,
-                        color: Colors.white60, size: 14),
-                    const SizedBox(width: 4),
+                    const Icon(Icons.people_rounded, color: Colors.white60, size: 13),
+                    const SizedBox(width: 3),
                     Text('$_totalUsers iscritti',
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12)),
-                    const SizedBox(width: 16),
-                    Container(
-                      width: 7,
-                      height: 7,
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2ECC71),
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 4),
+                        style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    const SizedBox(width: 10),
+                    Container(width: 7, height: 7,
+                        decoration: const BoxDecoration(color: Color(0xFF2ECC71), shape: BoxShape.circle)),
+                    const SizedBox(width: 3),
                     Text('$_onlineUsers online',
-                        style: const TextStyle(
-                            color: Colors.white70, fontSize: 12)),
+                        style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    const SizedBox(width: 10),
+                    Container(width: 7, height: 7,
+                        decoration: BoxDecoration(color: Colors.grey.shade500, shape: BoxShape.circle)),
+                    const SizedBox(width: 3),
+                    Text('$_offlineUsers offline',
+                        style: const TextStyle(color: Colors.white70, fontSize: 11)),
+                    if (_anonOnline > 0) ...[
+                      const SizedBox(width: 10),
+                      const Icon(Icons.visibility_outlined, color: Colors.white38, size: 12),
+                      const SizedBox(width: 3),
+                      Text('$_anonOnline visitatori',
+                          style: const TextStyle(color: Colors.white54, fontSize: 11)),
+                    ],
                   ],
                 ),
               ),

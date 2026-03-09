@@ -30,6 +30,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     if (err != null) {
       setState(() { _loading = false; _error = err; });
+    } else if (Navigator.canPop(context)) {
+      Navigator.pop(context);
     } else {
       Navigator.pushReplacement(
         context, MaterialPageRoute(builder: (_) => const HomeScreen()));
@@ -42,8 +44,12 @@ class _LoginScreenState extends State<LoginScreen> {
     if (SupabaseConfig.isInitialized) {
       _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
         if (data.event == AuthChangeEvent.signedIn && mounted) {
-          Navigator.pushReplacement(
-              context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+          if (Navigator.canPop(context)) {
+            Navigator.pop(context);
+          } else {
+            Navigator.pushReplacement(
+                context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+          }
         }
       });
     }

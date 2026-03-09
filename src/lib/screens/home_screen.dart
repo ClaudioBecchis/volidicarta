@@ -110,7 +110,10 @@ class _DashboardTabState extends State<_DashboardTab> {
 
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      if (mounted) setState(() {});
+      return;
+    }
     try {
       final results = await Future.wait([
         DbHelper().getStats(uid),
@@ -145,18 +148,35 @@ class _DashboardTabState extends State<_DashboardTab> {
             itemBuilder: (_) => <PopupMenuEntry>[
               PopupMenuItem(
                 enabled: false,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(user?.username ?? '',
-                        style: const TextStyle(fontWeight: FontWeight.bold)),
-                    Text(user?.email ?? '',
-                        style: const TextStyle(
-                            fontSize: 12, color: Colors.grey)),
-                  ],
-                ),
+                child: user != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(user.username,
+                              style: const TextStyle(fontWeight: FontWeight.bold)),
+                          Text(user.email,
+                              style: const TextStyle(
+                                  fontSize: 12, color: Colors.grey)),
+                        ],
+                      )
+                    : const Text('Ospite',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               ),
               const PopupMenuDivider(),
+              if (user == null) ...[
+                const PopupMenuItem(
+                  value: 'login',
+                  child: Row(
+                    children: [
+                      Icon(Icons.login, size: 18, color: Color(0xFF1A5276)),
+                      SizedBox(width: 8),
+                      Text('Accedi / Registrati',
+                          style: TextStyle(color: Color(0xFF1A5276), fontWeight: FontWeight.w600)),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+              ],
               const PopupMenuItem(
                 value: 'settings',
                 child: Row(
@@ -177,7 +197,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                   ],
                 ),
               ),
-              if (user?.username?.toLowerCase() == 'claudio')
+              if (user != null && user.username.toLowerCase() == 'claudio')
                 const PopupMenuItem(
                   value: 'admin_users',
                   child: Row(
@@ -190,20 +210,26 @@ class _DashboardTabState extends State<_DashboardTab> {
                     ],
                   ),
                 ),
-              const PopupMenuDivider(),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, size: 18),
-                    SizedBox(width: 8),
-                    Text('Disconnetti'),
-                  ],
+              if (user != null) ...[
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  value: 'logout',
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, size: 18),
+                      SizedBox(width: 8),
+                      Text('Disconnetti'),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
             onSelected: (v) async {
-              if (v == 'settings') {
+              if (v == 'login') {
+                await Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()));
+                setState(() {});
+              } else if (v == 'settings') {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const SettingsScreen()));
               } else if (v == 'about') {
@@ -213,7 +239,6 @@ class _DashboardTabState extends State<_DashboardTab> {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const AdminUsersScreen()));
               } else if (v == 'logout') {
-                final nav = Navigator.of(context);
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
@@ -234,10 +259,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                 );
                 if (confirm != true) return;
                 await AuthService().logout();
-                if (mounted) {
-                  nav.pushReplacement(
-                      MaterialPageRoute(builder: (_) => const LoginScreen()));
-                }
+                if (mounted) setState(() {});
               }
             },
           ),
@@ -261,29 +283,66 @@ class _DashboardTabState extends State<_DashboardTab> {
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.menu_book_rounded,
-                        color: Colors.white, size: 36),
-                    const SizedBox(height: 12),
-                    Text(
-                      'Ciao, ${user?.username ?? ''}!',
-                      style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _total == 0
-                          ? 'Inizia a recensire i tuoi libri preferiti'
-                          : 'Hai recensito $_total ${_total == 1 ? 'libro' : 'libri'}',
-                      style: const TextStyle(
-                          color: Colors.white70, fontSize: 14),
-                    ),
-                  ],
-                ),
+                child: user != null
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.menu_book_rounded,
+                              color: Colors.white, size: 36),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Ciao, ${user.username}!',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _total == 0
+                                ? 'Inizia a recensire i tuoi libri preferiti'
+                                : 'Hai recensito $_total ${_total == 1 ? 'libro' : 'libri'}',
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Icon(Icons.menu_book_rounded,
+                              color: Colors.white, size: 36),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Benvenuto in Voli di Carta!',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            'Accedi per salvare e sincronizzare le recensioni',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                          const SizedBox(height: 14),
+                          ElevatedButton.icon(
+                            onPressed: () async {
+                              await Navigator.push(context,
+                                  MaterialPageRoute(builder: (_) => const LoginScreen()));
+                              setState(() {});
+                              _load();
+                            },
+                            icon: const Icon(Icons.login, size: 16),
+                            label: const Text('Accedi / Registrati'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: const Color(0xFF1A5276),
+                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                            ),
+                          ),
+                        ],
+                      ),
               ),
               const SizedBox(height: 20),
               // Stats rapide

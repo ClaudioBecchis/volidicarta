@@ -226,18 +226,31 @@ class SupabaseService {
     } catch (_) {}
   }
 
-  Future<({int totalUsers, int onlineUsers})> getCommunityStats() async {
+  Future<({int totalUsers, int onlineUsers, int offlineUsers, int anonOnline})> getCommunityStats() async {
     final c = _client;
-    if (c == null) return (totalUsers: 0, onlineUsers: 0);
+    if (c == null) return (totalUsers: 0, onlineUsers: 0, offlineUsers: 0, anonOnline: 0);
     try {
       final data = await c.rpc('get_community_stats');
       final m = data as Map<String, dynamic>;
       return (
         totalUsers: (m['total_users'] as num?)?.toInt() ?? 0,
         onlineUsers: (m['online_users'] as num?)?.toInt() ?? 0,
+        offlineUsers: (m['offline_users'] as num?)?.toInt() ?? 0,
+        anonOnline: (m['anon_online'] as num?)?.toInt() ?? 0,
       );
     } catch (_) {
-      return (totalUsers: 0, onlineUsers: 0);
+      return (totalUsers: 0, onlineUsers: 0, offlineUsers: 0, anonOnline: 0);
     }
+  }
+
+  Future<void> updateAnonPresence(String sessionId, String platform) async {
+    final c = _client;
+    if (c == null) return;
+    try {
+      await c.rpc('update_anon_presence', params: {
+        'session_id_param': sessionId,
+        'platform_param': platform,
+      });
+    } catch (_) {}
   }
 }

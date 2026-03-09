@@ -1,15 +1,17 @@
+import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
 import '../services/auth_service.dart';
 import '../services/crash_service.dart';
 import '../services/review_sync_service.dart';
+import '../services/supabase_service.dart';
 import '../services/update_service.dart';
 import '../widgets/update_dialog.dart';
 import 'home_screen.dart';
-import 'login_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -34,10 +36,16 @@ class _SplashScreenState extends State<SplashScreen> {
     }
     if (!mounted) return;
 
-    // Sync recensioni dal cloud (se loggato)
+    // Sync recensioni + aggiorna presenza
     final uid = AuthService().currentUser?.id;
-    if (uid != null && SupabaseConfig.isInitialized) {
-      ReviewSyncService().syncFromCloud(uid);
+    if (SupabaseConfig.isInitialized) {
+      if (uid != null) {
+        ReviewSyncService().syncFromCloud(uid);
+        SupabaseService().updatePresence();
+      } else {
+        // Utente non registrato: traccia come sessione anonima
+        _trackAnonymousPresence();
+      }
     }
 
     // Mostra dialog crash report su Android e Windows (non su Web)
@@ -71,15 +79,31 @@ class _SplashScreenState extends State<SplashScreen> {
     }
 
     if (!mounted) return;
-    final isLoggedIn = SupabaseConfig.isInitialized
-        ? AuthService().isLoggedIn
-        : false;
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(
-        builder: (_) => isLoggedIn ? const HomeScreen() : const LoginScreen(),
-      ),
+      MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
+  }
+
+  Future<void> _trackAnonymousPresence() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      String? sessionId = prefs.getString('anon_session_id');
+      if (sessionId == null) {
+        final r = Random.secure();
+        sessionId = List.generate(16, (_) => r.nextInt(256).toRadixString(16).padLeft(2, '0')).join();
+        await prefs.setString('anon_session_id', sessionId);
+      }
+      String platform = 'unknown';
+      if (kIsWeb) {
+        platform = 'web';
+      } else if (defaultTargetPlatform == TargetPlatform.android) {
+        platform = 'android';
+      } else if (defaultTargetPlatform == TargetPlatform.windows) {
+        platform = 'windows';
+      }
+      await SupabaseService().updateAnonPresence(sessionId, platform);
+    } catch (_) {}
   }
 
   Future<void> _checkAndReportCrash() async {

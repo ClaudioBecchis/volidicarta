@@ -61,8 +61,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ? Supabase.instance.client.auth.currentSession
           : null;
       if (session != null) {
-        Navigator.pushReplacement(context,
-            MaterialPageRoute(builder: (_) => const HomeScreen()));
+        if (Navigator.canPop(context)) {
+          Navigator.pop(context);
+        } else {
+          Navigator.pushReplacement(context,
+              MaterialPageRoute(builder: (_) => const HomeScreen()));
+        }
       } else {
         setState(() => _loading = false);
         showDialog(
