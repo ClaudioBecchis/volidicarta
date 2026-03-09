@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy – Voli di Carta</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+           background: #f5f7fa; color: #222; line-height: 1.7; }
+    header { background: #1A5276; color: white; padding: 32px 24px; }
+    header h1 { font-size: 1.6rem; }
+    header p  { opacity: .75; margin-top: 6px; font-size: .9rem; }
+    main { max-width: 780px; margin: 32px auto; padding: 0 20px 60px; }
+    h2 { font-size: 1.1rem; color: #1A5276; margin: 28px 0 8px; }
+    p, li { font-size: .95rem; color: #444; }
+    ul { padding-left: 20px; margin-top: 6px; }
+    li { margin-bottom: 4px; }
+    .card { background: white; border-radius: 12px; padding: 24px;
+            box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 12px; }
+    .tag { display: inline-block; background: #eaf2f8; color: #1A5276;
+           border-radius: 6px; padding: 2px 10px; font-size: .8rem; margin-right: 6px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid #eee; font-size: .9rem; }
+    th { background: #f0f4f8; color: #1A5276; }
+    a { color: #1A5276; }
+    footer { text-align: center; font-size: .8rem; color: #aaa; margin-top: 40px; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📖 Voli di Carta — Privacy Policy</h1>
+  <p>Ultimo aggiornamento: 9 marzo 2026</p>
+</header>
+
+<main>
+
+  <div class="card">
+    <h2>1. Titolare del trattamento</h2>
+    <p>
+      <strong>Claudio Becchis</strong><br>
+      Progetto open source — <a href="https://github.com/ClaudioBecchis/volidicarta">github.com/ClaudioBecchis/volidicarta</a><br>
+      Contatto per richieste privacy:
+      <a href="https://github.com/ClaudioBecchis/volidicarta/issues">apri un'issue su GitHub</a>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>2. Che dati raccogliamo</h2>
+    <table>
+      <tr><th>Dato</th><th>Scopo</th><th>Base giuridica</th><th>Conservazione</th></tr>
+      <tr>
+        <td>ID sessione anonima</td>
+        <td>Contare utenti attivi (statistiche aggregate)</td>
+        <td>Legittimo interesse (art. 6.1.f GDPR)</td>
+        <td>30 giorni di inattività</td>
+      </tr>
+      <tr>
+        <td>Email + username</td>
+        <td>Account community (opzionale)</td>
+        <td>Consenso esplicito (art. 6.1.a GDPR)</td>
+        <td>Fino a cancellazione account</td>
+      </tr>
+      <tr>
+        <td>Recensioni e libri letti</td>
+        <td>Funzionalità principale dell'app</td>
+        <td>Esecuzione contratto (art. 6.1.b)</td>
+        <td>Localmente sul dispositivo; su Supabase se sincronizzate</td>
+      </tr>
+      <tr>
+        <td>Stato online / piattaforma</td>
+        <td>Indicatore community "utenti online"</td>
+        <td>Legittimo interesse</td>
+        <td>Aggiornato ogni sessione, cancellato dopo 30 giorni</td>
+      </tr>
+      <tr>
+        <td>Query di ricerca libri</td>
+        <td>Ricerca tramite Google Books e Open Library</td>
+        <td>Esecuzione contratto</td>
+        <td>Non memorizzate da noi; soggette alle policy di Google e Open Library</td>
+      </tr>
+    </table>
+    <p style="margin-top:12px; font-size:.85rem; color:#888;">
+      <strong>Non raccogliamo</strong>: dati di geolocalizzazione, contatti, foto, dati biometrici,
+      dati finanziari, dati di navigazione web esterni all'app.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>3. Terze parti</h2>
+    <ul>
+      <li><strong>Google Books API</strong> — ricerca libri. Le query vengono trasmesse a Google.
+          <a href="https://policies.google.com/privacy">Privacy Google</a></li>
+      <li><strong>Open Library (Internet Archive)</strong> — ricerca libri alternativa.
+          <a href="https://archive.org/about/terms.php">Termini Open Library</a></li>
+      <li><strong>Supabase</strong> — backend community (autenticazione, dati cloud).
+          Server in UE (Frankfurt). <a href="https://supabase.com/privacy">Privacy Supabase</a></li>
+      <li><strong>GitHub</strong> — aggiornamenti automatici app (download APK/EXE).
+          <a href="https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement">Privacy GitHub</a></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>4. Dati dei minori</h2>
+    <p>L'app non è destinata a bambini under 13. Non raccogliamo consapevolmente
+       dati di minori. Se sei un genitore e ritieni che tuo figlio abbia fornito dati,
+       contattaci tramite GitHub Issues per la cancellazione immediata.</p>
+  </div>
+
+  <div class="card">
+    <h2>5. I tuoi diritti (GDPR)</h2>
+    <p>Hai diritto a:</p>
+    <ul>
+      <li><strong>Accesso</strong> — sapere quali dati abbiamo su di te</li>
+      <li><strong>Rettifica</strong> — correggere dati inesatti</li>
+      <li><strong>Cancellazione</strong> — eliminare il tuo account e tutti i dati associati</li>
+      <li><strong>Portabilità</strong> — esportare i tuoi dati in formato leggibile</li>
+      <li><strong>Opposizione</strong> — opporti al trattamento basato su legittimo interesse</li>
+      <li><strong>Revoca consenso</strong> — in qualsiasi momento, tramite Impostazioni → Privacy</li>
+    </ul>
+    <p style="margin-top:10px;">Per esercitare questi diritti:
+      <a href="https://github.com/ClaudioBecchis/volidicarta/issues">apri un'issue su GitHub</a>
+      oppure usa la funzione "Elimina account" nelle impostazioni dell'app.</p>
+  </div>
+
+  <div class="card">
+    <h2>6. Sicurezza</h2>
+    <p>I dati in transito sono protetti da HTTPS/TLS. I dati su Supabase sono
+       protetti da Row Level Security (RLS): ogni utente può accedere solo ai propri dati.
+       Le password non vengono mai memorizzate in chiaro.</p>
+  </div>
+
+  <div class="card">
+    <h2>7. Modifiche a questa policy</h2>
+    <p>In caso di modifiche sostanziali, verrà mostrata una notifica all'interno dell'app.
+       La data di "ultimo aggiornamento" in cima a questa pagina verrà aggiornata.</p>
+  </div>
+
+  <footer>
+    Voli di Carta · Open Source ·
+    <a href="https://github.com/ClaudioBecchis/volidicarta">GitHub</a> ·
+    <a href="https://claudiobecchis.github.io/volidicarta/">App Web</a>
+  </footer>
+
+</main>
+</body>
+</html>
