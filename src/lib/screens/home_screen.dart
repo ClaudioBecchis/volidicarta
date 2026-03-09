@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/review.dart';
 import '../services/auth_service.dart';
+import '../services/supabase_service.dart';
 import '../database/db_helper.dart';
+import '../config/supabase_config.dart';
 import 'login_screen.dart';
 import 'search_screen.dart';
 import 'my_reviews_screen.dart';
@@ -101,11 +103,27 @@ class _DashboardTabState extends State<_DashboardTab> {
   double? _avg;
   int _wishlistCount = 0;
   List<Review> _recent = [];
+  int _communityUsers = 0;
+  int _onlineUsers = 0;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadCommunityStats();
+  }
+
+  Future<void> _loadCommunityStats() async {
+    if (!SupabaseConfig.isConfigured) return;
+    try {
+      final stats = await SupabaseService().getCommunityStats();
+      if (mounted) {
+        setState(() {
+          _communityUsers = stats.totalUsers;
+          _onlineUsers = stats.onlineUsers;
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> _load() async {
@@ -141,7 +159,18 @@ class _DashboardTabState extends State<_DashboardTab> {
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
-        title: const Text('Voli di Carta'),
+        title: user != null
+            ? Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Voli di Carta',
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text('Ciao, ${user.username}!',
+                      style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                ],
+              )
+            : const Text('Voli di Carta'),
         actions: [
           PopupMenuButton(
             icon: const Icon(Icons.account_circle_outlined),
@@ -273,76 +302,131 @@ class _DashboardTabState extends State<_DashboardTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Benvenuto
+              // Banner principale
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [Color(0xFF1A5276), Color(0xFF2471A3)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(16),
                 ),
-                child: user != null
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Corpo principale
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 14),
+                      child: Row(
                         children: [
                           const Icon(Icons.menu_book_rounded,
-                              color: Colors.white, size: 36),
-                          const SizedBox(height: 12),
-                          Text(
-                            'Ciao, ${user.username}!',
-                            style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _total == 0
-                                ? 'Inizia a recensire i tuoi libri preferiti'
-                                : 'Hai recensito $_total ${_total == 1 ? 'libro' : 'libri'}',
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 14),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Icon(Icons.menu_book_rounded,
-                              color: Colors.white, size: 36),
-                          const SizedBox(height: 12),
-                          const Text(
-                            'Benvenuto in Voli di Carta!',
-                            style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 4),
-                          const Text(
-                            'Accedi per salvare e sincronizzare le recensioni',
-                            style: TextStyle(color: Colors.white70, fontSize: 14),
-                          ),
-                          const SizedBox(height: 14),
-                          ElevatedButton.icon(
-                            onPressed: () async {
-                              await Navigator.push(context,
-                                  MaterialPageRoute(builder: (_) => const LoginScreen()));
-                              setState(() {});
-                              _load();
-                            },
-                            icon: const Icon(Icons.login, size: 16),
-                            label: const Text('Accedi / Registrati'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: const Color(0xFF1A5276),
-                              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                            ),
+                              color: Colors.white, size: 44),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: user != null
+                                ? Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        _total == 0
+                                            ? 'Inizia a leggere!'
+                                            : '$_total ${_total == 1 ? 'libro letto' : 'libri letti'}',
+                                        style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        _avg != null
+                                            ? 'Voto medio: ${_avg!.toStringAsFixed(1)} ★'
+                                            : 'Aggiungi la tua prima recensione',
+                                        style: const TextStyle(
+                                            color: Colors.white70, fontSize: 13),
+                                      ),
+                                    ],
+                                  )
+                                : Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Voli di Carta',
+                                        style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(height: 4),
+                                      const Text(
+                                        'Le tue recensioni, sempre con te',
+                                        style: TextStyle(
+                                            color: Colors.white70, fontSize: 13),
+                                      ),
+                                      const SizedBox(height: 10),
+                                      ElevatedButton.icon(
+                                        onPressed: () async {
+                                          await Navigator.push(context,
+                                              MaterialPageRoute(
+                                                  builder: (_) => const LoginScreen()));
+                                          setState(() {});
+                                          _load();
+                                        },
+                                        icon: const Icon(Icons.login, size: 15),
+                                        label: const Text('Accedi / Registrati',
+                                            style: TextStyle(fontSize: 13)),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.white,
+                                          foregroundColor: const Color(0xFF1A5276),
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 14, vertical: 8),
+                                          minimumSize: Size.zero,
+                                          tapTargetSize:
+                                              MaterialTapTargetSize.shrinkWrap,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                           ),
                         ],
                       ),
+                    ),
+                    // Striscia community stats
+                    if (_communityUsers > 0 || _onlineUsers > 0)
+                      Container(
+                        width: double.infinity,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF154360),
+                          borderRadius: BorderRadius.vertical(
+                              bottom: Radius.circular(16)),
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.people_rounded,
+                                color: Colors.white54, size: 13),
+                            const SizedBox(width: 4),
+                            Text('$_communityUsers iscritti',
+                                style: const TextStyle(
+                                    color: Colors.white60, fontSize: 11)),
+                            const SizedBox(width: 12),
+                            Container(
+                              width: 7, height: 7,
+                              decoration: const BoxDecoration(
+                                  color: Color(0xFF2ECC71),
+                                  shape: BoxShape.circle),
+                            ),
+                            const SizedBox(width: 4),
+                            Text('$_onlineUsers online ora',
+                                style: const TextStyle(
+                                    color: Colors.white60, fontSize: 11)),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
               const SizedBox(height: 20),
               // Stats rapide
