@@ -8,7 +8,7 @@ class SupabaseService {
   SupabaseService._();
 
   SupabaseClient? get _client =>
-      SupabaseConfig.isConfigured ? Supabase.instance.client : null;
+      SupabaseConfig.isInitialized ? Supabase.instance.client : null;
 
   // ── Auth ──────────────────────────────────────────────────────────────────
 

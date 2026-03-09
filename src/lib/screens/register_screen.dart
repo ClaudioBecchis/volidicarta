@@ -57,7 +57,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() { _loading = false; _error = err; });
     } else {
       if (!mounted) return;
-      final session = SupabaseConfig.isConfigured
+      final session = SupabaseConfig.isInitialized
           ? Supabase.instance.client.auth.currentSession
           : null;
       if (session != null) {

@@ -39,7 +39,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    if (SupabaseConfig.isConfigured) {
+    if (SupabaseConfig.isInitialized) {
       _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
         if (data.event == AuthChangeEvent.signedIn && mounted) {
           Navigator.pushReplacement(

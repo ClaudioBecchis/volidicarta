@@ -35,11 +35,15 @@ class _SplashScreenState extends State<SplashScreen> {
     final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     final isWindows = !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
     if (isAndroid || isWindows) {
-      await _checkAndReportCrash();
+      try {
+        await _checkAndReportCrash();
+      } catch (e) {
+        debugPrint('Crash report dialog error: $e');
+      }
     }
 
     if (!mounted) return;
-    final isLoggedIn = SupabaseConfig.isConfigured
+    final isLoggedIn = SupabaseConfig.isInitialized
         ? AuthService().isLoggedIn
         : false;
     Navigator.pushReplacement(

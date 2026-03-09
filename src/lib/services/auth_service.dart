@@ -10,7 +10,7 @@ class AuthService {
   factory AuthService() => _instance;
 
   SupabaseClient? get _client =>
-      SupabaseConfig.isConfigured ? Supabase.instance.client : null;
+      SupabaseConfig.isInitialized ? Supabase.instance.client : null;
 
   User? get currentUser {
     final u = _client?.auth.currentUser;
