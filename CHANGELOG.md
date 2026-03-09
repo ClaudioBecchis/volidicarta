@@ -4,6 +4,13 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.8] - 2026-03-09
+
+### Aggiunto
+- **ADMIN**: Pannello "Utenti registrati" nel menu account (visibile solo all'admin) — lista utenti con username, data iscrizione, stato online (pallino verde), ricerca per nome
+
+---
+
 ## [1.3.7] - 2026-03-09
 
 ### Aggiunto

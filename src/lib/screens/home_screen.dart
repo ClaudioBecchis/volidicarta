@@ -13,6 +13,7 @@ import 'book_detail_screen.dart';
 import 'community_screen.dart';
 import 'settings_screen.dart';
 import 'wishlist_screen.dart';
+import 'admin_users_screen.dart';
 import '../models/book.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
@@ -176,6 +177,19 @@ class _DashboardTabState extends State<_DashboardTab> {
                   ],
                 ),
               ),
+              if (user?.username?.toLowerCase() == 'claudio')
+                const PopupMenuItem(
+                  value: 'admin_users',
+                  child: Row(
+                    children: [
+                      Icon(Icons.admin_panel_settings_outlined,
+                          size: 18, color: Color(0xFF1A5276)),
+                      SizedBox(width: 8),
+                      Text('Utenti registrati',
+                          style: TextStyle(color: Color(0xFF1A5276))),
+                    ],
+                  ),
+                ),
               const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'logout',
@@ -195,6 +209,9 @@ class _DashboardTabState extends State<_DashboardTab> {
               } else if (v == 'about') {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const AboutScreen()));
+              } else if (v == 'admin_users') {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const AdminUsersScreen()));
               } else if (v == 'logout') {
                 final nav = Navigator.of(context);
                 final confirm = await showDialog<bool>(
