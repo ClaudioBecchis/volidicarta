@@ -33,6 +33,8 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 800));
     try {
       await AuthService().loadSession();
+      // Piccolo delay per assicurarsi che Supabase abbia ripristinato la sessione
+      await Future.delayed(const Duration(milliseconds: 300));
       await AuthService().refreshAdminStatus();
     } catch (e) {
       debugPrint('SplashScreen init error: $e');

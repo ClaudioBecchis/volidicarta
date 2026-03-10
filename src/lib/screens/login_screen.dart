@@ -30,11 +30,15 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     if (err != null) {
       setState(() { _loading = false; _error = err; });
-    } else if (Navigator.canPop(context)) {
-      Navigator.pop(context);
     } else {
-      Navigator.pushReplacement(
-        context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      await AuthService().refreshAdminStatus();
+      if (!mounted) return;
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      } else {
+        Navigator.pushReplacement(
+          context, MaterialPageRoute(builder: (_) => const HomeScreen()));
+      }
     }
   }
 

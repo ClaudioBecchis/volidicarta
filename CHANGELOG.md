@@ -4,6 +4,13 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.17] - 2026-03-10
+
+### Corretto
+- **Fix admin Android**: `refreshAdminStatus()` ora chiamato dopo il login — il menu Admin appariva solo se l'utente riapriva l'app
+
+---
+
 ## [1.3.16] - 2026-03-10
 
 ### Corretto
