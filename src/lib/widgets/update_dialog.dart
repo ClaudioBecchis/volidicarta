@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../services/update_service.dart';
 import '../database/db_helper.dart';
 
@@ -35,20 +36,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
   Future<void> _update() async {
     final info = widget.info;
 
-    // ── Android: apri il browser per scaricare l'APK ─────────────────────
-    if (UpdateService.isAndroid) {
-      final apkUrl = UpdateService().apkUrl(info.downloadUrl, info.latestVersion);
-      final uri = Uri.parse(apkUrl ?? info.downloadUrl ?? '');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-      if (mounted) Navigator.pop(context);
-      return;
-    }
-
-    // ── Windows: scarica installer e avvia ────────────────────────────────
-    if (!UpdateService.isWindows) {
-      // Web o altra piattaforma: apri link nel browser
+    // Web o piattaforme non supportate: apri link nel browser
+    if (!UpdateService.isAndroid && !UpdateService.isWindows) {
       final uri = Uri.parse(info.downloadUrl ?? '');
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -61,11 +50,18 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
     try {
       final tmpDir = await getTemporaryDirectory();
-      final installer = File(
-          '${tmpDir.path}\\VoliDiCarta_v${info.latestVersion}_Setup.exe');
+      final fileName = UpdateService.isAndroid
+          ? 'VoliDiCarta_v${info.latestVersion}.apk'
+          : 'VoliDiCarta_v${info.latestVersion}_Setup.exe';
+      final sep = UpdateService.isAndroid ? '/' : '\\';
+      final installer = File('${tmpDir.path}$sep$fileName');
 
-      final req = http.Request('GET', Uri.parse(info.downloadUrl!));
-      final response = await req.send().timeout(const Duration(minutes: 5));
+      final downloadUrl = UpdateService.isAndroid
+          ? (UpdateService().apkUrl(info.downloadUrl, info.latestVersion) ?? info.downloadUrl!)
+          : info.downloadUrl!;
+
+      final req = http.Request('GET', Uri.parse(downloadUrl));
+      final response = await req.send().timeout(const Duration(minutes: 10));
       final total = response.contentLength ?? 0;
       int received = 0;
       final bytes = <int>[];
@@ -79,8 +75,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
       }
       await installer.writeAsBytes(bytes);
 
-      // Verifica SHA-256
-      if (info.sha256 != null && info.sha256!.isNotEmpty) {
+      // Verifica SHA-256 (solo su Windows — l'APK ha un hash diverso da quello EXE)
+      if (!UpdateService.isAndroid && info.sha256 != null && info.sha256!.isNotEmpty) {
         final digest = sha256.convert(await installer.readAsBytes());
         if (digest.toString() != info.sha256) {
           await installer.delete();
@@ -92,6 +88,14 @@ class _UpdateDialogState extends State<UpdateDialog> {
       if (!mounted) return;
       setState(() { _downloading = false; _progress = 1; });
 
+      // ── Android: lancia il wizard di installazione nativo ────────────────
+      if (UpdateService.isAndroid) {
+        await OpenFilex.open(installer.path, type: 'application/vnd.android.package-archive');
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+
+      // ── Windows: chiedi conferma e avvia setup ───────────────────────────
       final confirm = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
@@ -215,7 +219,7 @@ class _UpdateDialogState extends State<UpdateDialog> {
           if (isAndroid && !_downloading) ...[
             const SizedBox(height: 10),
             Text(
-              'Verrà aperto il browser per scaricare l\'APK.\nDopo il download, installa il file.',
+              'L\'APK verrà scaricato automaticamente.\nAl termine apparirà il wizard di installazione.',
               style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
             ),
           ],
@@ -230,11 +234,8 @@ class _UpdateDialogState extends State<UpdateDialog> {
               ),
               ElevatedButton.icon(
                 onPressed: _update,
-                icon: Icon(
-                  isAndroid ? Icons.open_in_browser : Icons.download_rounded,
-                  size: 18,
-                ),
-                label: Text(isAndroid ? 'Scarica APK' : 'Aggiorna ora'),
+                icon: const Icon(Icons.system_update_alt_rounded, size: 18),
+                label: Text(isAndroid ? 'Installa aggiornamento' : 'Aggiorna ora'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1A5276),
                   foregroundColor: Colors.white,

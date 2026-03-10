@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/settings_service.dart';
 import '../l10n/app_strings.dart';
+import '../widgets/gdpr_consent_dialog.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -131,6 +134,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
+          const SizedBox(height: 12),
+
+          // ── Privacy ───────────────────────────────────────────────────────
+          Card(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: const Icon(Icons.privacy_tip_outlined, color: Color(0xFF1A5276)),
+                  title: const Text('Privacy Policy'),
+                  subtitle: const Text('Leggi come utilizziamo i dati',
+                      style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.open_in_new, size: 16, color: Colors.grey),
+                  onTap: () => launchUrl(
+                    Uri.parse('https://claudiobecchis.github.io/volidicarta/privacy-policy.html'),
+                    mode: LaunchMode.externalApplication,
+                  ),
+                ),
+                const Divider(height: 1, indent: 16, endIndent: 16),
+                ListTile(
+                  leading: const Icon(Icons.manage_history_outlined, color: Color(0xFF1A5276)),
+                  title: const Text('Gestisci consenso dati'),
+                  subtitle: const Text('Modifica le preferenze di tracciamento',
+                      style: TextStyle(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => _showConsentManager(context),
+                ),
+              ],
+            ),
+          ),
+
           const SizedBox(height: 24),
           Center(
             child: Text(
@@ -154,6 +188,65 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _setLocale(String code) {
     _settings.setLocale(Locale(code));
     setState(() {});
+  }
+
+  Future<void> _showConsentManager(BuildContext context) async {
+    final current = await GdprConsentDialog.isAccepted();
+    if (!context.mounted) return;
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.manage_history_outlined, color: Color(0xFF1A5276)),
+          SizedBox(width: 10),
+          Text('Tracciamento anonimo', style: TextStyle(fontSize: 16)),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              current
+                  ? 'Hai accettato il tracciamento anonimo per le statistiche aggregate.'
+                  : 'Hai rifiutato il tracciamento anonimo.',
+              style: const TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Puoi cambiare questa preferenza in qualsiasi momento.',
+              style: TextStyle(fontSize: 12, color: Colors.black54),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Rifiuta', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF1A5276),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Accetta'),
+          ),
+        ],
+      ),
+    );
+    if (result != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('gdpr_consent_given', result);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(result
+              ? 'Consenso accettato'
+              : 'Consenso rifiutato — nessun dato anonimo inviato'),
+          duration: const Duration(seconds: 2),
+        ));
+      }
+    }
   }
 }
 

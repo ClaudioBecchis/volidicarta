@@ -67,6 +67,7 @@ class _ForumScreenState extends State<ForumScreen> {
 
   Future<void> _loadMore() async {
     if (_loadingMore || !_hasMore) return;
+    if (!mounted) return;
     setState(() => _loadingMore = true);
     try {
       final more = await _service.fetchThreads(

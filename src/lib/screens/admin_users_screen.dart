@@ -38,7 +38,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
           .order('created_at', ascending: false);
       if (mounted) {
         setState(() {
-          _users = (data as List).cast<Map<String, dynamic>>();
+          _users = List<Map<String, dynamic>>.from((data as List? ?? []));
           _loading = false;
         });
       }
@@ -52,7 +52,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     if (_search.isEmpty) return _users;
     final q = _search.toLowerCase();
     return _users
-        .where((u) => (u['username'] as String).toLowerCase().contains(q))
+        .where((u) => ((u['username'] as String?) ?? '').toLowerCase().contains(q))
         .toList();
   }
 

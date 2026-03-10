@@ -1,7 +1,12 @@
+import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'package:path_provider/path_provider.dart';
+import 'package:open_filex/open_filex.dart';
 import '../config/supabase_config.dart';
+import '../database/db_helper.dart';
 
 class UpdateInfo {
   final String latestVersion;
@@ -76,11 +81,57 @@ class UpdateService {
     }
   }
 
-  /// Restituisce l'URL APK Android sostituendo il link EXE con l'APK
   String? apkUrl(String? downloadUrl, String version) {
     if (downloadUrl == null) return null;
-    // Il download_url punta all'EXE, costruiamo l'URL APK nella stessa release
     final base = downloadUrl.substring(0, downloadUrl.lastIndexOf('/'));
     return '$base/Voli.di.Carta_v$version.apk';
+  }
+
+  /// Scarica e installa l'aggiornamento in background senza interazione utente.
+  /// Su Android: lancia il wizard di installazione del sistema operativo.
+  /// Su Windows: avvia l'installer EXE e chiude l'app.
+  Future<void> downloadAndInstall(UpdateInfo info) async {
+    try {
+      final tmpDir = await getTemporaryDirectory();
+
+      if (isAndroid) {
+        final url = apkUrl(info.downloadUrl, info.latestVersion)
+            ?? info.downloadUrl!;
+        final apkFile = File('${tmpDir.path}/VDC_update_${info.latestVersion}.apk');
+
+        // Se già scaricato (es. crash precedente) riusa il file
+        if (!apkFile.existsSync()) {
+          final req = http.Request('GET', Uri.parse(url));
+          final response = await req.send().timeout(const Duration(minutes: 10));
+          await apkFile.writeAsBytes(await response.stream.toBytes());
+        }
+
+        // Lancia il wizard di installazione nativo — unica azione richiesta all'utente
+        await OpenFilex.open(
+          apkFile.path,
+          type: 'application/vnd.android.package-archive',
+        );
+        return;
+      }
+
+      if (isWindows) {
+        final exeFile = File(
+            '${tmpDir.path}\\VDC_update_${info.latestVersion}.exe');
+
+        if (!exeFile.existsSync()) {
+          final req = http.Request('GET', Uri.parse(info.downloadUrl!));
+          final response = await req.send().timeout(const Duration(minutes: 10));
+          await exeFile.writeAsBytes(await response.stream.toBytes());
+        }
+
+        // /S = silent install (NSIS standard flag)
+        await Process.start(exeFile.path, ['/S']);
+        await Future.delayed(const Duration(milliseconds: 500));
+        await DbHelper().close();
+        await SystemNavigator.pop();
+      }
+    } catch (_) {
+      // Fallimento silenzioso — l'aggiornamento verrà ritentato al prossimo avvio
+    }
   }
 }

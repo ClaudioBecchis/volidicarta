@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../models/review.dart';
 import '../services/auth_service.dart';
 import '../services/supabase_service.dart';
@@ -30,6 +31,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _tab = 0;
   final _dashboardKey = GlobalKey<_DashboardTabState>();
+  final _myReviewsKey = GlobalKey<MyReviewsScreenState>();
 
   late final List<Widget> _pages;
 
@@ -39,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _pages = [
       _DashboardTab(key: _dashboardKey, onTabChange: _onTabSelected),
       const SearchScreen(),
-      const MyReviewsScreen(),
+      MyReviewsScreen(key: _myReviewsKey),
       const WishlistScreen(),
       const StatsScreen(),
       const CommunityScreen(),
@@ -49,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void _onTabSelected(int i) {
     setState(() => _tab = i);
     if (i == 0) _dashboardKey.currentState?._load();
+    if (i == 2) _myReviewsKey.currentState?.reload();
   }
 
   @override
@@ -257,7 +260,7 @@ class _DashboardTabState extends State<_DashboardTab> {
               if (v == 'login') {
                 await Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const LoginScreen()));
-                setState(() {});
+                if (mounted) setState(() {});
               } else if (v == 'settings') {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const SettingsScreen()));
@@ -307,11 +310,17 @@ class _DashboardTabState extends State<_DashboardTab> {
                 borderRadius: BorderRadius.circular(16),
                 child: Column(
                   children: [
-                    // Immagine banner
-                    Image.asset(
-                      'assets/icon/banner.png',
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+                    // Immagine banner (cropped per nascondere il testo GitHub nell'immagine)
+                    ClipRect(
+                      child: Align(
+                        alignment: Alignment.topCenter,
+                        heightFactor: 0.82,
+                        child: Image.asset(
+                          'assets/icon/banner.png',
+                          width: double.infinity,
+                          fit: BoxFit.fitWidth,
+                        ),
+                      ),
                     ),
                     // Striscia stats sotto il banner
                     Container(
@@ -387,6 +396,31 @@ class _DashboardTabState extends State<_DashboardTab> {
                                     color: Colors.white54, fontSize: 11)),
                           ],
                         ],
+                      ),
+                    ),
+                    // Link GitHub tappabile
+                    GestureDetector(
+                      onTap: () => launchUrl(
+                        Uri.parse('https://github.com/ClaudioBecchis/volidicarta'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      child: Container(
+                        width: double.infinity,
+                        color: const Color(0xFF0D2137),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 5),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.code, color: Colors.white38, size: 11),
+                            SizedBox(width: 5),
+                            Text(
+                              'github.com/ClaudioBecchis/volidicarta',
+                              style: TextStyle(
+                                  color: Colors.white38, fontSize: 10),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],

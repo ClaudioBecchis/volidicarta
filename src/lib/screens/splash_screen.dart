@@ -10,7 +10,7 @@ import '../services/crash_service.dart';
 import '../services/review_sync_service.dart';
 import '../services/supabase_service.dart';
 import '../services/update_service.dart';
-import '../widgets/update_dialog.dart';
+import '../widgets/gdpr_consent_dialog.dart';
 import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -36,14 +36,18 @@ class _SplashScreenState extends State<SplashScreen> {
     }
     if (!mounted) return;
 
-    // Sync recensioni + aggiorna presenza
+    // Consenso GDPR — mostrato solo al primo avvio
+    final consentAccepted = await GdprConsentDialog.showIfNeeded(context);
+    if (!mounted) return;
+
+    // Sync recensioni + aggiorna presenza (solo se consenso dato)
     final uid = AuthService().currentUser?.id;
     if (SupabaseConfig.isInitialized) {
       if (uid != null) {
         ReviewSyncService().syncFromCloud(uid);
-        SupabaseService().updatePresence();
-      } else {
-        // Utente non registrato: traccia come sessione anonima
+        if (consentAccepted) SupabaseService().updatePresence();
+      } else if (consentAccepted) {
+        // Utente non registrato: traccia come sessione anonima solo con consenso
         _trackAnonymousPresence();
       }
     }
@@ -59,8 +63,8 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     }
 
-    // Check aggiornamento automatico (Android e Windows)
-    if (!kIsWeb && (isAndroid || isWindows) && mounted) {
+    // Check e download aggiornamento automatico in background (Android e Windows)
+    if (!kIsWeb && (isAndroid || isWindows)) {
       try {
         String currentVersion = '';
         try {
@@ -69,8 +73,9 @@ class _SplashScreenState extends State<SplashScreen> {
         } catch (_) {}
         if (currentVersion.isNotEmpty) {
           final update = await UpdateService().checkForUpdate(currentVersion);
-          if (update != null && update.isNewerAvailable && mounted) {
-            await UpdateDialog.showIfNeeded(context, update);
+          if (update != null && update.isNewerAvailable) {
+            // Avvia download + install in background senza attendere né mostrare dialog
+            UpdateService().downloadAndInstall(update).ignore();
           }
         }
       } catch (e) {

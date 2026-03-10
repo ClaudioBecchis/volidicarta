@@ -226,7 +226,7 @@ class DbHelper {
       FROM reviews WHERE user_id = ?
       GROUP BY yr ORDER BY yr DESC LIMIT 5
     ''', [userId]);
-    return {for (final r in rows) int.parse(r['yr'] as String): r['cnt'] as int};
+    return {for (final r in rows) (int.tryParse(r['yr'] as String? ?? '') ?? 0): r['cnt'] as int};
   }
 
   Future<List<Review>> getRecentReviews(String userId, {int limit = 3}) async {

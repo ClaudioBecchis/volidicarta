@@ -45,6 +45,37 @@ class BookApiService {
       }
       _cache.remove(key);
     }
+
+    // Per il filtro ITA: doppia ricerca parallela — con e senza langRestrict,
+    // poi filtro client-side su language='it' e merge per coprire edizioni
+    // italiane con metadati mancanti o errati.
+    if (langRestrict == 'it') {
+      final results = await Future.wait([
+        _searchGoogle(query, maxResults: 40, langRestrict: 'it'),
+        _searchGoogle(query, maxResults: 40),
+      ]);
+      final withRestrict = results[0];
+      final withoutRestrict = results[1];
+
+      final seenIds = <String>{};
+      final merged = <Book>[];
+      for (final b in withRestrict.books) {
+        if (seenIds.add(b.id)) merged.add(b);
+      }
+      for (final b in withoutRestrict.books) {
+        if (b.language == 'it' && seenIds.add(b.id)) merged.add(b);
+      }
+
+      if (merged.isEmpty && withRestrict.error != null) {
+        final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: 'ita');
+        if (fallback.error == null) _addToCache(key, fallback);
+        return fallback;
+      }
+      final limited = (books: merged.take(20).toList(), error: null);
+      _addToCache(key, limited);
+      return limited;
+    }
+
     final result = await _searchGoogle(query, maxResults: maxResults, langRestrict: langRestrict);
     if (result.error != null) {
       final olLang = langRestrict == 'en' ? 'eng' : 'ita';

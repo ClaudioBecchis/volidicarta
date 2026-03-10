@@ -17,10 +17,10 @@ class MyReviewsScreen extends StatefulWidget {
   const MyReviewsScreen({super.key});
 
   @override
-  State<MyReviewsScreen> createState() => _MyReviewsScreenState();
+  State<MyReviewsScreen> createState() => MyReviewsScreenState();
 }
 
-class _MyReviewsScreenState extends State<MyReviewsScreen> {
+class MyReviewsScreenState extends State<MyReviewsScreen> {
   List<Review> _reviews = [];
   List<Review> _filtered = [];
   bool _loading = true;
@@ -34,6 +34,8 @@ class _MyReviewsScreenState extends State<MyReviewsScreen> {
     super.initState();
     _load();
   }
+
+  void reload() => _load();
 
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;

@@ -38,7 +38,7 @@ class _AboutScreenState extends State<AboutScreen> {
     } catch (_) {
       // Fallback: leggi dal pubspec tramite rootBundle è non disponibile qui;
       // usa stringa statica solo se PackageInfo non è disponibile
-      _currentVersion = '1.3.0';
+      _currentVersion = '1.3.12';
     }
   }
 

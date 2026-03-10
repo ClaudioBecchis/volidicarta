@@ -11,6 +11,7 @@ class Book {
   final String? categories;
   final String? previewLink;   // link anteprima Google Books
   final String? coverLargeUrl; // copertina alta risoluzione
+  final String? language;      // codice lingua (es. 'it', 'en')
 
   Book({
     required this.id,
@@ -25,6 +26,7 @@ class Book {
     this.categories,
     this.previewLink,
     this.coverLargeUrl,
+    this.language,
   });
 
   factory Book.fromOpenLibrary(Map<String, dynamic> json) {
@@ -39,7 +41,7 @@ class Book {
     final isbns = json['isbn'] as List?;
     final isbn13 = isbns?.cast<String>().firstWhere(
           (s) => s.length == 13,
-          orElse: () => isbns.first,
+          orElse: () => isbns.isNotEmpty ? isbns.first as String : '',
         );
     final authors = (json['author_name'] as List?)?.cast<String>().join(', ')
         ?? 'Autore sconosciuto';
@@ -98,6 +100,7 @@ class Book {
       pageCount: info['pageCount'],
       categories: (info['categories'] as List?)?.join(', '),
       previewLink: previewLink,
+      language: info['language'] as String?,
     );
   }
 }

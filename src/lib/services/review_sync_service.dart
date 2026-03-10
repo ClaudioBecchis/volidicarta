@@ -71,8 +71,9 @@ class ReviewSyncService {
         final map = m as Map<String, dynamic>;
         try {
           // Controlla se esiste già in locale
-          final existing = await db.getReviewForBook(
-              userId, map['book_id'] as String);
+          final bookId = map['book_id'] as String?;
+          if (bookId == null) continue;
+          final existing = await db.getReviewForBook(userId, bookId);
 
           if (existing == null) {
             // Non esiste localmente: inserisci
@@ -127,7 +128,7 @@ class ReviewSyncService {
         bookPublisher: m['book_publisher'] as String?,
         bookYear: m['book_year'] as String?,
         bookGenre: m['book_genre'] as String?,
-        rating: (m['rating'] as num).toInt(),
+        rating: (m['rating'] as num?)?.toInt() ?? 0,
         reviewTitle: m['review_title'] as String?,
         reviewBody: m['review_body'] as String?,
         startDate: m['start_date'] as String?,

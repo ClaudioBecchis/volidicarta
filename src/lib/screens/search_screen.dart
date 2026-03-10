@@ -246,6 +246,24 @@ class _SearchScreenState extends State<SearchScreen> {
           ),
           const SizedBox(height: 8),
           Expanded(child: _buildResults()),
+          // Attribution richiesta dai Google Books API Terms of Service
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Powered by ',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+                const Text('Google',
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF4285F4),
+                        fontWeight: FontWeight.w600)),
+                Text(' · Open Library',
+                    style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+              ],
+            ),
+          ),
         ],
       ),
     );

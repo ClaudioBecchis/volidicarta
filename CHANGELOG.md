@@ -4,6 +4,16 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.13] - 2026-03-10
+
+### Corretto
+- **Crash fix**: `admin_users_screen` — crash se `username` è null nella ricerca
+- **Crash fix**: `review_sync_service` — crash se `book_id` o `rating` sono null nel sync cloud
+- **Crash fix**: `db_helper` — `int.parse` su anno null/non valido nelle statistiche per anno
+- **Crash fix**: `forum_screen` — `setState` senza guard `mounted` in `_loadMore()`
+
+---
+
 ## [1.3.8] - 2026-03-09
 
 ### Aggiunto

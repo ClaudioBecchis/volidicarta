@@ -103,8 +103,10 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
   Future<void> _addToWishlist() async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Accedi per aggiungere alla lista "Da leggere"')));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Accedi per aggiungere alla lista "Da leggere"')));
+      }
       return;
     }
     final book = widget.book;
