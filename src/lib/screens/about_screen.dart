@@ -199,6 +199,9 @@ class _AboutScreenState extends State<AboutScreen> {
                   ),
                 ),
                 const SizedBox(height: 16),
+                // Donazione Ko-fi
+                _DonateCard(),
+                const SizedBox(height: 8),
                 // Controlla aggiornamenti
                 OutlinedButton.icon(
                   onPressed: _checking ? null : _checkUpdates,
@@ -322,6 +325,100 @@ class _AboutScreenState extends State<AboutScreen> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DonateCard extends StatelessWidget {
+  static const _paypalUrl = 'https://paypal.me/CBECCHIS?locale.x=it_IT&country.x=IT';
+  static const _kofiUrl = 'https://ko-fi.com/polariscore';
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFFFF5E5B), Color(0xFFFF8C42)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF5E5B).withValues(alpha: 0.3),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          const Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('☕', style: TextStyle(fontSize: 20)),
+              SizedBox(width: 8),
+              Text(
+                'Supporta lo sviluppo',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Se ti piace l\'app, una donazione aiuta a mantenerla aggiornata e migliorarla nel tempo.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white70, fontSize: 12),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse(_paypalUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                icon: const Icon(Icons.payment, size: 16),
+                label: const Text('PayPal'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFF003087),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+              const SizedBox(width: 10),
+              ElevatedButton.icon(
+                onPressed: () => launchUrl(
+                  Uri.parse(_kofiUrl),
+                  mode: LaunchMode.externalApplication,
+                ),
+                icon: const Text('☕', style: TextStyle(fontSize: 13)),
+                label: const Text('Ko-fi'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFFFF5E5B),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20)),
+                  textStyle: const TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

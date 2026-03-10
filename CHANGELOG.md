@@ -4,6 +4,13 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.14] - 2026-03-10
+
+### Aggiunto
+- **DONAZIONI**: Card "Supporta lo sviluppo" in Info App e Impostazioni — bottoni PayPal e Ko-fi per supportare gli aggiornamenti futuri
+
+---
+
 ## [1.3.13] - 2026-03-10
 
 ### Corretto
