@@ -4,6 +4,14 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.15] - 2026-03-10
+
+### Aggiunto
+- **CRASH AUTOMATICO**: al riavvio dell'app dopo un crash, la segnalazione viene inviata automaticamente su GitHub (label `bug`, `crash-auto`) senza alcuna interazione utente
+- **Copertura errori completa**: `runZonedGuarded` in `main.dart` cattura tutti gli errori async non gestiti oltre ai crash Flutter
+
+---
+
 ## [1.3.14] - 2026-03-10
 
 ### Aggiunto

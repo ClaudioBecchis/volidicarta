@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -113,87 +115,65 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _checkAndReportCrash() async {
     final crash = await CrashService.load();
-    if (crash == null || !mounted) return;
+    if (crash == null) return;
 
-    final report = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.bug_report_outlined, color: Colors.red),
-            SizedBox(width: 8),
-            Text('Crash rilevato'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("L'app è crashata durante l'ultima sessione."),
-            const SizedBox(height: 8),
-            Text(
-              crash.error.length > 120
-                  ? '${crash.error.substring(0, 120)}…'
-                  : crash.error,
-              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Vuoi segnalare il problema su GitHub?',
-              style: TextStyle(fontWeight: FontWeight.w500),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('No, grazie'),
-          ),
-          ElevatedButton.icon(
-            onPressed: () => Navigator.pop(ctx, true),
-            icon: const Icon(Icons.open_in_new, size: 16),
-            label: const Text('Segnala'),
-          ),
-        ],
-      ),
-    );
+    String version = '';
+    try {
+      final info = await PackageInfo.fromPlatform();
+      version = info.version;
+    } catch (_) {}
+    final platform = defaultTargetPlatform == TargetPlatform.android ? 'Android' : 'Windows';
+
+    final issueBody = [
+      '## Crash automatico rilevato',
+      '',
+      '## Informazioni',
+      '- **Versione**: ${version.isNotEmpty ? version : 'n/d'}',
+      '- **Piattaforma**: $platform',
+      '- **Data crash**: ${crash.time}',
+      '',
+      '## Errore',
+      '```',
+      crash.error,
+      '```',
+      '<details><summary>Stack trace</summary>',
+      '',
+      '```',
+      crash.stack.length > 3000 ? crash.stack.substring(0, 3000) : crash.stack,
+      '```',
+      '</details>',
+    ].join('\n');
+
+    // Invia automaticamente — nessuna interazione richiesta all'utente
+    try {
+      await http.post(
+        Uri.parse('${SupabaseConfig.url}/functions/v1/github-issue'),
+        headers: {
+          'Authorization': 'Bearer ${SupabaseConfig.anonJwt}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({
+          'title': 'Crash automatico su $platform${version.isNotEmpty ? ' v$version' : ''}',
+          'body': issueBody,
+          'labels': ['bug', 'crash-auto'],
+        }),
+      ).timeout(const Duration(seconds: 10));
+    } catch (_) {
+      // Invio fallito silenziosamente — il crash resterà in memoria per il prossimo avvio
+      return;
+    }
 
     await CrashService.clear();
 
-    if (report == true) {
-      String version = '';
-      try {
-        final info = await PackageInfo.fromPlatform();
-        version = info.version;
-      } catch (_) {}
-      final platform = _isAndroidPlatform(defaultTargetPlatform) ? 'Android' : 'Windows';
-      final title = Uri.encodeComponent('Bug su $platform${version.isNotEmpty ? ' v$version' : ''}');
-      final body = Uri.encodeComponent([
-        '## Descrizione del problema',
-        '',
-        '_Descrivi qui cosa stavi facendo quando si è verificato il problema._',
-        '',
-        '## Informazioni',
-        '- **Versione**: ${version.isNotEmpty ? version : 'n/d'}',
-        '- **Piattaforma**: $platform',
-        '',
-        '## Crash registrato (${crash.time})',
-        '```',
-        crash.error,
-        '```',
-        '<details><summary>Stack trace</summary>',
-        '',
-        '```',
-        crash.stack.length > 2000 ? crash.stack.substring(0, 2000) : crash.stack,
-        '```',
-        '</details>',
-      ].join('\n'));
-      final uri = Uri.parse(
-          'https://github.com/ClaudioBecchis/volidicarta/issues/new?title=$title&body=$body');
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
+    // Toast discreto
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Crash rilevato e segnalato automaticamente.'),
+          duration: Duration(seconds: 3),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

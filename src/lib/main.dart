@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart'
     show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
@@ -40,7 +41,10 @@ void main() async {
   } catch (e) {
     debugPrint('SettingsService load error: $e');
   }
-  runApp(const BookReviewApp());
+  runZonedGuarded(
+    () => runApp(const BookReviewApp()),
+    (error, stack) => CrashService.save(error, stack),
+  );
 }
 
 class BookReviewApp extends StatefulWidget {
