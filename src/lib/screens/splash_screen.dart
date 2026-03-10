@@ -33,6 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
     await Future.delayed(const Duration(milliseconds: 800));
     try {
       await AuthService().loadSession();
+      await AuthService().refreshAdminStatus();
     } catch (e) {
       debugPrint('SplashScreen init error: $e');
     }

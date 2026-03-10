@@ -572,6 +572,16 @@ class _ReviewCard extends StatelessWidget {
 
   const _ReviewCard({required this.review, required this.onEdit});
 
+  String _fmtDate(String? iso) {
+    if (iso == null) return '';
+    try {
+      final d = DateTime.parse(iso);
+      return '${d.day.toString().padLeft(2, '0')}/${d.month.toString().padLeft(2, '0')}/${d.year}';
+    } catch (_) {
+      return iso;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -623,10 +633,10 @@ class _ReviewCard extends StatelessWidget {
                   const SizedBox(width: 4),
                   Text(
                     review.startDate != null && review.endDate != null
-                        ? '${review.startDate} → ${review.endDate}'
+                        ? '${_fmtDate(review.startDate)} → ${_fmtDate(review.endDate)}'
                         : review.endDate != null
-                            ? 'Finito il ${review.endDate}'
-                            : 'Iniziato il ${review.startDate}',
+                            ? 'Finito il ${_fmtDate(review.endDate)}'
+                            : 'Iniziato il ${_fmtDate(review.startDate)}',
                     style: const TextStyle(fontSize: 12, color: Colors.grey)),
                 ],
               ),

@@ -1,5 +1,5 @@
 #define MyAppName "Voli di Carta"
-#define MyAppVersion "1.3.15"
+#define MyAppVersion "1.3.16"
 #define MyAppPublisher "Claudio Becchis - PolarisCore.it"
 #define MyAppURL "https://polariscore.it"
 #define MyAppExeName "book_review.exe"

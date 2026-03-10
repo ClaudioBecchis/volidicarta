@@ -229,7 +229,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                   ],
                 ),
               ),
-              if (user != null && user.username.toLowerCase() == 'claudio')
+              if (user != null && user.isAdmin)
                 const PopupMenuItem(
                   value: 'admin_users',
                   child: Row(

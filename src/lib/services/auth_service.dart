@@ -12,6 +12,8 @@ class AuthService {
   SupabaseClient? get _client =>
       SupabaseConfig.isInitialized ? Supabase.instance.client : null;
 
+  bool _isAdmin = false;
+
   User? get currentUser {
     final u = _client?.auth.currentUser;
     if (u == null) return null;
@@ -19,10 +21,24 @@ class AuthService {
       id: u.id,
       username: u.userMetadata?['username'] as String? ?? u.email ?? '',
       email: u.email ?? '',
+      isAdmin: _isAdmin,
     );
   }
 
   bool get isLoggedIn => _client?.auth.currentUser != null;
+
+  /// Carica lo stato admin dal profilo Supabase — chiamare dopo il login.
+  Future<void> refreshAdminStatus() async {
+    final c = _client;
+    final uid = c?.auth.currentUser?.id;
+    if (c == null || uid == null) { _isAdmin = false; return; }
+    try {
+      final res = await c.from('profiles').select('is_admin').eq('id', uid).maybeSingle();
+      _isAdmin = (res?['is_admin'] as bool?) ?? false;
+    } catch (_) {
+      _isAdmin = false;
+    }
+  }
 
   /// Chiamata all'avvio: Supabase ripristina la sessione automaticamente.
   Future<void> loadSession() async {
@@ -42,8 +58,10 @@ class AuthService {
         data: {'username': username},
       );
       if (res.user == null) return 'Registrazione fallita. Riprova.';
-      // Il profilo viene creato automaticamente dal trigger su auth.users.
-      // Se la conferma email è attiva, l'utente riceve una mail.
+      // Crea profilo esplicitamente — non dipendere dal trigger
+      try {
+        await c.from('profiles').upsert({'id': res.user!.id, 'username': username});
+      } catch (_) {}
       return null;
     } on AuthException catch (e) {
       return _translateError(e.message);

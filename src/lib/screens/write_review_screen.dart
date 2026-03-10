@@ -138,7 +138,14 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           bookGenre: _genre,
         );
         await DbHelper().updateReview(review);
-        ReviewSyncService().upsert(review);
+        ReviewSyncService().upsert(review).catchError((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Salvato localmente — sync cloud non riuscita'),
+              duration: Duration(seconds: 3),
+            ));
+          }
+        });
       } else {
         review = Review(
           userId: uid,
@@ -160,15 +167,22 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           updatedAt: now,
         );
         await DbHelper().insertReview(review);
-        ReviewSyncService().upsert(review);
+        ReviewSyncService().upsert(review).catchError((_) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Salvato localmente — sync cloud non riuscita'),
+              duration: Duration(seconds: 3),
+            ));
+          }
+        });
       }
 
-      final supaUid = SupabaseService().currentUser?.id;
-      if (_sharePublic && SupabaseConfig.isConfigured && SupabaseService().isLoggedIn && supaUid != null) {
+      final authUser = AuthService().currentUser;
+      if (_sharePublic && SupabaseConfig.isConfigured && AuthService().isLoggedIn && authUser != null) {
         final pub = PublicReview(
           id: '',
-          userId: supaUid,
-          username: SupabaseService().currentUsername ?? 'Utente',
+          userId: authUser.id,
+          username: authUser.username.isNotEmpty ? authUser.username : 'Utente',
           bookId: review.bookId,
           bookTitle: review.bookTitle,
           bookAuthor: review.bookAuthor,
@@ -433,13 +447,13 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
                         color: Color(0xFF1A5276)),
                     title: Text(s.sharedInCommunity),
                     subtitle: Text(
-                      SupabaseService().isLoggedIn
+                      AuthService().isLoggedIn
                           ? 'La recensione sarà visibile a tutti'
                           : 'Accedi alla community per condividere',
                       style: const TextStyle(fontSize: 12),
                     ),
-                    value: _sharePublic && SupabaseService().isLoggedIn,
-                    onChanged: SupabaseService().isLoggedIn
+                    value: _sharePublic && AuthService().isLoggedIn,
+                    onChanged: AuthService().isLoggedIn
                         ? (v) => setState(() => _sharePublic = v)
                         : null,
                     activeThumbColor: const Color(0xFF1A5276),

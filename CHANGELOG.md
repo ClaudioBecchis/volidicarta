@@ -4,6 +4,19 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.16] - 2026-03-10
+
+### Corretto
+- **M-3**: `AuthService.register()` crea ora il profilo Supabase esplicitamente senza dipendere dal trigger DB
+- **M-4**: Accesso admin ora basato su colonna `is_admin` nel DB (non più username hardcoded)
+- **M-2**: `ReviewSyncService().upsert()` mostra snackbar se la sync cloud fallisce
+- **C-2**: `write_review_screen.dart` usa `AuthService` come unico punto di verità per auth (rimosso uso di `SupabaseService` per login/logout check)
+- **M-1**: `get_community_stats()` ora restituisce `offline_users` (aggiornata funzione SQL Supabase)
+- **I-1**: Date lettura mostrate in formato `DD/MM/YYYY` invece di ISO raw
+- **I-2**: `DbHelper` thread-safe — `_initFuture` previene doppia inizializzazione su web
+
+---
+
 ## [1.3.15] - 2026-03-10
 
 ### Aggiunto

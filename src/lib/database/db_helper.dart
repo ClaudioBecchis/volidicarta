@@ -8,14 +8,14 @@ import '../models/wishlist_book.dart';
 
 class DbHelper {
   static final DbHelper _instance = DbHelper._();
-  static Database? _db;
+  static Future<Database>? _initFuture;
 
   DbHelper._();
   factory DbHelper() => _instance;
 
   Future<Database> get database async {
-    _db ??= await _initDb();
-    return _db!;
+    _initFuture ??= _initDb();
+    return _initFuture!;
   }
 
   Future<Database> _initDb() async {
@@ -240,7 +240,8 @@ class DbHelper {
   }
 
   Future<void> close() async {
-    await _db?.close();
-    _db = null;
+    final db = await _initFuture;
+    await db?.close();
+    _initFuture = null;
   }
 }
