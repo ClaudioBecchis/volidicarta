@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import '../config/app_colors.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -85,30 +87,212 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-  Future<void> _reportBug() async {
-    final crash = await CrashService.load();
-    final platform = kIsWeb
-        ? 'Web'
-        : defaultTargetPlatform == TargetPlatform.android
-            ? 'Android'
-            : defaultTargetPlatform == TargetPlatform.windows
-                ? 'Windows'
-                : defaultTargetPlatform == TargetPlatform.iOS
-                    ? 'iOS'
-                    : defaultTargetPlatform == TargetPlatform.macOS
-                        ? 'macOS'
-                        : defaultTargetPlatform == TargetPlatform.linux
-                            ? 'Linux'
-                            : 'Unknown';
-    final title = Uri.encodeComponent('Bug su $platform v$_currentVersion');
-    final body = Uri.encodeComponent([
-      '## Descrizione del problema',
+  static const _ghRepo = 'ClaudioBecchis/volidicarta';
+
+  String get _platform => kIsWeb
+      ? 'Web'
+      : defaultTargetPlatform == TargetPlatform.android
+          ? 'Android'
+          : defaultTargetPlatform == TargetPlatform.windows
+              ? 'Windows'
+              : defaultTargetPlatform == TargetPlatform.iOS
+                  ? 'iOS'
+                  : defaultTargetPlatform == TargetPlatform.macOS
+                      ? 'macOS'
+                      : defaultTargetPlatform == TargetPlatform.linux
+                          ? 'Linux'
+                          : 'Unknown';
+
+  Future<String?> _postGitHubIssue({
+    required String title,
+    required String body,
+    required List<String> labels,
+  }) async {
+    try {
+      final resp = await http.post(
+        Uri.parse('${SupabaseConfig.url}/functions/v1/github-issue'),
+        headers: {
+          'Authorization': 'Bearer ${SupabaseConfig.anonJwt}',
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode({'title': title, 'body': body, 'labels': labels}),
+      );
+      if (resp.statusCode == 200 || resp.statusCode == 201) {
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        return data['html_url'] as String?;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _suggestImprovement() async {
+    final titleCtrl = TextEditingController();
+    final bodyCtrl = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.lightbulb_outline, color: Color(0xFFF39C12)),
+          SizedBox(width: 10),
+          Text('Suggerisci un miglioramento', style: TextStyle(fontSize: 16)),
+        ]),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'Hai un\'idea per migliorare l\'app? Descrivila qui sotto e verrà inviata direttamente agli sviluppatori.',
+                style: TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: titleCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Titolo breve',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 10),
+              TextField(
+                controller: bodyCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Descrizione',
+                  hintText: 'Descrivi la funzionalità o il miglioramento...',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                maxLines: 5,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annulla'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFF39C12),
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Invia'),
+          ),
+        ],
+      ),
+    );
+    titleCtrl.dispose();
+    bodyCtrl.dispose();
+    if (result != true || !mounted) return;
+    final t = titleCtrl.text.trim();
+    final b = bodyCtrl.text.trim();
+    if (t.isEmpty) return;
+    final issueBody = [
+      '## Descrizione del suggerimento',
       '',
-      '_Descrivi qui cosa stavi facendo quando si è verificato il problema._',
+      b.isNotEmpty ? b : '_Nessuna descrizione fornita._',
       '',
       '## Informazioni',
       '- **Versione**: $_currentVersion',
-      '- **Piattaforma**: $platform',
+      '- **Piattaforma**: $_platform',
+    ].join('\n');
+    final url = await _postGitHubIssue(
+      title: 'Suggerimento: $t',
+      body: issueBody,
+      labels: ['enhancement'],
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(url != null
+          ? 'Suggerimento inviato! Grazie per il feedback.'
+          : 'Errore di invio. Riprova più tardi.'),
+      backgroundColor: url != null ? Colors.green : Colors.red,
+      duration: const Duration(seconds: 3),
+    ));
+  }
+
+  Future<void> _reportBug() async {
+    final crash = await CrashService.load();
+    final descCtrl = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.bug_report_outlined, color: Colors.red),
+          SizedBox(width: 10),
+          Text('Segnala un bug', style: TextStyle(fontSize: 16)),
+        ]),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Descrivi cosa stavi facendo quando si è verificato il problema.',
+                style: TextStyle(fontSize: 13, color: Colors.black54),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: descCtrl,
+                decoration: const InputDecoration(
+                  labelText: 'Descrizione del problema',
+                  border: OutlineInputBorder(),
+                  isDense: true,
+                ),
+                maxLines: 4,
+                textCapitalization: TextCapitalization.sentences,
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Versione: $_currentVersion · Piattaforma: $_platform'
+                  '${crash != null ? '\nUltimo crash: ${crash.time}' : ''}',
+                  style: const TextStyle(fontSize: 11, color: Colors.black54),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annulla'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red.shade700,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Invia'),
+          ),
+        ],
+      ),
+    );
+    descCtrl.dispose();
+    if (result != true || !mounted) return;
+    final desc = descCtrl.text.trim();
+    final issueBody = [
+      '## Descrizione del problema',
+      '',
+      desc.isNotEmpty ? desc : '_Nessuna descrizione fornita._',
+      '',
+      '## Informazioni',
+      '- **Versione**: $_currentVersion',
+      '- **Piattaforma**: $_platform',
       if (crash != null) ...[
         '',
         '## Ultimo crash registrato (${crash.time})',
@@ -124,16 +308,20 @@ class _AboutScreenState extends State<AboutScreen> {
       ] else ...[
         '- **Crash registrato**: nessuno',
       ],
-    ].join('\n'));
-    final uri = Uri.parse(
-        'https://github.com/ClaudioBecchis/volidicarta/issues/new?title=$title&body=$body');
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri, mode: LaunchMode.externalApplication);
-    } else if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossibile aprire il browser')),
-      );
-    }
+    ].join('\n');
+    final url = await _postGitHubIssue(
+      title: 'Bug su $_platform v$_currentVersion',
+      body: issueBody,
+      labels: ['bug'],
+    );
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+      content: Text(url != null
+          ? 'Bug segnalato! Grazie per la segnalazione.'
+          : 'Errore di invio. Riprova più tardi.'),
+      backgroundColor: url != null ? Colors.green : Colors.red,
+      duration: const Duration(seconds: 3),
+    ));
   }
 
 
@@ -260,6 +448,17 @@ class _AboutScreenState extends State<AboutScreen> {
                     side: BorderSide(color: Colors.red.shade300),
                   ),
                 ),
+                const SizedBox(height: 8),
+                // Suggerisci miglioramento
+                OutlinedButton.icon(
+                  onPressed: _suggestImprovement,
+                  icon: const Icon(Icons.lightbulb_outline),
+                  label: const Text('Suggerisci un miglioramento'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.amber.shade800,
+                    side: BorderSide(color: Colors.amber.shade400),
+                  ),
+                ),
                 // Divider
                 const Divider(),
                 const SizedBox(height: 24),
@@ -333,6 +532,7 @@ class _AboutScreenState extends State<AboutScreen> {
 class _DonateCard extends StatelessWidget {
   static const _paypalUrl = 'https://paypal.me/CBECCHIS?locale.x=it_IT&country.x=IT';
   static const _kofiUrl = 'https://ko-fi.com/polariscore';
+  static const _satispayUrl = 'https://www.satispay.com/app/satispay/send-money/user/claudiobecchis';
 
   @override
   Widget build(BuildContext context) {
@@ -378,42 +578,48 @@ class _DonateCard extends StatelessWidget {
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
             children: [
               ElevatedButton.icon(
-                onPressed: () => launchUrl(
-                  Uri.parse(_paypalUrl),
-                  mode: LaunchMode.externalApplication,
-                ),
-                icon: const Icon(Icons.payment, size: 16),
+                onPressed: () => launchUrl(Uri.parse(_paypalUrl),
+                    mode: LaunchMode.externalApplication),
+                icon: const Icon(Icons.payment, size: 15),
                 label: const Text('PayPal'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFF003087),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  textStyle: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 13),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 ),
               ),
-              const SizedBox(width: 10),
               ElevatedButton.icon(
-                onPressed: () => launchUrl(
-                  Uri.parse(_kofiUrl),
-                  mode: LaunchMode.externalApplication,
+                onPressed: () => launchUrl(Uri.parse(_satispayUrl),
+                    mode: LaunchMode.externalApplication),
+                icon: const Text('💸', style: TextStyle(fontSize: 13)),
+                label: const Text('Satispay'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.white,
+                  foregroundColor: const Color(0xFFE3000F),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => launchUrl(Uri.parse(_kofiUrl),
+                    mode: LaunchMode.externalApplication),
                 icon: const Text('☕', style: TextStyle(fontSize: 13)),
                 label: const Text('Ko-fi'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: const Color(0xFFFF5E5B),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20)),
-                  textStyle: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 13),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                 ),
               ),
             ],

@@ -13,6 +13,8 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 class SupabaseConfig {
   static const String url = 'https://qyoupoyikbtizcqrswkt.supabase.co';
   static const String anonKey = 'sb_publishable_YubwImp9bCpgBaSeB_-frw_e6vYWRI6';
+  // Chiave JWT legacy — richiesta dalle Edge Functions
+  static const String anonJwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InF5b3Vwb3lpa2J0aXpjcXJzd2t0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI5MTAwNzUsImV4cCI6MjA4ODQ4NjA3NX0.uMK2ji-sadDSLsnnZL18FnoenZR2evSxS9XH-IEMKvI';
 
   /// Restituisce true se le credenziali sono state configurate nel codice
   static bool get isConfigured =>

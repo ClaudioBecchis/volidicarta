@@ -206,28 +206,41 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: TextStyle(color: Colors.white70, fontSize: 12),
                 ),
                 const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     ElevatedButton.icon(
                       onPressed: () => launchUrl(
                         Uri.parse('https://paypal.me/CBECCHIS?locale.x=it_IT&country.x=IT'),
                         mode: LaunchMode.externalApplication,
                       ),
-                      icon: const Icon(Icons.payment, size: 16),
+                      icon: const Icon(Icons.payment, size: 15),
                       label: const Text('PayPal'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: const Color(0xFF003087),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
-                        textStyle: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      onPressed: () => launchUrl(
+                        Uri.parse('https://www.satispay.com/app/satispay/send-money/user/claudiobecchis'),
+                        mode: LaunchMode.externalApplication,
+                      ),
+                      icon: const Text('💸', style: TextStyle(fontSize: 13)),
+                      label: const Text('Satispay'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: const Color(0xFFE3000F),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                      ),
+                    ),
                     ElevatedButton.icon(
                       onPressed: () => launchUrl(
                         Uri.parse('https://ko-fi.com/polariscore'),
@@ -238,12 +251,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
                         foregroundColor: const Color(0xFFFF5E5B),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20)),
-                        textStyle: const TextStyle(
-                            fontWeight: FontWeight.bold, fontSize: 13),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                        textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
                       ),
                     ),
                   ],

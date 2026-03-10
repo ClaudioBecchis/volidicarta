@@ -7,7 +7,9 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 ## [1.3.14] - 2026-03-10
 
 ### Aggiunto
-- **DONAZIONI**: Card "Supporta lo sviluppo" in Info App e Impostazioni — bottoni PayPal e Ko-fi per supportare gli aggiornamenti futuri
+- **DONAZIONI**: Card "Supporta lo sviluppo" in Info App e Impostazioni — bottoni PayPal, Satispay e Ko-fi per supportare gli aggiornamenti futuri
+- **SEGNALA BUG**: Dialog interno — l'utente descrive il problema e la segnalazione viene inviata automaticamente su GitHub senza aprire il browser
+- **SUGGERISCI MIGLIORAMENTO**: Nuovo bottone in Info App — apre un dialog interno per inviare proposte direttamente su GitHub (sezione "enhancement")
 
 ---
 
