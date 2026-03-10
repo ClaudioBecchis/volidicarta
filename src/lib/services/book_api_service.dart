@@ -34,10 +34,18 @@ class BookApiService {
     _lastCall = DateTime.now();
   }
 
+  // Costruisce la query effettiva per Google Books in base al tipo di ricerca
+  String _buildQuery(String query, String searchType) {
+    final q = query.trim();
+    if (searchType == 'inauthor') return 'inauthor:"$q"';
+    if (searchType == 'intitle') return 'intitle:"$q"';
+    return q;
+  }
+
   Future<({List<Book> books, String? error})> search(
-      String query, {int maxResults = 15, String langRestrict = 'it'}) async {
+      String query, {int maxResults = 15, String langRestrict = 'it', String searchType = 'all'}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
-    final key = '${query.trim()}|$langRestrict';
+    final key = '${query.trim()}|$langRestrict|$searchType';
     if (_cache.containsKey(key)) {
       final entry = _cache[key]!;
       if (DateTime.now().difference(entry.ts) < _cacheTtl) {
@@ -46,13 +54,15 @@ class BookApiService {
       _cache.remove(key);
     }
 
+    final effectiveQuery = _buildQuery(query, searchType);
+
     // Per il filtro ITA: doppia ricerca parallela — con e senza langRestrict,
     // poi filtro client-side su language='it' e merge per coprire edizioni
     // italiane con metadati mancanti o errati.
     if (langRestrict == 'it') {
       final results = await Future.wait([
-        _searchGoogle(query, maxResults: 40, langRestrict: 'it'),
-        _searchGoogle(query, maxResults: 40),
+        _searchGoogle(effectiveQuery, maxResults: 40, langRestrict: 'it'),
+        _searchGoogle(effectiveQuery, maxResults: 40),
       ]);
       final withRestrict = results[0];
       final withoutRestrict = results[1];
@@ -67,7 +77,7 @@ class BookApiService {
       }
 
       if (merged.isEmpty && withRestrict.error != null) {
-        final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: 'ita');
+        final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: 'ita', searchType: searchType);
         if (fallback.error == null) _addToCache(key, fallback);
         return fallback;
       }
@@ -76,10 +86,10 @@ class BookApiService {
       return limited;
     }
 
-    final result = await _searchGoogle(query, maxResults: maxResults, langRestrict: langRestrict);
+    final result = await _searchGoogle(effectiveQuery, maxResults: maxResults, langRestrict: langRestrict);
     if (result.error != null) {
       final olLang = langRestrict == 'en' ? 'eng' : 'ita';
-      final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: olLang);
+      final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: olLang, searchType: searchType);
       if (fallback.error == null) _addToCache(key, fallback);
       return fallback;
     }
@@ -88,9 +98,9 @@ class BookApiService {
   }
 
   Future<({List<Book> books, String? error})> searchAll(
-      String query, {int maxResults = 15}) async {
+      String query, {int maxResults = 15, String searchType = 'all'}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
-    final key = '${query.trim()}|all';
+    final key = '${query.trim()}|all|$searchType';
     if (_cache.containsKey(key)) {
       final entry = _cache[key]!;
       if (DateTime.now().difference(entry.ts) < _cacheTtl) {
@@ -98,9 +108,10 @@ class BookApiService {
       }
       _cache.remove(key);
     }
-    final result = await _searchGoogle(query, maxResults: maxResults);
+    final effectiveQuery = _buildQuery(query, searchType);
+    final result = await _searchGoogle(effectiveQuery, maxResults: maxResults);
     if (result.error != null) {
-      final fallback = await _searchOpenLibrary(query, maxResults: maxResults);
+      final fallback = await _searchOpenLibrary(query, maxResults: maxResults, searchType: searchType);
       if (fallback.error == null) _addToCache(key, fallback);
       return fallback;
     }
@@ -150,10 +161,18 @@ class BookApiService {
   }
 
   Future<({List<Book> books, String? error})> _searchOpenLibrary(
-      String query, {int maxResults = 15, String? lang}) async {
+      String query, {int maxResults = 15, String? lang, String searchType = 'all'}) async {
     try {
       final encoded = Uri.encodeQueryComponent(query.trim());
-      var url = '$_openLibBase?q=$encoded&limit=$maxResults&fields=key,title,author_name,cover_i,isbn,publisher,first_publish_year,number_of_pages_median,subject';
+      final String searchParam;
+      if (searchType == 'inauthor') {
+        searchParam = 'author=$encoded';
+      } else if (searchType == 'intitle') {
+        searchParam = 'title=$encoded';
+      } else {
+        searchParam = 'q=$encoded';
+      }
+      var url = '$_openLibBase?$searchParam&limit=$maxResults&fields=key,title,author_name,cover_i,isbn,publisher,first_publish_year,number_of_pages_median,subject';
       if (lang != null) url += '&language=$lang';
       final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) {

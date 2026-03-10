@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../models/book.dart';
 import '../models/review.dart';
 import '../models/wishlist_book.dart';
@@ -30,9 +32,12 @@ class _SearchScreenState extends State<SearchScreen> {
   bool _loading = false;
   bool _searched = false;
   String _langFilter = 'it'; // 'it', 'en', 'all'
+  String _searchType = 'all'; // 'all', 'intitle', 'inauthor'
   Map<String, Review> _reviewedMap = {}; // bookId → Review
   Set<String> _wishlistIds = {}; // bookId → in wishlist
   List<String> _history = [];
+  List<String> _suggestions = [];
+  Timer? _suggestTimer;
 
   @override
   void initState() {
@@ -105,8 +110,8 @@ class _SearchScreenState extends State<SearchScreen> {
     }
     setState(() { _loading = true; _searched = true; _error = null; });
     final res = _langFilter == 'all'
-        ? await _api.searchAll(q)
-        : await _api.search(q, langRestrict: _langFilter);
+        ? await _api.searchAll(q, searchType: _searchType)
+        : await _api.search(q, langRestrict: _langFilter, searchType: _searchType);
     if (mounted) {
       setState(() { _results = res.books; _error = res.error; _loading = false; });
       if (res.books.isNotEmpty || res.error == null) _addToHistory(q);
@@ -168,8 +173,47 @@ class _SearchScreenState extends State<SearchScreen> {
     _loadReviewed();
   }
 
+  void _onQueryChanged(String value) {
+    setState(() {});
+    _suggestTimer?.cancel();
+    if (value.trim().length < 3 || _searchType == 'all') {
+      if (_suggestions.isNotEmpty) setState(() => _suggestions = []);
+      return;
+    }
+    _suggestTimer = Timer(const Duration(milliseconds: 350), () => _fetchSuggestions(value.trim()));
+  }
+
+  Future<void> _fetchSuggestions(String q) async {
+    try {
+      List<String> results = [];
+      if (_searchType == 'inauthor') {
+        final url = 'https://openlibrary.org/search/authors.json?q=${Uri.encodeQueryComponent(q)}&limit=6';
+        final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          final docs = data['docs'] as List? ?? [];
+          results = docs.map((d) => d['name'] as String? ?? '').where((n) => n.isNotEmpty).toList();
+        }
+      } else if (_searchType == 'intitle') {
+        final url = 'https://www.googleapis.com/books/v1/volumes?q=intitle:${Uri.encodeQueryComponent(q)}&maxResults=6&printType=books&fields=items(volumeInfo/title)';
+        final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+        if (res.statusCode == 200) {
+          final data = jsonDecode(res.body);
+          final items = data['items'] as List? ?? [];
+          final seen = <String>{};
+          for (final item in items) {
+            final title = item['volumeInfo']?['title'] as String? ?? '';
+            if (title.isNotEmpty && seen.add(title)) results.add(title);
+          }
+        }
+      }
+      if (mounted) setState(() => _suggestions = results);
+    } catch (_) {}
+  }
+
   @override
   void dispose() {
+    _suggestTimer?.cancel();
     _ctrl.dispose();
     super.dispose();
   }
@@ -189,7 +233,11 @@ class _SearchScreenState extends State<SearchScreen> {
               controller: _ctrl,
               style: const TextStyle(color: Colors.black87),
               decoration: InputDecoration(
-                hintText: s.searchBookHint,
+                hintText: _searchType == 'inauthor'
+                    ? 'Es: Baricco, Umberto Eco, Calvino...'
+                    : _searchType == 'intitle'
+                        ? 'Es: Harry Potter, Il nome della rosa...'
+                        : s.searchBookHint,
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _ctrl.text.isNotEmpty
                     ? IconButton(
@@ -203,12 +251,64 @@ class _SearchScreenState extends State<SearchScreen> {
                 filled: true,
                 fillColor: Colors.white,
               ),
-              onSubmitted: (_) => _search(),
-              onChanged: (_) => setState(() {}),
+              onSubmitted: (_) {
+                setState(() => _suggestions = []);
+                _search();
+              },
+              onChanged: _onQueryChanged,
+            ),
+          ),
+          if (_suggestions.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 0, 12, 4),
+              child: Material(
+                elevation: 4,
+                borderRadius: BorderRadius.circular(8),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _suggestions.length,
+                  separatorBuilder: (_, __) => const Divider(height: 1),
+                  itemBuilder: (_, i) => ListTile(
+                    dense: true,
+                    leading: Icon(
+                      _searchType == 'inauthor' ? Icons.person_outline : Icons.book_outlined,
+                      size: 18,
+                      color: Colors.grey.shade500,
+                    ),
+                    title: Text(_suggestions[i], style: const TextStyle(fontSize: 14)),
+                    onTap: () {
+                      final selected = _suggestions[i];
+                      _ctrl.text = selected;
+                      setState(() => _suggestions = []);
+                      _search(selected);
+                    },
+                  ),
+                ),
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            child: Row(
+              children: [
+                for (final chip in [
+                  ('Tutto', 'all'),
+                  ('Titolo', 'intitle'),
+                  ('Autore', 'inauthor'),
+                ])
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ChoiceChip(
+                      label: Text(chip.$1),
+                      selected: _searchType == chip.$2,
+                      onSelected: (_) => setState(() { _searchType = chip.$2; _suggestions = []; }),
+                    ),
+                  ),
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
             child: Row(
               children: [
                 for (final chip in [
@@ -281,8 +381,23 @@ class _SearchScreenState extends State<SearchScreen> {
             children: [
               Icon(Icons.search, size: 64, color: Colors.grey.shade300),
               const SizedBox(height: 12),
-              Text('Cerca un libro per titolo o autore',
-                  style: TextStyle(color: Colors.grey.shade500)),
+              Text(
+                _searchType == 'inauthor'
+                    ? 'Scrivi il nome dell\'autore'
+                    : _searchType == 'intitle'
+                        ? 'Scrivi il titolo del libro'
+                        : 'Cerca un libro per titolo o autore',
+                style: TextStyle(color: Colors.grey.shade500),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                _searchType == 'inauthor'
+                    ? 'Es: Baricco · Umberto Eco · Calvino'
+                    : _searchType == 'intitle'
+                        ? 'Es: Harry Potter · Il nome della rosa'
+                        : 'Es: Baricco · Harry Potter · 9788804668336',
+                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+              ),
               const SizedBox(height: 8),
               Text('Fonte: Google Books (Amazon, Feltrinelli, IBS...)',
                   style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),

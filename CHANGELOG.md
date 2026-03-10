@@ -4,6 +4,15 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.18] - 2026-03-10
+
+### Migliorato
+- **Ricerca per autore**: aggiunto selettore tipo ricerca (Tutto / Titolo / Autore) — la modalità Autore usa `inauthor:` su Google Books e `author=` su Open Library per risultati precisi
+- **Suggerimenti autocomplete**: digitando almeno 3 caratteri, la ricerca per Autore suggerisce nomi reali da Open Library, quella per Titolo suggerisce titoli da Google Books
+- **Hint contestuale**: il campo di ricerca mostra esempi diversi in base al tipo selezionato
+
+---
+
 ## [1.3.17] - 2026-03-10
 
 ### Corretto
