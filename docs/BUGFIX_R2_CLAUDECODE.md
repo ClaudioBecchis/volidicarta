@@ -1,245 +1,240 @@
-# Bug Analysis Round 2 — Voli di Carta
+# 🔍 Bug Fix Report — Round 2
 
-> **Analisi:** Claude Sonnet 4.6 · **Data:** 2026-03-10  
-> **Versione analizzata:** 1.3.17+28 (master)  
-> **Round precedente:** [BUGFIX_R1_CLAUDECODE.md](./BUGFIX_R1_CLAUDECODE.md) — 8 bug trovati, tutti corretti in v1.3.16
-
----
-
-## Riepilogo Round 2
-
-| ID   | Gravità       | File                                    | Descrizione sintetica                              | Status  |
-|------|---------------|-----------------------------------------|----------------------------------------------------|---------|
-| N-1  | 🔴 Critico    | `about_screen.dart`                     | Controller disposed prima di leggere `.text` → bug report/suggerimento sempre vuoto | PENDING |
-| N-2  | 🟡 Media      | `my_reviews_screen.dart`                | `ReviewSyncService().delete()` non awaited → errori cloud silenziosi | PENDING |
-| N-3  | 🟡 Media      | `community_review_detail_screen.dart`   | `SupabaseService().currentUser` per auth check — inconsistente con `AuthService()` | PENDING |
-| N-4  | 🟡 Media      | `settings_screen.dart`                  | Versione hardcoded `v1.0.7` nel footer (attuale: 1.3.17) | PENDING |
-| N-5  | 🔵 Bassa      | `forum_thread_detail_screen.dart`       | Nessun `if (mounted)` dopo `Future.delayed` prima di `_scrollCtrl.animateTo()` | PENDING |
-| N-6  | 🔵 Bassa      | `splash_screen.dart`                    | Metodo statico `_isAndroidPlatform` definito ma mai usato (dead code) | PENDING |
-| N-7  | 🔵 Bassa      | `update_service.dart` vs `update_dialog.dart` | Nome file APK inconsistente nei due componenti di update | PENDING |
+> **Repository:** volidicarta · Flutter/Dart/Supabase  
+> **Versione analizzata:** 1.3.15+28 (master)  
+> **Preparato da:** Claude (Anthropic) · Marzo 2026  
+> **Scope:** File non analizzati in Round 1 — update_service, crash_service, settings_service, admin_users_screen, forum_screen, stats_screen, search_screen, wishlist_screen, my_reviews_screen, register_screen, db_helper (completo), supabase_schema.sql (completo)
 
 ---
 
-## Dettaglio Bug
+## 📋 Sommario Round 2
+
+| ID | Gravità | Descrizione | File |
+|----|---------|-------------|------|
+| **C-3** | 🔴 Critico | Tabella `user_reviews` usata da `ReviewSyncService` NON ESISTE nello schema Supabase → backup cloud recensioni private completamente non funzionante | `services/review_sync_service.dart` · `supabase_schema.sql` |
+| **M-5** | 🟡 Media | Colonna `is_admin` non definita in `profiles` → `AuthService.refreshAdminStatus()` ritorna sempre `false`, sistema admin DB inutilizzabile | `supabase_schema.sql` · `services/auth_service.dart` |
+| **M-6** | 🟡 Media | `ReviewSyncService().delete()` non awaited in `_deleteReview()` → cancellazione cloud fire-and-forget, stesso pattern di M-2 | `screens/my_reviews_screen.dart` |
+| **M-7** | 🟡 Media | `UpdateService.downloadAndInstall()` non verifica SHA-256 — implementazione parallela a `UpdateDialog._update()` ma senza verifica integrità | `services/update_service.dart` |
+| **I-3** | 🔵 Bassa | `getStatsByYear()` raggruppa per `created_at` (data recensione) invece di `end_date` (data lettura) | `database/db_helper.dart` |
+| **I-4** | 🔵 Bassa | Privacy policy afferma "NESSUN dato locale" ma l'app salva in SQLite locale → dichiarazione GDPR non accurata | `screens/register_screen.dart` |
+| **I-5** | 🔵 Bassa | `WishlistBook` creato senza `bookGenre` in `SearchScreen._toggleWishlist()` | `screens/search_screen.dart` |
 
 ---
 
-### N-1 🔴 — `about_screen.dart`: Controller disposed prima di leggere `.text`
+## 🔴 C-3 — Tabella `user_reviews` inesistente in Supabase
 
-**File:** `src/lib/screens/about_screen.dart`  
-**Metodi:** `_suggestImprovement()`, `_reportBug()`
+**Impatto:** tutti gli utenti — backup cloud recensioni private completamente non funzionante
 
-**Problema:** In entrambi i metodi, i `TextEditingController` vengono disposti (`dispose()`) **prima** di leggere il loro contenuto. Il risultato è che il testo digitato dall'utente viene perso: la segnalazione/suggerimento viene inviata vuota anche se l'utente aveva scritto qualcosa.
+### Problema
 
-**Codice difettoso — `_suggestImprovement()`:**
+`ReviewSyncService` fa upsert/delete/select sulla tabella `user_reviews`, che **non è mai stata definita** nello schema Supabase (`supabase_schema.sql`). Lo schema contiene solo `public_reviews` (per il feed community). Gli errori vengono swallowed silenziosamente nel try/catch.
+
 ```dart
-final result = await showDialog<bool>(...);  // l'utente digita nel dialog
-titleCtrl.dispose();   // ← dispose PRIMA di leggere
-bodyCtrl.dispose();    // ← dispose PRIMA di leggere
-if (result != true || !mounted) return;
-final t = titleCtrl.text.trim();  // ← legge da controller già disposed → ""
-final b = bodyCtrl.text.trim();   // ← legge da controller già disposed → ""
-if (t.isEmpty) return;            // ← esce sempre, issue mai inviata!
+// review_sync_service.dart
+await c.from('user_reviews').upsert({...}, onConflict: 'user_id,book_id'); // ❌ tabella inesistente
+await c.from('user_reviews').delete()...;  // ❌
+await c.from('user_reviews').select()...;  // ❌
 ```
 
-**Codice difettoso — `_reportBug()`:**
-```dart
-final result = await showDialog<bool>(...);
-descCtrl.dispose();                   // ← dispose PRIMA di leggere
-if (result != true || !mounted) return;
-final desc = descCtrl.text.trim();    // ← legge da controller già disposed → ""
+**Conseguenze:**
+- Il backup automatico al salvataggio non funziona
+- `syncFromCloud()` al login non scarica nulla
+- `uploadAll()` non ha effetto
+- L'utente crede le recensioni siano al sicuro nel cloud ma non lo sono
+
+### Fix
+
+Aggiungere la tabella allo schema:
+
+```sql
+create table user_reviews (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete cascade not null,
+  book_id text not null,
+  book_title text not null,
+  book_author text not null,
+  book_cover_url text,
+  book_publisher text,
+  book_year text,
+  book_genre text,
+  rating int not null check (rating between 1 and 5),
+  review_title text,
+  review_body text,
+  start_date text,
+  end_date text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(user_id, book_id)
+);
+alter table user_reviews enable row level security;
+create policy "ur_own" on user_reviews using (auth.uid() = user_id);
+create policy "ur_insert" on user_reviews for insert with check (auth.uid() = user_id);
 ```
-
-**Fix:**
-```dart
-// _suggestImprovement()
-final result = await showDialog<bool>(...);
-// Leggi il testo PRIMA di dispose
-final t = titleCtrl.text.trim();
-final b = bodyCtrl.text.trim();
-titleCtrl.dispose();
-bodyCtrl.dispose();
-if (result != true || !mounted) return;
-if (t.isEmpty) return;
-// ... resto invariato
-
-// _reportBug()
-final result = await showDialog<bool>(...);
-final desc = descCtrl.text.trim();  // leggi prima
-descCtrl.dispose();
-if (result != true || !mounted) return;
-// ... resto invariato
-```
-
-**Impatto:** Critico — bug report e suggerimenti vengono sempre inviati vuoti a GitHub, rendendo la funzionalità completamente inutile.
 
 ---
 
-### N-2 🟡 — `my_reviews_screen.dart`: `ReviewSyncService().delete()` non awaited
+## 🟡 M-5 — Schema mancante: colonna `is_admin` in `profiles`
 
-**File:** `src/lib/screens/my_reviews_screen.dart`  
-**Metodo:** `_deleteReview()`
+**Impatto:** sistema di permessi admin non funzionante
 
-**Problema:** La cancellazione cloud non è awaited, analoga al bug M-2 già corretto per l'upsert. Gli errori di rete durante la cancellazione vengono ignorati silenziosamente.
+### Problema
 
-**Codice difettoso:**
+`AuthService.refreshAdminStatus()` legge `profiles.is_admin`, ma la colonna non è nello schema.  
+La query ritorna la riga senza il campo → `_isAdmin = false` sempre.
+
 ```dart
-try {
-  await DbHelper().deleteReview(r.id!);
-  ReviewSyncService().delete(r.userId, r.bookId);  // ← non awaited
-  _load();
-}
+// auth_service.dart
+final res = await c.from('profiles').select('is_admin').eq('id', uid).maybeSingle();
+_isAdmin = (res?['is_admin'] as bool?) ?? false; // sempre false — colonna inesistente
 ```
 
-**Fix:**
-```dart
-try {
-  await DbHelper().deleteReview(r.id!);
-  try {
-    await ReviewSyncService().delete(r.userId, r.bookId);
-  } catch (e) {
-    debugPrint('Cloud delete sync error: $e');
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Recensione eliminata localmente. Sync cloud non riuscita.')),
-      );
-    }
-  }
-  _load();
-}
-```
+### Fix
 
-**Impatto:** La recensione viene eliminata localmente ma rimane su Supabase se la rete fallisce. Al prossimo sync cloud potrebbe riapparire.
+```sql
+alter table profiles add column if not exists is_admin boolean default false;
+```
 
 ---
 
-### N-3 🟡 — `community_review_detail_screen.dart`: Auth check via `SupabaseService` invece di `AuthService`
+## 🟡 M-6 — `ReviewSyncService().delete()` non awaited
 
-**File:** `src/lib/screens/community_review_detail_screen.dart`  
-**Riga:** `final isMyReview = SupabaseService().currentUser?.id == _review.userId;`
+**Impatto:** recensioni eliminate localmente potrebbero rientrare dal cloud al prossimo sync
 
-**Problema:** Il check di ownership usa `SupabaseService().currentUser` invece di `AuthService().currentUser`. Dopo la correzione C-2 di Round 1 (che ha unificato l'auth su `AuthService`), questo è l'ultimo punto nell'app che bypassa `AuthService`. Se le due sorgenti restituiscono utenti diversi (es. durante refresh di sessione), il pulsante "Elimina" potrebbe apparire o sparire erroneamente.
+### Problema
 
-**Fix:**
+Stesso pattern del bug M-2 (Round 1) ma per la cancellazione:
+
 ```dart
-// Prima
-import '../services/supabase_service.dart';
-final isMyReview = SupabaseService().currentUser?.id == _review.userId;
-
-// Dopo
-import '../services/auth_service.dart';
-final isMyReview = AuthService().currentUser?.id == _review.userId;
+// screens/my_reviews_screen.dart — _deleteReview()
+await DbHelper().deleteReview(r.id!);           // ✅ awaited
+ReviewSyncService().delete(r.userId, r.bookId); // ❌ non awaited — fire & forget
 ```
 
-**Impatto:** Incoerenza architetturale che può causare bug sottili durante il refresh della sessione.
+### Fix
+
+```dart
+await ReviewSyncService().delete(r.userId, r.bookId);
+```
 
 ---
 
-### N-4 🟡 — `settings_screen.dart`: Versione hardcoded nel footer
+## 🟡 M-7 — `UpdateService.downloadAndInstall()` non verifica SHA-256
 
-**File:** `src/lib/screens/settings_screen.dart`
+**Impatto:** file di aggiornamento corrotti/manomessi vengono installati silenziosamente
 
-**Problema:** Il footer della schermata Impostazioni mostra la versione hardcoded `v1.0.7`, mentre la versione attuale è `1.3.17`. Il bug esiste da molto tempo (la schermata non è mai stata aggiornata) e crea confusione all'utente che si trova la versione corretta su "Info App" ma quella vecchia su "Impostazioni".
+### Problema
 
-**Codice difettoso:**
-```dart
-Center(
-  child: Text(
-    'Voli di Carta v1.0.7\nClaudio Becchis · polariscore.it',
-    // ...
-  ),
-),
-```
+Esistono due implementazioni parallele del download aggiornamenti:
 
-**Fix:** Convertire `_SettingsScreenState` per caricare la versione dinamicamente (come già fatto in `AboutScreen`), oppure rimuovere semplicemente la riga della versione dal footer di Impostazioni, lasciandola solo in "Info App".
+- **`UpdateDialog._update()`** → verifica SHA-256 su Windows con `package:crypto` ✅  
+- **`UpdateService.downloadAndInstall()`** → scarica e installa senza nessuna verifica ❌
+
+Il campo `UpdateInfo.sha256` viene ricevuto dal server ma mai usato in `UpdateService`.  
+Su Android la verifica è assente anche in `UpdateDialog`.
 
 ```dart
-// Soluzione semplice: rimuovi la versione dal footer di Settings
-Center(
-  child: Text(
-    'Claudio Becchis · polariscore.it',
-    // ...
-  ),
-),
+// update_service.dart — downloadAndInstall()
+await exeFile.writeAsBytes(await response.stream.toBytes());
+await Process.start(exeFile.path, ['/S']); // installa senza verificare sha256
 ```
 
-**Impatto:** Informazione errata mostrata all'utente. Versione "Info App" = corretta, versione "Impostazioni" = obsoleta (v1.0.7).
+### Fix
+
+Eliminare `UpdateService.downloadAndInstall()` e centralizzare la logica in `UpdateDialog`,  
+oppure portare la verifica SHA-256 (per entrambe le piattaforme) anche in `UpdateService`.
 
 ---
 
-### N-5 🔵 — `forum_thread_detail_screen.dart`: Missing `mounted` check dopo `Future.delayed`
+## 🔵 I-3 — `getStatsByYear()` usa `created_at` invece di `end_date`
 
-**File:** `src/lib/screens/forum_thread_detail_screen.dart`  
-**Metodo:** `_sendReply()`
+**Impatto:** UX — statistiche "Libri per anno" fuorvianti
 
-**Problema:** Dopo aver inviato una risposta, c'è un `Future.delayed(100ms)` per aspettare il rebuild prima di scrollare in fondo. Non c'è un controllo `if (mounted)` prima di chiamare `_scrollCtrl.animateTo(...)`. Se l'utente naviga indietro durante i 100ms, lo `ScrollController` non è più attaccato a nessuna view e viene lanciato un `StateError`.
+### Problema
 
-**Codice difettoso:**
 ```dart
-await Future.delayed(const Duration(milliseconds: 100));
-_scrollCtrl.animateTo(          // ← nessun mounted check
-  _scrollCtrl.position.maxScrollExtent,
-  duration: const Duration(milliseconds: 300),
-  curve: Curves.easeOut,
+// db_helper.dart — getStatsByYear()
+'''SELECT SUBSTR(created_at, 1, 4) as yr ...'''  // usa data inserimento recensione
+```
+
+Se l'utente aggiunge in blocco libri letti in anni precedenti, appaiono tutti nell'anno corrente.
+
+### Fix
+
+```sql
+SELECT SUBSTR(COALESCE(NULLIF(end_date,''), created_at), 1, 4) as yr
+```
+
+---
+
+## 🔵 I-4 — Privacy policy non accurata (problema GDPR)
+
+**Impatto:** compliance GDPR — dichiarazione falsa
+
+### Problema
+
+Il testo in `RegisterScreen` afferma:
+> *"NESSUN dato viene conservato localmente sul dispositivo in uso"*
+
+L'app salva un database SQLite locale (`volidicarta.db`) con **tutte le recensioni e la wishlist**.
+
+### Fix
+
+Aggiornare il testo in `register_screen.dart`:
+> "I tuoi dati vengono salvati sui server Supabase (EU) **e memorizzati localmente sul dispositivo per il funzionamento offline**."
+
+---
+
+## 🔵 I-5 — `WishlistBook` senza `bookGenre` in `SearchScreen`
+
+**Impatto:** UX — libri dalla ricerca senza genere nella wishlist
+
+### Problema
+
+```dart
+// screens/search_screen.dart — _toggleWishlist()
+final wb = WishlistBook(
+  userId: uid,
+  bookId: book.id,
+  bookTitle: book.title,
+  bookAuthor: book.authors,
+  bookCoverUrl: book.coverUrl,
+  bookPublisher: book.publisher,
+  bookYear: ...,
+  addedAt: DateTime.now().toIso8601String(),
+  // bookGenre: mancante — book.categories disponibile ma non passato
 );
 ```
 
-**Fix:**
+### Fix
+
 ```dart
-await Future.delayed(const Duration(milliseconds: 100));
-if (!mounted) return;           // ← aggiungere questo check
-_scrollCtrl.animateTo(
-  _scrollCtrl.position.maxScrollExtent,
-  duration: const Duration(milliseconds: 300),
-  curve: Curves.easeOut,
-);
+bookGenre: book.categories, // aggiungere
 ```
 
 ---
 
-### N-6 🔵 — `splash_screen.dart`: Metodo `_isAndroidPlatform` mai usato
+## 📊 Riepilogo Totale (Round 1 + Round 2)
 
-**File:** `src/lib/screens/splash_screen.dart`
+| ID | Gravità | Stato |
+|----|---------|-------|
+| C-1 | 🔴 Critico | Chiavi Supabase hardcoded → PENDING |
+| C-2 | 🔴 Critico | Doppio sistema auth → PENDING |
+| C-3 | 🔴 Critico | Tabella user_reviews inesistente → PENDING *(NUOVO)* |
+| M-1 | 🟡 Media | get_community_stats() campi mancanti → PENDING |
+| M-2 | 🟡 Media | upsert() non awaited → PENDING |
+| M-3 | 🟡 Media | profiles non creato alla registrazione → PENDING |
+| M-4 | 🟡 Media | Admin hardcoded su 'claudio' → PENDING |
+| M-5 | 🟡 Media | Schema: is_admin mancante → PENDING *(NUOVO)* |
+| M-6 | 🟡 Media | delete() non awaited → PENDING *(NUOVO)* |
+| M-7 | 🟡 Media | SHA-256 non verificato in UpdateService → PENDING *(NUOVO)* |
+| I-1 | 🔵 Bassa | Date formato ISO raw → PENDING |
+| I-2 | 🔵 Bassa | DbHelper non thread-safe web → PENDING |
+| I-3 | 🔵 Bassa | Stats anno usa created_at → PENDING *(NUOVO)* |
+| I-4 | 🔵 Bassa | Privacy policy errata → PENDING *(NUOVO)* |
+| I-5 | 🔵 Bassa | WishlistBook senza bookGenre → PENDING *(NUOVO)* |
 
-**Problema:** Il metodo statico `_isAndroidPlatform` è definito nella classe ma non viene mai chiamato da nessuna parte. È dead code rimasto da una refactoring precedente.
-
-**Codice da rimuovere:**
-```dart
-static bool _isAndroidPlatform(TargetPlatform p) => p == TargetPlatform.android;
-```
-
-La logica Android è già inline nel codice (`defaultTargetPlatform == TargetPlatform.android`) ed `UpdateService` espone `UpdateService.isAndroid` per uso esterno.
-
----
-
-### N-7 🔵 — `update_service.dart` vs `update_dialog.dart`: Nome file APK inconsistente
-
-**File:** `src/lib/services/update_service.dart`, `src/lib/widgets/update_dialog.dart`
-
-**Problema:** I due componenti usano nomi diversi per il file APK temporaneo:
-- `update_service.dart` (metodo `downloadAndInstall`): `VDC_update_${version}.apk`
-- `update_dialog.dart` (classe `UpdateDialog`): `VoliDiCarta_v${version}.apk`
-
-Se entrambi i path vengono eseguiti nella stessa sessione (es. aggiornamento automatico in background + utente preme manualmente "Installa"), vengono creati due file APK duplicati nella cartella temporanea.
-
-**Fix:** Centralizzare il nome del file in `UpdateService`:
-```dart
-// In UpdateService
-static String apkFileName(String version) => 'VoliDiCarta_v$version.apk';
-static String exeFileName(String version) => 'VoliDiCarta_v${version}_Setup.exe';
-```
-E usare questi metodi in entrambi i file.
+**Totale: 3 Critici · 7 Medi · 5 Bassi · 7 nuovi in Round 2**
 
 ---
 
-## Note aggiuntive
-
-### C-1 ancora aperta
-Le credenziali Supabase (`anonKey`, `anonJwt`) in `supabase_config.dart` sono ancora hardcoded nel repository pubblico. Questo era il bug più critico di Round 1 e rimane irrisolto. Si raccomanda di ruotare immediatamente le chiavi dal pannello Supabase e migrare a una soluzione con variabili d'ambiente o file di configurazione gitignored.
-
-### Fallback versione hardcoded in `about_screen.dart`
-Il fallback `_currentVersion = '1.3.12'` nel catch di `PackageInfo.fromPlatform()` è già obsoleto (versione attuale: 1.3.17). Se `PackageInfo` fallisce, l'utente vede una versione sbagliata. Considerare di usare la stringa `'sconosciuta'` come fallback.
-
----
-
-*Generato da Claude Sonnet 4.6 — volidicarta Round 2*
+*Claude (Anthropic) · Analisi statica manuale · Marzo 2026*
