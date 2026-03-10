@@ -2,47 +2,40 @@ workflows:
   macos-build:
     name: macOS Build
     max_build_duration: 120
+    working_directory: src
     environment:
       flutter: 3.41.4
       xcode: 16.2
       cocoapods: default
     scripts:
-      - name: Get Flutter packages
-        script: |
-          cd src
-          flutter pub get
       - name: Enable macOS desktop
         script: flutter config --enable-macos-desktop
+      - name: Get Flutter packages
+        script: flutter pub get
       - name: Build macOS app
-        script: |
-          cd src
-          flutter build macos --release
+        script: flutter build macos --release
     artifacts:
-      - src/build/macos/Build/Products/Release/*.app
-      - src/build/macos/Build/Products/Release/*.zip
+      - build/macos/Build/Products/Release/*.app
+      - build/macos/Build/Products/Release/*.zip
 
   ios-build:
     name: iOS Build (no-codesign)
     max_build_duration: 120
+    working_directory: src
     environment:
       flutter: 3.41.4
       xcode: 16.2
       cocoapods: default
     scripts:
       - name: Get Flutter packages
-        script: |
-          cd src
-          flutter pub get
+        script: flutter pub get
       - name: Build iOS (no signing)
-        script: |
-          cd src
-          flutter build ios --release --no-codesign
+        script: flutter build ios --release --no-codesign
       - name: Crea IPA non firmato
         script: |
-          cd src/build/ios/iphoneos
+          cd build/ios/iphoneos
           mkdir -p Payload
           cp -r Runner.app Payload/
           zip -r VoliDiCarta_nosign.ipa Payload
     artifacts:
-      - src/build/ios/iphoneos/VoliDiCarta_nosign.ipa
-      - src/build/ios/archive/*.xcarchive
+      - build/ios/iphoneos/VoliDiCarta_nosign.ipa
