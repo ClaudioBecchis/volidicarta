@@ -12,6 +12,7 @@ import '../services/review_sync_service.dart';
 import '../services/supabase_service.dart';
 import '../services/update_service.dart';
 import '../widgets/gdpr_consent_dialog.dart';
+import '../widgets/update_dialog.dart';
 import 'home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -62,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     }
 
-    // Check e download aggiornamento automatico in background (Android e Windows)
+    // Check aggiornamento (Android e Windows): mostra dialog con versione disponibile
     if (!kIsWeb && (isAndroid || isWindows)) {
       try {
         String currentVersion = '';
@@ -70,11 +71,10 @@ class _SplashScreenState extends State<SplashScreen> {
           final info = await PackageInfo.fromPlatform();
           currentVersion = info.version;
         } catch (_) {}
-        if (currentVersion.isNotEmpty) {
+        if (currentVersion.isNotEmpty && mounted) {
           final update = await UpdateService().checkForUpdate(currentVersion);
-          if (update != null && update.isNewerAvailable) {
-            // Avvia download + install in background senza attendere né mostrare dialog
-            UpdateService().downloadAndInstall(update).ignore();
+          if (update != null && update.isNewerAvailable && mounted) {
+            await UpdateDialog.showIfNeeded(context, update);
           }
         }
       } catch (e) {
