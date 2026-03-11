@@ -75,7 +75,7 @@ begin
   end if;
   return null;
 end;
-$$ language plpgsql security definer set search_path = '';
+$$ language plpgsql security definer set search_path = 'public';
 
 create trigger likes_count_trigger
 after insert or delete on likes
@@ -168,7 +168,7 @@ begin
   end if;
   return null;
 end;
-$$ language plpgsql security definer set search_path = '';
+$$ language plpgsql security definer set search_path = 'public';
 
 create trigger forum_thread_likes_count_trigger
 after insert or delete on forum_thread_likes
@@ -184,7 +184,7 @@ begin
   end if;
   return null;
 end;
-$$ language plpgsql security definer set search_path = '';
+$$ language plpgsql security definer set search_path = 'public';
 
 create trigger forum_reply_likes_count_trigger
 after insert or delete on forum_reply_likes
@@ -195,12 +195,12 @@ for each row execute function update_forum_reply_likes_count();
 create or replace function increment_replies_count(thread_id_param uuid)
 returns void as $$
   update forum_threads set replies_count = replies_count + 1 where id = thread_id_param;
-$$ language sql security definer set search_path = '';
+$$ language sql security definer set search_path = 'public';
 
 create or replace function decrement_replies_count(thread_id_param uuid)
 returns void as $$
   update forum_threads set replies_count = greatest(0, replies_count - 1) where id = thread_id_param;
-$$ language sql security definer set search_path = '';
+$$ language sql security definer set search_path = 'public';
 
 -- ── Indici ────────────────────────────────────────────────────────────────
 
@@ -262,7 +262,7 @@ alter table profiles add column if not exists last_seen timestamptz;
 create or replace function update_presence()
 returns void as $$
   update profiles set last_seen = now() where id = auth.uid();
-$$ language sql security definer set search_path = '';
+$$ language sql security definer set search_path = 'public';
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- ANONYMOUS PRESENCE (sessioni anonime con piattaforma)
@@ -282,13 +282,13 @@ returns void as $$
   values (session_id_param, platform_param, now())
   on conflict (session_id) do update
     set last_seen = now(), platform = platform_param;
-$$ language sql security definer set search_path = '';
+$$ language sql security definer set search_path = 'public';
 
 -- ── Pulizia automatica sessioni scadute (>24h) ────────────────────────────
 create or replace function cleanup_anon_presence()
 returns void as $$
   delete from anon_presence where last_seen < now() - interval '24 hours';
-$$ language sql security definer set search_path = '';
+$$ language sql security definer set search_path = 'public';
 
 -- RPC: restituisce contatori community (usata nella CommunityScreen)
 create or replace function get_community_stats()
@@ -299,7 +299,7 @@ returns json as $$
     'offline_users', (select count(*) from profiles where last_seen is null or last_seen <= now() - interval '5 minutes'),
     'anon_online', (select count(*) from anon_presence where last_seen > now() - interval '5 minutes')
   );
-$$ language sql security definer set search_path = '';
+$$ language sql security definer set search_path = 'public';
 
 -- RPC: statistiche admin dettagliate (registrazioni per giorno, piattaforme)
 create or replace function get_admin_stats()
@@ -326,4 +326,4 @@ returns json as $$
       ) p
     )
   );
-$$ language sql security definer set search_path = '';
+$$ language sql security definer set search_path = 'public';
