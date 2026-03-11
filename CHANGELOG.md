@@ -4,6 +4,14 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.20] - 2026-03-11
+
+### Aggiunto
+- **Dashboard visitatori** (solo admin): nuova schermata con KPI utenti online/totali/anonimi, nuovi iscritti 7/30 giorni, grafico iscrizioni per giorno, breakdown piattaforme (Android/Windows/Web). Auto-refresh ogni 60s.
+- **Schema Supabase**: tabella `anon_presence` + RPCs `update_anon_presence`, `get_admin_stats`, `get_community_stats` aggiornata
+
+---
+
 ## [1.3.19] - 2026-03-11
 
 ### Corretto
