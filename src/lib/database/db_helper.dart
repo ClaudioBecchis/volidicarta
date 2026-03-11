@@ -239,6 +239,12 @@ class DbHelper {
     return res.map(Review.fromMap).toList();
   }
 
+  Future<void> deleteAllUserData() async {
+    final db = await database;
+    await db.delete('reviews');
+    await db.delete('wishlist');
+  }
+
   Future<void> close() async {
     final db = await _initFuture;
     await db?.close();

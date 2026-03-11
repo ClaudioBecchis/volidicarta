@@ -243,6 +243,25 @@ class SupabaseService {
     }
   }
 
+  Future<String?> deleteAccount() async {
+    final c = _client;
+    if (c == null) return 'Community non disponibile.';
+    try {
+      final session = c.auth.currentSession;
+      if (session == null) return 'Non sei autenticato.';
+      final res = await c.functions.invoke(
+        'delete-account',
+        headers: {'Authorization': 'Bearer ${session.accessToken}'},
+      );
+      if (res.status != 200) {
+        return 'Errore eliminazione: ${res.data}';
+      }
+      return null; // successo
+    } catch (e) {
+      return 'Errore: $e';
+    }
+  }
+
   Future<void> updateAnonPresence(String sessionId, String platform) async {
     final c = _client;
     if (c == null) return;

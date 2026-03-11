@@ -457,7 +457,28 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                     ),
                   ),
                 ),
-                if (book.previewLink != null) ...[
+                if (book.pdfDownloadLink != null) ...[
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BookPreviewScreen(
+                              title: 'PDF',
+                              url: book.pdfDownloadLink!,
+                            ),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.picture_as_pdf_outlined,
+                          color: Colors.red),
+                      label: const Text('PDF',
+                          style: TextStyle(color: Colors.red)),
+                    ),
+                  ),
+                ] else if (book.previewLink != null) ...[
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(

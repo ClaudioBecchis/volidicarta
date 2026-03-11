@@ -9,9 +9,10 @@ class Book {
   final String? isbn;
   final int? pageCount;
   final String? categories;
-  final String? previewLink;   // link anteprima Google Books
-  final String? coverLargeUrl; // copertina alta risoluzione
-  final String? language;      // codice lingua (es. 'it', 'en')
+  final String? previewLink;    // link anteprima Google Books
+  final String? pdfDownloadLink; // link PDF gratuito (solo dominio pubblico)
+  final String? coverLargeUrl;  // copertina alta risoluzione
+  final String? language;       // codice lingua (es. 'it', 'en')
 
   Book({
     required this.id,
@@ -25,6 +26,7 @@ class Book {
     this.pageCount,
     this.categories,
     this.previewLink,
+    this.pdfDownloadLink,
     this.coverLargeUrl,
     this.language,
   });
@@ -87,6 +89,14 @@ class Book {
     final previewLink = toHttps(json['volumeInfo']?['previewLink'] as String?
         ?? json['accessInfo']?['webReaderLink'] as String?);
 
+    final accessInfo = json['accessInfo'] ?? {};
+    final pdfInfo = accessInfo['pdf'] ?? {};
+    final pdfAvailable = pdfInfo['isAvailable'] == true;
+    final pdfDownloadLink = pdfAvailable
+        ? toHttps(pdfInfo['downloadLink'] as String?
+            ?? pdfInfo['acsTokenLink'] as String?)
+        : null;
+
     return Book(
       id: json['id'] ?? '',
       title: info['title'] ?? 'Titolo sconosciuto',
@@ -100,6 +110,7 @@ class Book {
       pageCount: info['pageCount'],
       categories: (info['categories'] as List?)?.join(', '),
       previewLink: previewLink,
+      pdfDownloadLink: pdfDownloadLink,
       language: info['language'] as String?,
     );
   }

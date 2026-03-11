@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/settings_service.dart';
+import '../services/supabase_service.dart';
+import '../services/auth_service.dart';
+import '../database/db_helper.dart';
 import '../l10n/app_strings.dart';
 import '../widgets/gdpr_consent_dialog.dart';
 
@@ -165,6 +168,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
             ),
           ),
 
+          // ── Elimina account ───────────────────────────────────────────────
+          if (AuthService().isLoggedIn) ...[
+            const SizedBox(height: 12),
+            Card(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
+              child: ListTile(
+                leading: const Icon(Icons.delete_forever_outlined,
+                    color: Colors.red),
+                title: const Text('Elimina account',
+                    style: TextStyle(color: Colors.red)),
+                subtitle: const Text(
+                    'Rimuove definitivamente account e tutti i dati',
+                    style: TextStyle(fontSize: 12)),
+                trailing: const Icon(Icons.chevron_right,
+                    color: Colors.red),
+                onTap: () => _confirmDeleteAccount(context),
+              ),
+            ),
+          ],
+
           const SizedBox(height: 16),
           // ── Donazione ─────────────────────────────────────────────────────
           Container(
@@ -285,6 +309,69 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void _setLocale(String code) {
     _settings.setLocale(Locale(code));
     setState(() {});
+  }
+
+  Future<void> _confirmDeleteAccount(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.red),
+          SizedBox(width: 10),
+          Text('Elimina account',
+              style: TextStyle(color: Colors.red, fontSize: 16)),
+        ]),
+        content: const Text(
+          'Questa azione è irreversibile.\n\nVerranno eliminati:\n• Il tuo account\n• Tutte le tue recensioni\n• I tuoi post nel forum\n• Tutti i tuoi dati\n\nSei sicuro di voler continuare?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Annulla'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Elimina definitivamente'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    if (!context.mounted) return;
+
+    // Mostra loading
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final error = await SupabaseService().deleteAccount();
+
+    if (!context.mounted) return;
+    Navigator.pop(context); // chiudi loading
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(error), backgroundColor: Colors.red));
+      return;
+    }
+
+    // Cancella dati locali
+    try { await DbHelper().deleteAllUserData(); } catch (_) {}
+
+    if (!context.mounted) return;
+    // Torna alla root e mostra messaggio
+    Navigator.of(context).popUntil((r) => r.isFirst);
+    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+      content: Text('Account eliminato con successo.'),
+      duration: Duration(seconds: 3),
+    ));
   }
 
   Future<void> _showConsentManager(BuildContext context) async {
