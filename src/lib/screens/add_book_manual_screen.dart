@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/book.dart';
 import 'write_review_screen.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 
 class AddBookManualScreen extends StatefulWidget {
   const AddBookManualScreen({super.key});
@@ -64,9 +65,10 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
-      appBar: AppBar(title: const Text('Aggiungi Libro Manualmente')),
+      appBar: AppBar(title: Text(s.addBookManually)),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -109,8 +111,8 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Informazioni Libro',
-                          style: TextStyle(
+                      Text(s.bookInfoSection,
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -152,8 +154,8 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Dati Editoriali (opzionali)',
-                          style: TextStyle(
+                      Text(s.editorialData,
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 16),
                       TextFormField(
@@ -232,8 +234,8 @@ class _AddBookManualScreenState extends State<AddBookManualScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Copertina (opzionale)',
-                          style: TextStyle(
+                      Text(s.coverOptional,
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 8),
                       Text(

@@ -12,6 +12,7 @@ import '../database/db_helper.dart';
 import '../services/review_sync_service.dart';
 import '../widgets/star_rating.dart';
 import 'write_review_screen.dart';
+import 'book_preview_screen.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
 
@@ -105,7 +106,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     if (uid == null) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Accedi per aggiungere alla lista "Da leggere"')));
+            SnackBar(content: Text(S.of(context).loginToAddWishlist)));
       }
       return;
     }
@@ -127,8 +128,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     if (mounted) {
       setState(() => _inWishlist = true);
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Aggiunto a "Da leggere" 🔖'),
-              duration: Duration(seconds: 2)));
+          SnackBar(content: Text(S.of(context).addedToWishlist),
+              duration: const Duration(seconds: 2)));
     }
   }
 
@@ -139,8 +140,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     if (mounted) {
       setState(() => _inWishlist = false);
       ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Rimosso dalla lista "Da leggere"'),
-              duration: Duration(seconds: 2)));
+          SnackBar(content: Text(S.of(context).removedFromWishlist),
+              duration: const Duration(seconds: 2)));
     }
   }
 
@@ -233,7 +234,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                         final add = await showDialog<bool>(
                           context: context,
                           builder: (_) => AlertDialog(
-                            title: const Text('Aggiunto alla lista?'),
+                            title: Text(S.of(context).addedToListQuestion),
                             content: const Text(
                                 'Vuoi aggiungere il libro alla lista "Da leggere"?'),
                             actions: [
@@ -242,7 +243,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                                   child: const Text('No')),
                               ElevatedButton(
                                   onPressed: () => Navigator.pop(context, true),
-                                  child: const Text('Sì, aggiungi')),
+                                  child: Text(S.of(context).yesAdd)),
                             ],
                           ),
                         );
@@ -261,16 +262,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Elimina Recensione'),
-        content: Text(S.of(context).deleteReviewConfirm),
+        title: Text(S.of(context).deleteReview),
+        content: Text(S.of(context).deleteReviewConfirmMsg),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annulla')),
+              child: Text(S.of(context).cancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Elimina')),
+              child: Text(S.of(context).delete)),
         ],
       ),
     );
@@ -284,7 +285,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
         debugPrint('Delete review error: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Errore durante l\'eliminazione')));
+              SnackBar(content: Text(S.of(context).deleteError)));
         }
       }
     }
@@ -292,11 +293,12 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     final book = widget.book;
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
-        title: const Text('Dettaglio Libro'),
+        title: Text(s.bookDetail),
         actions: [
           IconButton(
             icon: Icon(_inWishlist ? Icons.bookmark : Icons.bookmark_border),
@@ -424,13 +426,13 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                           color: Colors.black54,
                           borderRadius: BorderRadius.circular(6),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(Icons.zoom_in, color: Colors.white, size: 14),
-                            SizedBox(width: 4),
-                            Text('Ingrandisci',
-                                style: TextStyle(
+                            const Icon(Icons.zoom_in, color: Colors.white, size: 14),
+                            const SizedBox(width: 4),
+                            Text(s.enlarge,
+                                style: const TextStyle(
                                     color: Colors.white, fontSize: 11)),
                           ],
                         ),
@@ -448,7 +450,7 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   child: ElevatedButton.icon(
                     onPressed: _showBuyOptions,
                     icon: const Icon(Icons.shopping_bag_outlined),
-                    label: const Text('Acquista'),
+                    label: Text(s.buy),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF1A5276),
                       foregroundColor: Colors.white,
@@ -459,17 +461,23 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final uri = Uri.parse(book.previewLink!);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri,
-                              mode: LaunchMode.externalApplication);
-                        }
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BookPreviewScreen(
+                              title: book.id.startsWith('ol_')
+                                  ? 'Open Library'
+                                  : S.of(context).preview,
+                              url: book.previewLink!,
+                            ),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.preview_outlined),
                       label: Text(book.id.startsWith('ol_')
                           ? 'Open Library'
-                          : 'Anteprima'),
+                          : S.of(context).preview),
                     ),
                   ),
                 ],
@@ -486,8 +494,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Descrizione',
-                          style: TextStyle(
+                      Text(s.description,
+                          style: const TextStyle(
                               fontWeight: FontWeight.bold, fontSize: 15)),
                       const SizedBox(height: 8),
                       _ExpandableText(text: book.description ?? _fetchedDescription!),
@@ -597,8 +605,8 @@ class _ReviewCard extends StatelessWidget {
                 const Icon(Icons.rate_review,
                     color: Color(0xFF1A5276), size: 20),
                 const SizedBox(width: 8),
-                const Text('La tua Recensione',
-                    style: TextStyle(
+                Text(S.of(context).myReviewCard,
+                    style: const TextStyle(
                         fontWeight: FontWeight.bold, fontSize: 15)),
                 const Spacer(),
                 IconButton(

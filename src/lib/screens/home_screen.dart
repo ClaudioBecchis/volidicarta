@@ -192,79 +192,79 @@ class _DashboardTabState extends State<_DashboardTab> {
                                   fontSize: 12, color: Colors.grey)),
                         ],
                       )
-                    : const Text('Ospite',
-                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+                    : Text(s.guest,
+                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
               ),
               const PopupMenuDivider(),
               if (user == null) ...[
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'login',
                   child: Row(
                     children: [
-                      Icon(Icons.login, size: 18, color: Color(0xFF1A5276)),
-                      SizedBox(width: 8),
-                      Text('Accedi / Registrati',
-                          style: TextStyle(color: Color(0xFF1A5276), fontWeight: FontWeight.w600)),
+                      const Icon(Icons.login, size: 18, color: Color(0xFF1A5276)),
+                      const SizedBox(width: 8),
+                      Text(s.loginOrRegister,
+                          style: const TextStyle(color: Color(0xFF1A5276), fontWeight: FontWeight.w600)),
                     ],
                   ),
                 ),
                 const PopupMenuDivider(),
               ],
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'settings',
                 child: Row(
                   children: [
-                    Icon(Icons.settings_outlined, size: 18),
-                    SizedBox(width: 8),
-                    Text('Impostazioni'),
+                    const Icon(Icons.settings_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Text(s.settings),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'about',
                 child: Row(
                   children: [
-                    Icon(Icons.info_outline, size: 18),
-                    SizedBox(width: 8),
-                    Text('Info App'),
+                    const Icon(Icons.info_outline, size: 18),
+                    const SizedBox(width: 8),
+                    Text(s.appInfo),
                   ],
                 ),
               ),
               if (user != null && user.isAdmin) ...[
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'admin_users',
                   child: Row(
                     children: [
-                      Icon(Icons.admin_panel_settings_outlined,
+                      const Icon(Icons.admin_panel_settings_outlined,
                           size: 18, color: Color(0xFF1A5276)),
-                      SizedBox(width: 8),
-                      Text('Utenti registrati',
-                          style: TextStyle(color: Color(0xFF1A5276))),
+                      const SizedBox(width: 8),
+                      Text(s.registeredUsers,
+                          style: const TextStyle(color: Color(0xFF1A5276))),
                     ],
                   ),
                 ),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'admin_stats',
                   child: Row(
                     children: [
-                      Icon(Icons.bar_chart,
+                      const Icon(Icons.bar_chart,
                           size: 18, color: Color(0xFF1A5276)),
-                      SizedBox(width: 8),
-                      Text('Statistiche visitatori',
-                          style: TextStyle(color: Color(0xFF1A5276))),
+                      const SizedBox(width: 8),
+                      Text(s.visitorStats,
+                          style: const TextStyle(color: Color(0xFF1A5276))),
                     ],
                   ),
                 ),
               ],
               if (user != null) ...[
                 const PopupMenuDivider(),
-                const PopupMenuItem(
+                PopupMenuItem(
                   value: 'logout',
                   child: Row(
                     children: [
-                      Icon(Icons.logout, size: 18),
-                      SizedBox(width: 8),
-                      Text('Disconnetti'),
+                      const Icon(Icons.logout, size: 18),
+                      const SizedBox(width: 8),
+                      Text(s.logout),
                     ],
                   ),
                 ),
@@ -291,18 +291,18 @@ class _DashboardTabState extends State<_DashboardTab> {
                 final confirm = await showDialog<bool>(
                   context: context,
                   builder: (_) => AlertDialog(
-                    title: const Text('Disconnetti'),
+                    title: Text(s.logout),
                     content: const Text(
                         'Sei sicuro di voler uscire dall\'account community?'),
                     actions: [
                       TextButton(
                           onPressed: () => Navigator.pop(context, false),
-                          child: const Text('Annulla')),
+                          child: Text(s.cancel)),
                       TextButton(
                           onPressed: () => Navigator.pop(context, true),
                           style: TextButton.styleFrom(
                               foregroundColor: Colors.red),
-                          child: const Text('Disconnetti')),
+                          child: Text(s.logout)),
                     ],
                   ),
                 );

@@ -5,6 +5,7 @@ import '../services/supabase_service.dart';
 import '../widgets/star_rating.dart';
 import '../config/app_colors.dart';
 import '../utils/date_format.dart';
+import '../l10n/app_strings.dart';
 
 class CommunityReviewDetailScreen extends StatefulWidget {
   final PublicReview review;
@@ -34,17 +35,17 @@ class _CommunityReviewDetailScreenState
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Elimina dalla Community'),
+        title: Text(S.of(context).deleteFromCommunity),
         content: const Text(
             'Vuoi rimuovere questa recensione dalla community? Rimarrà nel tuo diario personale.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annulla')),
+              child: Text(S.of(context).cancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Elimina')),
+              child: Text(S.of(context).delete)),
         ],
       ),
     );
@@ -65,12 +66,13 @@ class _CommunityReviewDetailScreenState
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     final isMyReview =
         SupabaseService().currentUser?.id == _review.userId;
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
-        title: const Text('Recensione'),
+        title: Text(s.reviewScreen),
         actions: [
           if (isMyReview)
             IconButton(
@@ -210,7 +212,7 @@ class _CommunityReviewDetailScreenState
                           const Icon(Icons.calendar_today,
                               size: 14, color: Colors.grey),
                           const SizedBox(width: 4),
-                          Text('Letto il ${_review.readDate}',
+                          Text('${s.readOn} ${_review.readDate}',
                               style: TextStyle(
                                   color: Colors.grey.shade600,
                                   fontSize: 12)),

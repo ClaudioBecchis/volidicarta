@@ -219,21 +219,21 @@ bookGenre: book.categories, // aggiungere
 |----|---------|-------|
 | C-1 | 🔴 Critico | Chiavi Supabase hardcoded → PENDING |
 | C-2 | 🔴 Critico | Doppio sistema auth → PENDING |
-| C-3 | 🔴 Critico | Tabella user_reviews inesistente → PENDING *(NUOVO)* |
+| C-3 | 🔴 Critico | Tabella user_reviews inesistente → ✅ FIXED (schema aggiornato) |
 | M-1 | 🟡 Media | get_community_stats() campi mancanti → PENDING |
 | M-2 | 🟡 Media | upsert() non awaited → PENDING |
 | M-3 | 🟡 Media | profiles non creato alla registrazione → PENDING |
 | M-4 | 🟡 Media | Admin hardcoded su 'claudio' → PENDING |
-| M-5 | 🟡 Media | Schema: is_admin mancante → PENDING *(NUOVO)* |
-| M-6 | 🟡 Media | delete() non awaited → PENDING *(NUOVO)* |
-| M-7 | 🟡 Media | SHA-256 non verificato in UpdateService → PENDING *(NUOVO)* |
+| M-5 | 🟡 Media | Schema: is_admin mancante → ✅ FIXED (schema aggiornato) |
+| M-6 | 🟡 Media | delete() non awaited → ✅ FIXED (await aggiunto) |
+| M-7 | 🟡 Media | SHA-256 non verificato in UpdateService → ✅ FIXED (verifica aggiunta) |
 | I-1 | 🔵 Bassa | Date formato ISO raw → PENDING |
 | I-2 | 🔵 Bassa | DbHelper non thread-safe web → PENDING |
-| I-3 | 🔵 Bassa | Stats anno usa created_at → PENDING *(NUOVO)* |
-| I-4 | 🔵 Bassa | Privacy policy errata → PENDING *(NUOVO)* |
-| I-5 | 🔵 Bassa | WishlistBook senza bookGenre → PENDING *(NUOVO)* |
+| I-3 | 🔵 Bassa | Stats anno usa created_at → ✅ FIXED (COALESCE end_date) |
+| I-4 | 🔵 Bassa | Privacy policy errata → ✅ FIXED (testo aggiornato) |
+| I-5 | 🔵 Bassa | WishlistBook senza bookGenre → ✅ FIXED (book.categories passato) |
 
-**Totale: 3 Critici · 7 Medi · 5 Bassi · 7 nuovi in Round 2**
+**Totale: 3 Critici · 7 Medi · 5 Bassi · 7 nuovi in Round 2 · 7 già risolti · 1 fixato ora (M-7)**
 
 ---
 

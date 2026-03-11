@@ -111,12 +111,12 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
             tooltip: s.groupBy,
             initialValue: _groupBy,
             onSelected: (v) => setState(() { _groupBy = v; _groupedCache = null; }),
-            itemBuilder: (_) => const [
+            itemBuilder: (ctx) => [
               PopupMenuItem(
                 value: _GroupBy.none,
                 child: ListTile(
-                  leading: Icon(Icons.list),
-                  title: Text('Tutti i libri'),
+                  leading: const Icon(Icons.list),
+                  title: Text(S.of(ctx).allBooks),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                 ),
@@ -124,8 +124,8 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
               PopupMenuItem(
                 value: _GroupBy.author,
                 child: ListTile(
-                  leading: Icon(Icons.person_outline),
-                  title: Text('Per Autore'),
+                  leading: const Icon(Icons.person_outline),
+                  title: Text(S.of(ctx).byAuthor),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                 ),
@@ -133,8 +133,8 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
               PopupMenuItem(
                 value: _GroupBy.genre,
                 child: ListTile(
-                  leading: Icon(Icons.category_outlined),
-                  title: Text('Per Genere / Tipo'),
+                  leading: const Icon(Icons.category_outlined),
+                  title: Text(S.of(ctx).byGenre),
                   contentPadding: EdgeInsets.zero,
                   dense: true,
                 ),
@@ -238,8 +238,8 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
                       ),
                       label: Text(
                         _groupBy == _GroupBy.author
-                            ? 'Per Autore'
-                            : 'Per Genere',
+                            ? s.byAuthor
+                            : s.byGenre,
                       ),
                       onDeleted: () => setState(() => _groupBy = _GroupBy.none),
                       deleteIcon: const Icon(Icons.close, size: 16),
@@ -263,7 +263,7 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
             Icon(Icons.menu_book_outlined,
                 size: 72, color: Colors.grey.shade300),
             const SizedBox(height: 16),
-            Text('Non hai ancora recensito nessun libro',
+            Text(S.of(context).noReviewsYet,
                 style:
                     TextStyle(color: Colors.grey.shade500, fontSize: 16)),
             const SizedBox(height: 8),
@@ -275,7 +275,7 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
     }
     if (_filtered.isEmpty) {
       return Center(
-          child: Text('Nessun risultato',
+          child: Text(S.of(context).noResults,
               style: TextStyle(color: Colors.grey.shade500)));
     }
 
@@ -368,17 +368,16 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Elimina Recensione'),
-        content: const Text(
-            'Sei sicuro di voler eliminare questa recensione?'),
+        title: Text(S.of(context).deleteReview),
+        content: Text(S.of(context).deleteReviewConfirmMsg),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Annulla')),
+              child: Text(S.of(context).cancel)),
           TextButton(
               onPressed: () => Navigator.pop(context, true),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Elimina')),
+              child: Text(S.of(context).delete)),
         ],
       ),
     );
@@ -391,7 +390,7 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
         debugPrint('Delete review error: $e');
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Errore durante l\'eliminazione')));
+              SnackBar(content: Text(S.of(context).deleteError)));
         }
       }
     }

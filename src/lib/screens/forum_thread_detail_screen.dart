@@ -4,6 +4,7 @@ import '../models/forum_reply.dart';
 import '../services/forum_service.dart';
 import '../services/auth_service.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 
 class ForumThreadDetailScreen extends StatefulWidget {
   final ForumThread thread;
@@ -70,7 +71,7 @@ class _ForumThreadDetailScreenState extends State<ForumThreadDetailScreen> {
       } else {
         setState(() => _sending = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Errore nell\'invio della risposta')),
+          SnackBar(content: Text(S.of(context).sendError)),
         );
       }
     }
@@ -90,14 +91,14 @@ class _ForumThreadDetailScreenState extends State<ForumThreadDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Elimina risposta'),
-        content: const Text('Vuoi eliminare questa risposta?'),
+        title: Text(S.of(context).deleteReply),
+        content: Text(S.of(context).confirmDeleteReply),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annulla')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(S.of(context).cancel)),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Elimina'),
+            child: Text(S.of(context).delete),
           ),
         ],
       ),
@@ -217,18 +218,18 @@ class _ForumThreadDetailScreenState extends State<ForumThreadDetailScreen> {
                       final confirm = await showDialog<bool>(
                         context: context,
                         builder: (_) => AlertDialog(
-                          title: const Text('Elimina thread'),
+                          title: Text(S.of(context).deleteThread),
                           content: const Text(
                               'Vuoi eliminare questo thread e tutte le risposte?'),
                           actions: [
                             TextButton(
                                 onPressed: () => Navigator.pop(context, false),
-                                child: const Text('Annulla')),
+                                child: Text(S.of(context).cancel)),
                             TextButton(
                               onPressed: () => Navigator.pop(context, true),
                               style: TextButton.styleFrom(
                                   foregroundColor: Colors.red),
-                              child: const Text('Elimina'),
+                              child: Text(S.of(context).delete),
                             ),
                           ],
                         ),

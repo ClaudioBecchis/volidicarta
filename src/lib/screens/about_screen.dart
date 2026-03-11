@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
@@ -87,7 +88,6 @@ class _AboutScreenState extends State<AboutScreen> {
     }
   }
 
-  static const _ghRepo = 'ClaudioBecchis/volidicarta';
 
   String get _platform => kIsWeb
       ? 'Web'
@@ -134,10 +134,10 @@ class _AboutScreenState extends State<AboutScreen> {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(children: [
-          Icon(Icons.lightbulb_outline, color: Color(0xFFF39C12)),
-          SizedBox(width: 10),
-          Text('Suggerisci un miglioramento', style: TextStyle(fontSize: 16)),
+        title: Row(children: [
+          const Icon(Icons.lightbulb_outline, color: Color(0xFFF39C12)),
+          const SizedBox(width: 10),
+          Text(S.of(ctx).suggestImprovement, style: const TextStyle(fontSize: 16)),
         ]),
         content: SingleChildScrollView(
           child: Column(
@@ -175,7 +175,7 @@ class _AboutScreenState extends State<AboutScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annulla'),
+            child: Text(S.of(ctx).cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -183,7 +183,7 @@ class _AboutScreenState extends State<AboutScreen> {
               backgroundColor: const Color(0xFFF39C12),
               foregroundColor: Colors.white,
             ),
-            child: const Text('Invia'),
+            child: Text(S.of(ctx).send),
           ),
         ],
       ),
@@ -220,15 +220,16 @@ class _AboutScreenState extends State<AboutScreen> {
 
   Future<void> _reportBug() async {
     final crash = await CrashService.load();
+    if (!mounted) return;
     final descCtrl = TextEditingController();
     final result = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(children: [
-          Icon(Icons.bug_report_outlined, color: Colors.red),
-          SizedBox(width: 10),
-          Text('Segnala un bug', style: TextStyle(fontSize: 16)),
+        title: Row(children: [
+          const Icon(Icons.bug_report_outlined, color: Colors.red),
+          const SizedBox(width: 10),
+          Text(S.of(ctx).reportBug, style: const TextStyle(fontSize: 16)),
         ]),
         content: SingleChildScrollView(
           child: Column(
@@ -269,7 +270,7 @@ class _AboutScreenState extends State<AboutScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Annulla'),
+            child: Text(S.of(ctx).cancel),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -277,7 +278,7 @@ class _AboutScreenState extends State<AboutScreen> {
               backgroundColor: Colors.red.shade700,
               foregroundColor: Colors.white,
             ),
-            child: const Text('Invia'),
+            child: Text(S.of(ctx).send),
           ),
         ],
       ),
@@ -327,9 +328,10 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
-      appBar: AppBar(title: const Text('Info App')),
+      appBar: AppBar(title: Text(s.appInfo)),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(32),
@@ -442,7 +444,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 OutlinedButton.icon(
                   onPressed: _reportBug,
                   icon: const Icon(Icons.bug_report_outlined),
-                  label: const Text('Segnala un Bug'),
+                  label: Text(s.reportBug),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red.shade700,
                     side: BorderSide(color: Colors.red.shade300),
@@ -453,7 +455,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 OutlinedButton.icon(
                   onPressed: _suggestImprovement,
                   icon: const Icon(Icons.lightbulb_outline),
-                  label: const Text('Suggerisci un miglioramento'),
+                  label: Text(s.suggestImprovement),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.amber.shade800,
                     side: BorderSide(color: Colors.amber.shade400),

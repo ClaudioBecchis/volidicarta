@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:http/http.dart' as http;
+import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
@@ -99,7 +100,6 @@ class UpdateService {
             ?? info.downloadUrl!;
         final apkFile = File('${tmpDir.path}/VDC_update_${info.latestVersion}.apk');
 
-        // Se già scaricato (es. crash precedente) riusa il file
         if (!apkFile.existsSync()) {
           final req = http.Request('GET', Uri.parse(url));
           final response = await req.send().timeout(const Duration(minutes: 10));
@@ -122,6 +122,15 @@ class UpdateService {
           final req = http.Request('GET', Uri.parse(info.downloadUrl!));
           final response = await req.send().timeout(const Duration(minutes: 10));
           await exeFile.writeAsBytes(await response.stream.toBytes());
+        }
+
+        // Verifica integrità SHA-256
+        if (info.sha256 != null && info.sha256!.isNotEmpty) {
+          final digest = sha256.convert(await exeFile.readAsBytes());
+          if (digest.toString() != info.sha256) {
+            await exeFile.delete();
+            throw Exception('SHA-256 mismatch: installer corrotto o manomesso');
+          }
         }
 
         // /S = silent install (NSIS standard flag)

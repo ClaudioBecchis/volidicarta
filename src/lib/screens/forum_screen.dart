@@ -3,6 +3,7 @@ import '../models/forum_thread.dart';
 import '../services/forum_service.dart';
 import '../services/auth_service.dart';
 import '../config/app_colors.dart';
+import '../l10n/app_strings.dart';
 import 'forum_thread_detail_screen.dart';
 import 'new_forum_thread_screen.dart';
 
@@ -116,6 +117,7 @@ class _ForumScreenState extends State<ForumScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final s = S.of(context);
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       body: Column(
@@ -187,29 +189,30 @@ class _ForumScreenState extends State<ForumScreen> {
         backgroundColor: const Color(0xFF1A5276),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),
-        label: const Text('Nuovo thread'),
+        label: Text(s.newThread),
       ),
     );
   }
 
   Widget _emptyView() {
+    final s = S.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(Icons.forum_outlined, size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          Text('Nessun thread ancora',
+          Text(s.noThreadsYet,
               style:
                   TextStyle(color: Colors.grey.shade500, fontSize: 16)),
           const SizedBox(height: 8),
-          Text('Sii il primo a iniziare una discussione!',
+          Text(s.firstToDiscuss,
               style: TextStyle(color: Colors.grey.shade400)),
           const SizedBox(height: 24),
           FilledButton.icon(
             onPressed: _openNewThread,
             icon: const Icon(Icons.add),
-            label: const Text('Crea il primo thread'),
+            label: Text(s.createFirstThread),
             style: FilledButton.styleFrom(
                 backgroundColor: const Color(0xFF1A5276)),
           ),

@@ -116,11 +116,12 @@ class _CommunityScreenState extends State<CommunityScreen>
   @override
   Widget build(BuildContext context) {
     if (!SupabaseConfig.isConfigured) return _notConfiguredView();
+    final s = S.of(context);
 
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
-        title: const Text('Community'),
+        title: Text(s.community),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
@@ -225,7 +226,7 @@ class _CommunityScreenState extends State<CommunityScreen>
           Icon(Icons.chat_bubble_outline_rounded,
               size: 64, color: Colors.grey.shade300),
           const SizedBox(height: 16),
-          Text('Nessuna recensione ancora',
+          Text(S.of(context).noReviewsInCommunity,
               style: TextStyle(color: Colors.grey.shade500, fontSize: 16)),
           const SizedBox(height: 8),
           Text(S.of(context).beFirstToShare,
@@ -238,9 +239,10 @@ class _CommunityScreenState extends State<CommunityScreen>
   }
 
   Widget _notConfiguredView() {
+    final s = S.of(context);
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
-      appBar: AppBar(title: const Text('Community')),
+      appBar: AppBar(title: Text(s.community)),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(32),
@@ -250,8 +252,8 @@ class _CommunityScreenState extends State<CommunityScreen>
               Icon(Icons.cloud_off_rounded,
                   size: 64, color: Colors.grey.shade300),
               const SizedBox(height: 20),
-              const Text('Community non configurata',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(s.communityNotConfigured,
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
               Text(
                 'Per attivare la community è necessario configurare\nil progetto Supabase.\n\n'
