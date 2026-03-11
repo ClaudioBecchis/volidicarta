@@ -17,6 +17,7 @@ import 'community_screen.dart';
 import 'settings_screen.dart';
 import 'wishlist_screen.dart';
 import 'admin_users_screen.dart';
+import 'admin_stats_screen.dart';
 import '../models/book.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
@@ -229,7 +230,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                   ],
                 ),
               ),
-              if (user != null && user.isAdmin)
+              if (user != null && user.isAdmin) ...[
                 const PopupMenuItem(
                   value: 'admin_users',
                   child: Row(
@@ -242,6 +243,19 @@ class _DashboardTabState extends State<_DashboardTab> {
                     ],
                   ),
                 ),
+                const PopupMenuItem(
+                  value: 'admin_stats',
+                  child: Row(
+                    children: [
+                      Icon(Icons.bar_chart,
+                          size: 18, color: Color(0xFF1A5276)),
+                      SizedBox(width: 8),
+                      Text('Statistiche visitatori',
+                          style: TextStyle(color: Color(0xFF1A5276))),
+                    ],
+                  ),
+                ),
+              ],
               if (user != null) ...[
                 const PopupMenuDivider(),
                 const PopupMenuItem(
@@ -270,6 +284,9 @@ class _DashboardTabState extends State<_DashboardTab> {
               } else if (v == 'admin_users') {
                 Navigator.push(context,
                     MaterialPageRoute(builder: (_) => const AdminUsersScreen()));
+              } else if (v == 'admin_stats') {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const AdminStatsScreen()));
               } else if (v == 'logout') {
                 final confirm = await showDialog<bool>(
                   context: context,

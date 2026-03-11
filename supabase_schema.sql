@@ -264,11 +264,66 @@ returns void as $$
   update profiles set last_seen = now() where id = auth.uid();
 $$ language sql security definer set search_path = '';
 
--- RPC: restituisce contatori community
+-- ═══════════════════════════════════════════════════════════════════════════
+-- ANONYMOUS PRESENCE (sessioni anonime con piattaforma)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists anon_presence (
+  session_id text primary key,
+  platform text not null default 'unknown',
+  last_seen timestamptz default now()
+);
+
+-- Nessuna RLS — dati anonimi, niente PII. Accesso solo tramite security definer.
+-- RPC: upsert sessione anonima
+create or replace function update_anon_presence(session_id_param text, platform_param text)
+returns void as $$
+  insert into anon_presence (session_id, platform, last_seen)
+  values (session_id_param, platform_param, now())
+  on conflict (session_id) do update
+    set last_seen = now(), platform = platform_param;
+$$ language sql security definer set search_path = '';
+
+-- ── Pulizia automatica sessioni scadute (>24h) ────────────────────────────
+create or replace function cleanup_anon_presence()
+returns void as $$
+  delete from anon_presence where last_seen < now() - interval '24 hours';
+$$ language sql security definer set search_path = '';
+
+-- RPC: restituisce contatori community (usata nella CommunityScreen)
 create or replace function get_community_stats()
 returns json as $$
   select json_build_object(
     'total_users', (select count(*) from profiles),
-    'online_users', (select count(*) from profiles where last_seen > now() - interval '5 minutes')
+    'online_users', (select count(*) from profiles where last_seen > now() - interval '5 minutes'),
+    'offline_users', (select count(*) from profiles where last_seen is null or last_seen <= now() - interval '5 minutes'),
+    'anon_online', (select count(*) from anon_presence where last_seen > now() - interval '5 minutes')
   );
-$$ language sql security invoker set search_path = '';
+$$ language sql security definer set search_path = '';
+
+-- RPC: statistiche admin dettagliate (registrazioni per giorno, piattaforme)
+create or replace function get_admin_stats()
+returns json as $$
+  select json_build_object(
+    'new_last_7d',  (select count(*) from profiles where created_at > now() - interval '7 days'),
+    'new_last_30d', (select count(*) from profiles where created_at > now() - interval '30 days'),
+    'registrations_by_day', (
+      select coalesce(json_agg(r order by r.day), '[]'::json)
+      from (
+        select created_at::date::text as day, count(*) as cnt
+        from profiles
+        where created_at > now() - interval '30 days'
+        group by 1
+      ) r
+    ),
+    'platforms', (
+      select coalesce(json_agg(p order by p.cnt desc), '[]'::json)
+      from (
+        select platform, count(*) as cnt
+        from anon_presence
+        where last_seen > now() - interval '7 days'
+        group by platform
+      ) p
+    )
+  );
+$$ language sql security definer set search_path = '';
