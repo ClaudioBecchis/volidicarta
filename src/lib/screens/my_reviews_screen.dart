@@ -385,7 +385,7 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
     if (confirm == true) {
       try {
         await DbHelper().deleteReview(r.id!);
-        ReviewSyncService().delete(r.userId, r.bookId);
+        await ReviewSyncService().delete(r.userId, r.bookId);
         _load();
       } catch (e) {
         debugPrint('Delete review error: $e');

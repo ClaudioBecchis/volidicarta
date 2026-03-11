@@ -71,6 +71,7 @@ class AuthService {
   }
 
   Future<String?> login(String email, String password) async {
+    _isAdmin = false;
     email = email.trim();
     if (!email.contains('@')) {
       return 'Inserisci la tua email per accedere';
@@ -88,6 +89,7 @@ class AuthService {
   }
 
   Future<void> logout() async {
+    _isAdmin = false;
     await _client?.auth.signOut();
   }
 

@@ -212,6 +212,46 @@ create index if not exists idx_forum_reply_likes_reply on forum_reply_likes(repl
 
 
 -- ═══════════════════════════════════════════════════════════════════════════
+-- IS_ADMIN (permessi amministratore)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+alter table profiles add column if not exists is_admin boolean default false;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- USER REVIEWS (backup cloud recensioni private)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists user_reviews (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references profiles(id) on delete cascade not null,
+  book_id text not null,
+  book_title text not null,
+  book_author text not null,
+  book_cover_url text,
+  book_publisher text,
+  book_year text,
+  book_genre text,
+  rating int not null check (rating between 1 and 5),
+  review_title text,
+  review_body text,
+  start_date text,
+  end_date text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(user_id, book_id)
+);
+
+alter table user_reviews enable row level security;
+
+-- Solo il proprietario può vedere/modificare le proprie recensioni private
+create policy "ur_select" on user_reviews for select using (auth.uid() = user_id);
+create policy "ur_insert" on user_reviews for insert with check (auth.uid() = user_id);
+create policy "ur_update" on user_reviews for update using (auth.uid() = user_id);
+create policy "ur_delete" on user_reviews for delete using (auth.uid() = user_id);
+
+create index if not exists idx_user_reviews_user on user_reviews(user_id, updated_at desc);
+
+-- ═══════════════════════════════════════════════════════════════════════════
 -- USER PRESENCE (utenti online)
 -- ═══════════════════════════════════════════════════════════════════════════
 

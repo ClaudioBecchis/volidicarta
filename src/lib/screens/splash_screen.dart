@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
 import '../services/auth_service.dart';
 import '../services/crash_service.dart';
@@ -30,15 +29,10 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _init() async {
-    await Future.delayed(const Duration(milliseconds: 800));
-    try {
-      await AuthService().loadSession();
-      // Piccolo delay per assicurarsi che Supabase abbia ripristinato la sessione
-      await Future.delayed(const Duration(milliseconds: 300));
-      await AuthService().refreshAdminStatus();
-    } catch (e) {
-      debugPrint('SplashScreen init error: $e');
-    }
+    await Future.wait([
+      Future.delayed(const Duration(milliseconds: 1000)),
+      _initServices(),
+    ]);
     if (!mounted) return;
 
     // Consenso GDPR — mostrato solo al primo avvio
@@ -93,6 +87,16 @@ class _SplashScreenState extends State<SplashScreen> {
       context,
       MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
+  }
+
+  Future<void> _initServices() async {
+    try {
+      await AuthService().loadSession();
+      await Future.delayed(const Duration(milliseconds: 300));
+      await AuthService().refreshAdminStatus();
+    } catch (e) {
+      debugPrint('SplashScreen init error: $e');
+    }
   }
 
   Future<void> _trackAnonymousPresence() async {
@@ -179,8 +183,6 @@ class _SplashScreenState extends State<SplashScreen> {
       );
     }
   }
-
-  static bool _isAndroidPlatform(TargetPlatform p) => p == TargetPlatform.android;
 
   @override
   Widget build(BuildContext context) {

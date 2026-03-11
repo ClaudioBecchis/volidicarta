@@ -4,6 +4,20 @@ Tutte le modifiche notevoli al progetto sono documentate in questo file.
 
 ---
 
+## [1.3.19] - 2026-03-11
+
+### Corretto
+- **M-8**: `AuthService.login()` e `logout()` resettano ora `_isAdmin = false` — prevenuto bug per cui un utente admin che effettuava logout lasciava i permessi admin attivi per l'utente successivo
+- **M-6**: `ReviewSyncService().delete()` in `my_reviews_screen.dart` è ora awaited — la cancellazione cloud non era più fire-and-forget
+- **C-3 / C-7**: Aggiunta tabella `user_reviews` allo schema Supabase con RLS completa — il backup cloud delle recensioni private ora funziona
+- **M-5**: Aggiunta colonna `is_admin` a `profiles` nello schema Supabase — `refreshAdminStatus()` ora legge correttamente il flag admin
+- **I-3**: `getStatsByYear()` usa ora `end_date` (data di fine lettura) anziché `created_at` (data inserimento recensione)
+- **I-4**: Testo privacy policy in `register_screen.dart` corretto — ora indica correttamente che i dati sono salvati sia su cloud che localmente
+- **I-5**: `WishlistBook` in `SearchScreen._toggleWishlist()` ora include `bookGenre` — i libri aggiunti dalla ricerca conservano il genere
+- **I-8**: Splash screen: init autenticazione e delay minimo ora eseguiti in parallelo con `Future.wait` — avvio leggermente più rapido
+
+---
+
 ## [1.3.18] - 2026-03-10
 
 ### Migliorato

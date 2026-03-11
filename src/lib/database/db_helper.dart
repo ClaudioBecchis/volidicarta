@@ -222,7 +222,7 @@ class DbHelper {
   Future<Map<int, int>> getStatsByYear(String userId) async {
     final db = await database;
     final rows = await db.rawQuery('''
-      SELECT SUBSTR(created_at, 1, 4) as yr, COUNT(*) as cnt
+      SELECT SUBSTR(COALESCE(NULLIF(end_date,''), created_at), 1, 4) as yr, COUNT(*) as cnt
       FROM reviews WHERE user_id = ?
       GROUP BY yr ORDER BY yr DESC LIMIT 5
     ''', [userId]);

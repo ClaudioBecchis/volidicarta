@@ -142,6 +142,7 @@ class _SearchScreenState extends State<SearchScreen> {
           bookYear: book.publishedDate != null && book.publishedDate!.length >= 4
               ? book.publishedDate!.substring(0, 4)
               : book.publishedDate,
+          bookGenre: book.categories,
           addedAt: DateTime.now().toIso8601String(),
         );
         await DbHelper().addToWishlist(wb);

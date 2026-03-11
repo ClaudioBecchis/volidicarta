@@ -94,10 +94,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         content: const SingleChildScrollView(
           child: Text(
             'I dati inseriti (username, email, password e recensioni) vengono '
-            'salvati esclusivamente sui server cloud di Supabase (supabase.com), '
-            'situati nell\'Unione Europea.\n\n'
-            'NESSUN dato viene conservato localmente sul dispositivo in uso '
-            'o su altri sistemi informatici privati.\n\n'
+            'salvati sui server cloud di Supabase (supabase.com), '
+            'situati nell\'Unione Europea, e memorizzati localmente sul dispositivo '
+            'per il funzionamento offline.\n\n'
             'I tuoi dati sono protetti secondo il GDPR e le policy di Supabase. '
             'Puoi richiedere la cancellazione del tuo account in qualsiasi momento '
             'contattando il supporto.\n\n'
@@ -250,9 +249,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
-                                'I tuoi dati sono salvati sui server cloud (Supabase EU). '
-                                'Nessun dato viene conservato localmente su questo dispositivo '
-                                'o su altri sistemi informatici.',
+                                'I tuoi dati sono salvati sui server cloud (Supabase EU) '
+                                'e memorizzati localmente sul dispositivo per il funzionamento offline.',
                                 style: TextStyle(
                                     fontSize: 11,
                                     color: Colors.grey.shade700,
