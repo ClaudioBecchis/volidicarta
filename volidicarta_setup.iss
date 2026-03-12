@@ -1,5 +1,5 @@
 #define MyAppName "Voli di Carta"
-#define MyAppVersion "1.3.24"
+#define MyAppVersion "1.3.25"
 #define MyAppPublisher "Claudio Becchis - PolarisCore.it"
 #define MyAppURL "https://polariscore.it"
 #define MyAppExeName "book_review.exe"
@@ -34,8 +34,7 @@ UninstallDisplayName={#MyAppName}
 VersionInfoVersion={#MyAppVersion}
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} - Le tue recensioni, sempre con te
-PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
+PrivilegesRequired=admin
 
 [Languages]
 Name: "italian"; MessagesFile: "compiler:Languages\Italian.isl"

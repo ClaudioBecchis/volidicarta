@@ -67,121 +67,19 @@ class _HomeScreenState extends State<HomeScreen> {
       return Scaffold(
         body: Row(
           children: [
-            NavigationRail(
-              extended: isExtended,
+            _DesktopRail(
               selectedIndex: _tab,
+              extended: isExtended,
               onDestinationSelected: _onTabSelected,
-              backgroundColor: Theme.of(context).brightness == Brightness.dark
-                  ? const Color(0xFF0D1B2A)
-                  : const Color(0xFFF0F4F8),
-              indicatorColor: const Color(0xFF1A5276).withValues(alpha: 0.15),
-              selectedIconTheme:
-                  const IconThemeData(color: Color(0xFF1A5276)),
-              selectedLabelTextStyle: const TextStyle(
-                  color: Color(0xFF1A5276), fontWeight: FontWeight.bold),
-              leading: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 20, 0, 12),
-                child: isExtended
-                    ? Column(
-                        children: [
-                          Container(
-                            width: 48,
-                            height: 48,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              gradient: const LinearGradient(
-                                colors: [Color(0xFF1A5276), Color(0xFF0D2137)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFF1A5276)
-                                      .withValues(alpha: 0.3),
-                                  blurRadius: 12,
-                                  spreadRadius: 2,
-                                ),
-                              ],
-                            ),
-                            child: const Icon(Icons.menu_book_rounded,
-                                color: Colors.white, size: 26),
-                          ),
-                          const SizedBox(height: 10),
-                          const Text(
-                            'Voli di Carta',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF1A5276),
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'La tua libreria digitale',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey.shade500,
-                            ),
-                          ),
-                        ],
-                      )
-                    : Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF1A5276), Color(0xFF0D2137)],
-                          ),
-                        ),
-                        child: const Icon(Icons.menu_book_rounded,
-                            color: Colors.white, size: 22),
-                      ),
-              ),
-              destinations: [
-                NavigationRailDestination(
-                  icon: const Icon(Icons.home_outlined),
-                  selectedIcon: const Icon(Icons.home),
-                  label: Text(s.home),
-                ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.search_outlined),
-                  selectedIcon: const Icon(Icons.search),
-                  label: Text(s.search),
-                ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.rate_review_outlined),
-                  selectedIcon: const Icon(Icons.rate_review),
-                  label: Text(s.myReviews),
-                ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.bookmark_border),
-                  selectedIcon: const Icon(Icons.bookmark),
-                  label: Text(s.toRead),
-                ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.bar_chart_outlined),
-                  selectedIcon: const Icon(Icons.bar_chart),
-                  label: Text(s.stats),
-                ),
-                NavigationRailDestination(
-                  icon: const Icon(Icons.people_outline),
-                  selectedIcon: const Icon(Icons.people),
-                  label: Text(s.community),
-                ),
-              ],
+              s: s,
             ),
-            const VerticalDivider(width: 1, thickness: 1),
+            VerticalDivider(
+              width: 1,
+              thickness: 1,
+              color: Theme.of(context).dividerColor,
+            ),
             Expanded(
-              child: width > 1400
-                  ? Center(
-                      child: SizedBox(
-                        width: 1200,
-                        child: IndexedStack(index: _tab, children: _pages),
-                      ),
-                    )
-                  : IndexedStack(index: _tab, children: _pages),
+              child: IndexedStack(index: _tab, children: _pages),
             ),
           ],
         ),
@@ -975,6 +873,235 @@ class _RecentBookTile extends StatelessWidget {
             child: Icon(Icons.menu_book,
                 color: Color(0xFF1A5276), size: 20)),
       );
+}
+
+// ── Desktop sidebar ───────────────────────────────────────────────────────────
+
+class _DesktopRail extends StatelessWidget {
+  final int selectedIndex;
+  final bool extended;
+  final ValueChanged<int> onDestinationSelected;
+  final S s;
+
+  const _DesktopRail({
+    required this.selectedIndex,
+    required this.extended,
+    required this.onDestinationSelected,
+    required this.s,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bg = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFF0F4F8);
+
+    return Container(
+      width: extended ? 220 : 72,
+      color: bg,
+      child: Column(
+        children: [
+          // ── Logo in cima ────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(0, 24, 0, 16),
+            child: extended
+                ? Column(
+                    children: [
+                      Container(
+                        width: 52,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFF1A5276), Color(0xFF0D2137)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1A5276)
+                                  .withValues(alpha: 0.35),
+                              blurRadius: 14,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: const Icon(Icons.menu_book_rounded,
+                            color: Colors.white, size: 28),
+                      ),
+                      const SizedBox(height: 10),
+                      const Text(
+                        'Voli di Carta',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF1A5276),
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'La tua libreria digitale',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.grey.shade500,
+                        ),
+                      ),
+                    ],
+                  )
+                : Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1A5276), Color(0xFF0D2137)],
+                      ),
+                    ),
+                    child: const Icon(Icons.menu_book_rounded,
+                        color: Colors.white, size: 22),
+                  ),
+          ),
+
+          Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
+          const SizedBox(height: 8),
+
+          // ── Voci di navigazione ─────────────────────────────────────────
+          for (final item in _navItems(s))
+            _RailItem(
+              icon: item.icon,
+              selectedIcon: item.selectedIcon,
+              label: item.label,
+              index: item.index,
+              selectedIndex: selectedIndex,
+              extended: extended,
+              onTap: () => onDestinationSelected(item.index),
+            ),
+
+          const Spacer(),
+          Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
+
+          // ── Versione in fondo ────────────────────────────────────────────
+          if (extended)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                'v1.3.24',
+                style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+              ),
+            )
+          else
+            const SizedBox(height: 10),
+        ],
+      ),
+    );
+  }
+
+  static List<({IconData icon, IconData selectedIcon, String label, int index})>
+      _navItems(S s) => [
+        (
+          icon: Icons.home_outlined,
+          selectedIcon: Icons.home,
+          label: s.home,
+          index: 0
+        ),
+        (
+          icon: Icons.search_outlined,
+          selectedIcon: Icons.search,
+          label: s.search,
+          index: 1
+        ),
+        (
+          icon: Icons.rate_review_outlined,
+          selectedIcon: Icons.rate_review,
+          label: s.myReviews,
+          index: 2
+        ),
+        (
+          icon: Icons.bookmark_border,
+          selectedIcon: Icons.bookmark,
+          label: s.toRead,
+          index: 3
+        ),
+        (
+          icon: Icons.bar_chart_outlined,
+          selectedIcon: Icons.bar_chart,
+          label: s.stats,
+          index: 4
+        ),
+        (
+          icon: Icons.people_outline,
+          selectedIcon: Icons.people,
+          label: s.community,
+          index: 5
+        ),
+      ];
+}
+
+class _RailItem extends StatelessWidget {
+  final IconData icon;
+  final IconData selectedIcon;
+  final String label;
+  final int index;
+  final int selectedIndex;
+  final bool extended;
+  final VoidCallback onTap;
+
+  const _RailItem({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+    required this.index,
+    required this.selectedIndex,
+    required this.extended,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isSelected = index == selectedIndex;
+    final color = isSelected ? const Color(0xFF1A5276) : Colors.grey.shade600;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+              horizontal: extended ? 12 : 0,
+              vertical: 10),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: isSelected
+                ? const Color(0xFF1A5276).withValues(alpha: 0.12)
+                : Colors.transparent,
+          ),
+          child: extended
+              ? Row(
+                  children: [
+                    Icon(isSelected ? selectedIcon : icon,
+                        color: color, size: 22),
+                    const SizedBox(width: 14),
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: isSelected
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        color: color,
+                      ),
+                    ),
+                  ],
+                )
+              : Icon(isSelected ? selectedIcon : icon,
+                  color: color, size: 22),
+        ),
+      ),
+    );
+  }
 }
 
 class _GridActionCard extends StatelessWidget {
