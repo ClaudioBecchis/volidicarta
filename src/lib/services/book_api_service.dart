@@ -43,7 +43,7 @@ class BookApiService {
   }
 
   Future<({List<Book> books, String? error})> search(
-      String query, {int maxResults = 15, String langRestrict = 'it', String searchType = 'all'}) async {
+      String query, {int maxResults = 30, String langRestrict = 'it', String searchType = 'all'}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
     final key = '${query.trim()}|$langRestrict|$searchType';
     if (_cache.containsKey(key)) {
@@ -63,9 +63,11 @@ class BookApiService {
       final results = await Future.wait([
         _searchGoogle(effectiveQuery, maxResults: 40, langRestrict: 'it'),
         _searchGoogle(effectiveQuery, maxResults: 40),
+        _searchOpenLibrary(query, maxResults: 20, lang: 'ita', searchType: searchType),
       ]);
       final withRestrict = results[0];
       final withoutRestrict = results[1];
+      final openLib = results[2];
 
       final seenIds = <String>{};
       final merged = <Book>[];
@@ -75,30 +77,57 @@ class BookApiService {
       for (final b in withoutRestrict.books) {
         if (b.language == 'it' && seenIds.add(b.id)) merged.add(b);
       }
+      // Aggiunge risultati Open Library se Google ha trovato poco
+      if (merged.length < 10) {
+        for (final b in openLib.books) {
+          if (seenIds.add(b.id)) merged.add(b);
+        }
+      }
 
       if (merged.isEmpty && withRestrict.error != null) {
+        if (openLib.error == null && openLib.books.isNotEmpty) {
+          _addToCache(key, openLib);
+          return openLib;
+        }
         final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: 'ita', searchType: searchType);
         if (fallback.error == null) _addToCache(key, fallback);
         return fallback;
       }
-      final limited = (books: merged.take(20).toList(), error: null);
+      final limited = (books: merged.take(40).toList(), error: null);
       _addToCache(key, limited);
       return limited;
     }
 
-    final result = await _searchGoogle(effectiveQuery, maxResults: maxResults, langRestrict: langRestrict);
-    if (result.error != null) {
-      final olLang = langRestrict == 'en' ? 'eng' : 'ita';
-      final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: olLang, searchType: searchType);
-      if (fallback.error == null) _addToCache(key, fallback);
-      return fallback;
+    final olLang = langRestrict == 'en' ? 'eng' : null;
+    final results = await Future.wait([
+      _searchGoogle(effectiveQuery, maxResults: 40, langRestrict: langRestrict == 'it' ? 'it' : langRestrict),
+      _searchOpenLibrary(query, maxResults: 20, lang: olLang, searchType: searchType),
+    ]);
+    final googleResult = results[0];
+    final olResult = results[1];
+
+    if (googleResult.error != null && googleResult.books.isEmpty) {
+      if (olResult.error == null) _addToCache(key, olResult);
+      return olResult;
     }
+
+    final seenIds = <String>{};
+    final merged = <Book>[];
+    for (final b in googleResult.books) {
+      if (seenIds.add(b.id)) merged.add(b);
+    }
+    if (merged.length < 10) {
+      for (final b in olResult.books) {
+        if (seenIds.add(b.id)) merged.add(b);
+      }
+    }
+    final result = (books: merged.take(40).toList(), error: null);
     _addToCache(key, result);
     return result;
   }
 
   Future<({List<Book> books, String? error})> searchAll(
-      String query, {int maxResults = 15, String searchType = 'all'}) async {
+      String query, {int maxResults = 30, String searchType = 'all'}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
     final key = '${query.trim()}|all|$searchType';
     if (_cache.containsKey(key)) {
@@ -109,12 +138,29 @@ class BookApiService {
       _cache.remove(key);
     }
     final effectiveQuery = _buildQuery(query, searchType);
-    final result = await _searchGoogle(effectiveQuery, maxResults: maxResults);
-    if (result.error != null) {
-      final fallback = await _searchOpenLibrary(query, maxResults: maxResults, searchType: searchType);
-      if (fallback.error == null) _addToCache(key, fallback);
-      return fallback;
+    final results = await Future.wait([
+      _searchGoogle(effectiveQuery, maxResults: 40),
+      _searchOpenLibrary(query, maxResults: 20, searchType: searchType),
+    ]);
+    final googleResult = results[0];
+    final olResult = results[1];
+
+    if (googleResult.error != null && googleResult.books.isEmpty) {
+      if (olResult.error == null) _addToCache(key, olResult);
+      return olResult;
     }
+
+    final seenIds = <String>{};
+    final merged = <Book>[];
+    for (final b in googleResult.books) {
+      if (seenIds.add(b.id)) merged.add(b);
+    }
+    if (merged.length < 15) {
+      for (final b in olResult.books) {
+        if (seenIds.add(b.id)) merged.add(b);
+      }
+    }
+    final result = (books: merged.take(40).toList(), error: null);
     _addToCache(key, result);
     return result;
   }
