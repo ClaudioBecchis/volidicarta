@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -59,27 +60,156 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
-    final isDesktop = width > 700;
+    // Su Windows/Linux/macOS usa SEMPRE il layout desktop
+    // indipendentemente dal DPI scaling che riduce i pixel logici
+    final isDesktop = !kIsWeb && (
+        defaultTargetPlatform == TargetPlatform.windows ||
+        defaultTargetPlatform == TargetPlatform.linux ||
+        defaultTargetPlatform == TargetPlatform.macOS ||
+        width > 700
+    );
     final s = S.of(context);
 
     if (isDesktop) {
-      final isExtended = width > 1200;
+      final isExtended = width > 900;
+      final isDark = Theme.of(context).brightness == Brightness.dark;
+      final railBg = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFF0F4F8);
+      final user = AuthService().currentUser;
+
+      final sw = isExtended ? 220.0 : 72.0;
       return Scaffold(
-        body: Row(
+        body: Stack(
           children: [
-            _DesktopRail(
-              selectedIndex: _tab,
-              extended: isExtended,
-              onDestinationSelected: _onTabSelected,
-              s: s,
-            ),
-            VerticalDivider(
-              width: 1,
-              thickness: 1,
-              color: Theme.of(context).dividerColor,
-            ),
-            Expanded(
+            // ── Contenuto principale (con margine sinistro = sidebar) ─────
+            Positioned(
+              left: sw + 1,
+              right: 0,
+              top: 0,
+              bottom: 0,
               child: IndexedStack(index: _tab, children: _pages),
+            ),
+            // ── Sidebar a TUTTA ALTEZZA (Positioned garantisce top=0,bottom=0) ──
+            Positioned(
+              left: 0,
+              top: 0,
+              bottom: 0,
+              width: sw,
+              child: Material(
+                color: railBg,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Logo in cima
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(0, 20, 0, 8),
+                      child: isExtended
+                          ? Column(children: [
+                              Container(
+                                width: 48,
+                                height: 48,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFF1A5276), Color(0xFF0D2137)],
+                                  ),
+                                ),
+                                child: const Icon(Icons.menu_book_rounded,
+                                    color: Colors.white, size: 26),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text('Voli di Carta',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF1A5276))),
+                            ])
+                          : Center(
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: const BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  gradient: LinearGradient(
+                                    colors: [Color(0xFF1A5276), Color(0xFF0D2137)],
+                                  ),
+                                ),
+                                child: const Icon(Icons.menu_book_rounded,
+                                    color: Colors.white, size: 22),
+                              ),
+                            ),
+                    ),
+                    Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
+                    // Voci navigazione — Expanded = occupa tutto lo spazio rimasto
+                    // NavigationRail con groupAlignment:-1.0 mette icone IN CIMA
+                    Expanded(
+                      child: NavigationRail(
+                        selectedIndex: _tab,
+                        onDestinationSelected: _onTabSelected,
+                        extended: isExtended,
+                        backgroundColor: Colors.transparent,
+                        groupAlignment: -1.0,
+                        minWidth: 72,
+                        minExtendedWidth: 220,
+                        selectedIconTheme: const IconThemeData(
+                            color: Color(0xFF1A5276), size: 22),
+                        unselectedIconTheme: IconThemeData(
+                            color: Colors.grey.shade500, size: 22),
+                        selectedLabelTextStyle: const TextStyle(
+                            color: Color(0xFF1A5276),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13),
+                        unselectedLabelTextStyle: TextStyle(
+                            color: Colors.grey.shade500, fontSize: 13),
+                        indicatorColor:
+                            const Color(0xFF1A5276).withValues(alpha: 0.12),
+                        destinations: [
+                          NavigationRailDestination(
+                              icon: const Icon(Icons.home_outlined),
+                              selectedIcon: const Icon(Icons.home),
+                              label: Text(s.home)),
+                          NavigationRailDestination(
+                              icon: const Icon(Icons.search_outlined),
+                              selectedIcon: const Icon(Icons.search),
+                              label: Text(s.search)),
+                          NavigationRailDestination(
+                              icon: const Icon(Icons.rate_review_outlined),
+                              selectedIcon: const Icon(Icons.rate_review),
+                              label: Text(s.myReviews)),
+                          NavigationRailDestination(
+                              icon: const Icon(Icons.bookmark_border),
+                              selectedIcon: const Icon(Icons.bookmark),
+                              label: Text(s.toRead)),
+                          NavigationRailDestination(
+                              icon: const Icon(Icons.bar_chart_outlined),
+                              selectedIcon: const Icon(Icons.bar_chart),
+                              label: Text(s.stats)),
+                          NavigationRailDestination(
+                              icon: const Icon(Icons.people_outline),
+                              selectedIcon: const Icon(Icons.people),
+                              label: Text(s.community)),
+                        ],
+                      ),
+                    ),
+                    // Menu utente fisso in FONDO
+                    Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
+                    _DesktopUserTile(
+                      extended: isExtended,
+                      s: s,
+                      onMenuAction: (v) => _dashboardKey.currentState
+                          ?._handleMenuAction(context, v, user, s),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // ── Divisore verticale ────────────────────────────────────────
+            Positioned(
+              left: sw,
+              top: 0,
+              bottom: 0,
+              width: 1,
+              child: Container(color: Theme.of(context).dividerColor),
             ),
           ],
         ),
@@ -185,219 +315,179 @@ class _DashboardTabState extends State<_DashboardTab> {
     }
   }
 
+  Future<void> _handleMenuAction(BuildContext context, String v, dynamic user, S s) async {
+    if (v == 'login') {
+      await Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()));
+      if (mounted) setState(() {});
+    } else if (v == 'settings') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const SettingsScreen()));
+    } else if (v == 'about') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const AboutScreen()));
+    } else if (v == 'premium') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const PremiumScreen()));
+    } else if (v == 'admin_users') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const AdminUsersScreen()));
+    } else if (v == 'admin_stats') {
+      Navigator.push(context,
+          MaterialPageRoute(builder: (_) => const AdminStatsScreen()));
+    } else if (v == 'logout') {
+      final confirm = await showDialog<bool>(
+        context: context,
+        builder: (_) => AlertDialog(
+          title: Text(s.logout),
+          content: const Text('Sei sicuro di voler uscire dall\'account community?'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(s.cancel)),
+            TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: TextButton.styleFrom(foregroundColor: Colors.red),
+                child: Text(s.logout)),
+          ],
+        ),
+      );
+      if (confirm != true) return;
+      await AuthService().logout();
+      if (mounted) setState(() {});
+    }
+  }
+
+  List<PopupMenuEntry> _buildMenuItems(dynamic user, S s) => [
+    PopupMenuItem(
+      enabled: false,
+      child: user != null
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(user.username,
+                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                Text(user.email,
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+              ],
+            )
+          : Text(s.guest,
+              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
+    ),
+    const PopupMenuDivider(),
+    if (user == null) ...[
+      PopupMenuItem(
+        value: 'login',
+        child: Row(children: [
+          const Icon(Icons.login, size: 18, color: Color(0xFF1A5276)),
+          const SizedBox(width: 8),
+          Text(s.loginOrRegister,
+              style: const TextStyle(color: Color(0xFF1A5276), fontWeight: FontWeight.w600)),
+        ]),
+      ),
+      const PopupMenuDivider(),
+    ],
+    PopupMenuItem(
+      value: 'settings',
+      child: Row(children: [
+        const Icon(Icons.settings_outlined, size: 18),
+        const SizedBox(width: 8),
+        Text(s.settings),
+      ]),
+    ),
+    PopupMenuItem(
+      value: 'about',
+      child: Row(children: [
+        const Icon(Icons.info_outline, size: 18),
+        const SizedBox(width: 8),
+        Text(s.appInfo),
+      ]),
+    ),
+    PopupMenuItem(
+      value: 'premium',
+      child: Row(children: [
+        ShaderMask(
+          shaderCallback: (b) =>
+              const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)]).createShader(b),
+          child: const Icon(Icons.workspace_premium_rounded, size: 18, color: Colors.white),
+        ),
+        const SizedBox(width: 8),
+        ShaderMask(
+          shaderCallback: (b) =>
+              const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)]).createShader(b),
+          child: const Text('Premium',
+              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        ),
+      ]),
+    ),
+    if (user != null && user.isAdmin) ...[
+      PopupMenuItem(
+        value: 'admin_users',
+        child: Row(children: [
+          const Icon(Icons.admin_panel_settings_outlined, size: 18, color: Color(0xFF1A5276)),
+          const SizedBox(width: 8),
+          Text(s.registeredUsers, style: const TextStyle(color: Color(0xFF1A5276))),
+        ]),
+      ),
+      PopupMenuItem(
+        value: 'admin_stats',
+        child: Row(children: [
+          const Icon(Icons.bar_chart, size: 18, color: Color(0xFF1A5276)),
+          const SizedBox(width: 8),
+          Text(s.visitorStats, style: const TextStyle(color: Color(0xFF1A5276))),
+        ]),
+      ),
+    ],
+    if (user != null) ...[
+      const PopupMenuDivider(),
+      PopupMenuItem(
+        value: 'logout',
+        child: Row(children: [
+          const Icon(Icons.logout, size: 18),
+          const SizedBox(width: 8),
+          Text(s.logout),
+        ]),
+      ),
+    ],
+  ];
+
   @override
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
     final s = S.of(context);
+    final isDesktop = (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) || MediaQuery.of(context).size.width > 700;
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
-      appBar: AppBar(
-        title: user != null
-            ? Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Voli di Carta',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  Text('Ciao, ${user.username}!',
-                      style: const TextStyle(fontSize: 12, color: Colors.white70)),
-                ],
-              )
-            : const Text('Voli di Carta'),
-        actions: [
-          PopupMenuButton(
-            icon: const Icon(Icons.account_circle_outlined),
-            itemBuilder: (_) => <PopupMenuEntry>[
-              PopupMenuItem(
-                enabled: false,
-                child: user != null
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(user.username,
-                              style: const TextStyle(fontWeight: FontWeight.bold)),
-                          Text(user.email,
-                              style: const TextStyle(
-                                  fontSize: 12, color: Colors.grey)),
-                        ],
-                      )
-                    : Text(s.guest,
-                        style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.grey)),
-              ),
-              const PopupMenuDivider(),
-              if (user == null) ...[
-                PopupMenuItem(
-                  value: 'login',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.login, size: 18, color: Color(0xFF1A5276)),
-                      const SizedBox(width: 8),
-                      Text(s.loginOrRegister,
-                          style: const TextStyle(color: Color(0xFF1A5276), fontWeight: FontWeight.w600)),
-                    ],
-                  ),
-                ),
-                const PopupMenuDivider(),
-              ],
-              PopupMenuItem(
-                value: 'settings',
-                child: Row(
-                  children: [
-                    const Icon(Icons.settings_outlined, size: 18),
-                    const SizedBox(width: 8),
-                    Text(s.settings),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'about',
-                child: Row(
-                  children: [
-                    const Icon(Icons.info_outline, size: 18),
-                    const SizedBox(width: 8),
-                    Text(s.appInfo),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                value: 'premium',
-                child: Row(
-                  children: [
-                    ShaderMask(
-                      shaderCallback: (b) => const LinearGradient(
-                        colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                      ).createShader(b),
-                      child: const Icon(Icons.workspace_premium_rounded,
-                          size: 18, color: Colors.white),
-                    ),
-                    const SizedBox(width: 8),
-                    ShaderMask(
-                      shaderCallback: (b) => const LinearGradient(
-                        colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                      ).createShader(b),
-                      child: const Text('Premium',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                    const SizedBox(width: 6),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 6, vertical: 2),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFD700), Color(0xFFFFA500)],
-                        ),
-                      ),
-                      child: const Text('NUOVO',
-                          style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 9,
-                              fontWeight: FontWeight.bold)),
-                    ),
-                  ],
-                ),
-              ),
-              if (user != null && user.isAdmin) ...[
-                PopupMenuItem(
-                  value: 'admin_users',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.admin_panel_settings_outlined,
-                          size: 18, color: Color(0xFF1A5276)),
-                      const SizedBox(width: 8),
-                      Text(s.registeredUsers,
-                          style: const TextStyle(color: Color(0xFF1A5276))),
-                    ],
-                  ),
-                ),
-                PopupMenuItem(
-                  value: 'admin_stats',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.bar_chart,
-                          size: 18, color: Color(0xFF1A5276)),
-                      const SizedBox(width: 8),
-                      Text(s.visitorStats,
-                          style: const TextStyle(color: Color(0xFF1A5276))),
-                    ],
-                  ),
+      appBar: isDesktop
+          ? null
+          : AppBar(
+              title: user != null
+                  ? Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('Voli di Carta',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text('Ciao, ${user.username}!',
+                            style: const TextStyle(fontSize: 12, color: Colors.white70)),
+                      ],
+                    )
+                  : const Text('Voli di Carta'),
+              actions: [
+                PopupMenuButton(
+                  icon: const Icon(Icons.account_circle_outlined),
+                  itemBuilder: (_) => _buildMenuItems(user, s),
+                  onSelected: (v) => _handleMenuAction(context, v as String, user, s),
                 ),
               ],
-              if (user != null) ...[
-                const PopupMenuDivider(),
-                PopupMenuItem(
-                  value: 'logout',
-                  child: Row(
-                    children: [
-                      const Icon(Icons.logout, size: 18),
-                      const SizedBox(width: 8),
-                      Text(s.logout),
-                    ],
-                  ),
-                ),
-              ],
-            ],
-            onSelected: (v) async {
-              if (v == 'login') {
-                await Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()));
-                if (mounted) setState(() {});
-              } else if (v == 'settings') {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const SettingsScreen()));
-              } else if (v == 'about') {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const AboutScreen()));
-              } else if (v == 'premium') {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const PremiumScreen()));
-              } else if (v == 'admin_users') {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const AdminUsersScreen()));
-              } else if (v == 'admin_stats') {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const AdminStatsScreen()));
-              } else if (v == 'logout') {
-                final confirm = await showDialog<bool>(
-                  context: context,
-                  builder: (_) => AlertDialog(
-                    title: Text(s.logout),
-                    content: const Text(
-                        'Sei sicuro di voler uscire dall\'account community?'),
-                    actions: [
-                      TextButton(
-                          onPressed: () => Navigator.pop(context, false),
-                          child: Text(s.cancel)),
-                      TextButton(
-                          onPressed: () => Navigator.pop(context, true),
-                          style: TextButton.styleFrom(
-                              foregroundColor: Colors.red),
-                          child: Text(s.logout)),
-                    ],
-                  ),
-                );
-                if (confirm != true) return;
-                await AuthService().logout();
-                if (mounted) setState(() {});
-              }
-            },
-          ),
-        ],
-      ),
+            ),
       body: RefreshIndicator(
         onRefresh: _load,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 1100),
-              child: Padding(
-                padding: const EdgeInsets.all(20),
-                child: _buildDashboardContent(context, user, s),
-              ),
-            ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: _buildDashboardContent(context, user, s),
           ),
         ),
       ),
@@ -405,7 +495,7 @@ class _DashboardTabState extends State<_DashboardTab> {
   }
 
   Widget _buildDashboardContent(BuildContext context, dynamic user, S s) {
-    final isWide = MediaQuery.of(context).size.width > 900;
+    final isWide = (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) || MediaQuery.of(context).size.width > 900;
     final actionCards = [
       _ActionCard(
         icon: Icons.add_box_outlined,
@@ -571,36 +661,71 @@ class _DashboardTabState extends State<_DashboardTab> {
         ),
         const SizedBox(height: 20),
         // Stats rapide
-        Row(
-          children: [
-            Expanded(
-              child: _QuickCard(
-                icon: Icons.menu_book_rounded,
-                label: s.booksRead,
-                value: '$_total',
-                color: AppColors.primary,
+        if (isWide)
+          Row(
+            children: [
+              SizedBox(
+                width: 220,
+                child: _QuickCard(
+                  icon: Icons.menu_book_rounded,
+                  label: s.booksRead,
+                  value: '$_total',
+                  color: AppColors.primary,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _QuickCard(
-                icon: Icons.star_rounded,
-                label: s.avgRating,
-                value: _avg != null ? _avg!.toStringAsFixed(1) : '-',
-                color: AppColors.amber,
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 220,
+                child: _QuickCard(
+                  icon: Icons.star_rounded,
+                  label: s.avgRating,
+                  value: _avg != null ? _avg!.toStringAsFixed(1) : '-',
+                  color: AppColors.amber,
+                ),
               ),
-            ),
-            const SizedBox(width: 8),
-            Expanded(
-              child: _QuickCard(
-                icon: Icons.bookmark_rounded,
-                label: s.toRead,
-                value: '$_wishlistCount',
-                color: AppColors.purple,
+              const SizedBox(width: 8),
+              SizedBox(
+                width: 220,
+                child: _QuickCard(
+                  icon: Icons.bookmark_rounded,
+                  label: s.toRead,
+                  value: '$_wishlistCount',
+                  color: AppColors.purple,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          )
+        else
+          Row(
+            children: [
+              Expanded(
+                child: _QuickCard(
+                  icon: Icons.menu_book_rounded,
+                  label: s.booksRead,
+                  value: '$_total',
+                  color: AppColors.primary,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _QuickCard(
+                  icon: Icons.star_rounded,
+                  label: s.avgRating,
+                  value: _avg != null ? _avg!.toStringAsFixed(1) : '-',
+                  color: AppColors.amber,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: _QuickCard(
+                  icon: Icons.bookmark_rounded,
+                  label: s.toRead,
+                  value: '$_wishlistCount',
+                  color: AppColors.purple,
+                ),
+              ),
+            ],
+          ),
         // Layout a due colonne su schermi larghi
         if (isWide) ...[
           const SizedBox(height: 20),
@@ -875,230 +1000,184 @@ class _RecentBookTile extends StatelessWidget {
       );
 }
 
-// ── Desktop sidebar ───────────────────────────────────────────────────────────
-
-class _DesktopRail extends StatelessWidget {
-  final int selectedIndex;
+class _DesktopUserTile extends StatelessWidget {
   final bool extended;
-  final ValueChanged<int> onDestinationSelected;
   final S s;
+  final Function(String) onMenuAction;
 
-  const _DesktopRail({
-    required this.selectedIndex,
+  const _DesktopUserTile({
     required this.extended,
-    required this.onDestinationSelected,
     required this.s,
+    required this.onMenuAction,
   });
 
   @override
   Widget build(BuildContext context) {
+    final user = AuthService().currentUser;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bg = isDark ? const Color(0xFF0D1B2A) : const Color(0xFFF0F4F8);
+    final textColor = isDark ? Colors.white70 : Colors.grey.shade700;
 
-    return Container(
-      width: extended ? 220 : 72,
-      color: bg,
-      child: Column(
-        children: [
-          // ── Logo in cima ────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(0, 24, 0, 16),
-            child: extended
-                ? Column(
-                    children: [
-                      Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFF1A5276), Color(0xFF0D2137)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF1A5276)
-                                  .withValues(alpha: 0.35),
-                              blurRadius: 14,
-                              spreadRadius: 2,
-                            ),
-                          ],
-                        ),
-                        child: const Icon(Icons.menu_book_rounded,
-                            color: Colors.white, size: 28),
-                      ),
-                      const SizedBox(height: 10),
-                      const Text(
-                        'Voli di Carta',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
-                          color: Color(0xFF1A5276),
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'La tua libreria digitale',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade500,
-                        ),
-                      ),
-                    ],
-                  )
-                : Container(
-                    width: 42,
-                    height: 42,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [Color(0xFF1A5276), Color(0xFF0D2137)],
-                      ),
-                    ),
-                    child: const Icon(Icons.menu_book_rounded,
-                        color: Colors.white, size: 22),
-                  ),
-          ),
-
-          Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
-          const SizedBox(height: 8),
-
-          // ── Voci di navigazione ─────────────────────────────────────────
-          for (final item in _navItems(s))
-            _RailItem(
-              icon: item.icon,
-              selectedIcon: item.selectedIcon,
-              label: item.label,
-              index: item.index,
-              selectedIndex: selectedIndex,
-              extended: extended,
-              onTap: () => onDestinationSelected(item.index),
-            ),
-
-          const Spacer(),
-          Divider(height: 1, color: Colors.grey.withValues(alpha: 0.2)),
-
-          // ── Versione in fondo ────────────────────────────────────────────
-          if (extended)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Text(
-                'v1.3.24',
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
-              ),
-            )
-          else
-            const SizedBox(height: 10),
-        ],
-      ),
-    );
-  }
-
-  static List<({IconData icon, IconData selectedIcon, String label, int index})>
-      _navItems(S s) => [
-        (
-          icon: Icons.home_outlined,
-          selectedIcon: Icons.home,
-          label: s.home,
-          index: 0
-        ),
-        (
-          icon: Icons.search_outlined,
-          selectedIcon: Icons.search,
-          label: s.search,
-          index: 1
-        ),
-        (
-          icon: Icons.rate_review_outlined,
-          selectedIcon: Icons.rate_review,
-          label: s.myReviews,
-          index: 2
-        ),
-        (
-          icon: Icons.bookmark_border,
-          selectedIcon: Icons.bookmark,
-          label: s.toRead,
-          index: 3
-        ),
-        (
-          icon: Icons.bar_chart_outlined,
-          selectedIcon: Icons.bar_chart,
-          label: s.stats,
-          index: 4
-        ),
-        (
-          icon: Icons.people_outline,
-          selectedIcon: Icons.people,
-          label: s.community,
-          index: 5
-        ),
-      ];
-}
-
-class _RailItem extends StatelessWidget {
-  final IconData icon;
-  final IconData selectedIcon;
-  final String label;
-  final int index;
-  final int selectedIndex;
-  final bool extended;
-  final VoidCallback onTap;
-
-  const _RailItem({
-    required this.icon,
-    required this.selectedIcon,
-    required this.label,
-    required this.index,
-    required this.selectedIndex,
-    required this.extended,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isSelected = index == selectedIndex;
-    final color = isSelected ? const Color(0xFF1A5276) : Colors.grey.shade600;
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          width: double.infinity,
-          padding: EdgeInsets.symmetric(
-              horizontal: extended ? 12 : 0,
-              vertical: 10),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            color: isSelected
-                ? const Color(0xFF1A5276).withValues(alpha: 0.12)
-                : Colors.transparent,
-          ),
-          child: extended
-              ? Row(
+    return PopupMenuButton<String>(
+      tooltip: '',
+      offset: const Offset(8, -8),
+      onSelected: onMenuAction,
+      itemBuilder: (_) => [
+        PopupMenuItem(
+          enabled: false,
+          child: user != null
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(isSelected ? selectedIcon : icon,
-                        color: color, size: 22),
-                    const SizedBox(width: 14),
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: isSelected
-                            ? FontWeight.bold
-                            : FontWeight.normal,
-                        color: color,
-                      ),
-                    ),
+                    Text(user.username,
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    Text(user.email,
+                        style: const TextStyle(fontSize: 12, color: Colors.grey)),
                   ],
                 )
-              : Icon(isSelected ? selectedIcon : icon,
-                  color: color, size: 22),
+              : Text(s.guest,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold, color: Colors.grey)),
         ),
+        const PopupMenuDivider(),
+        if (user == null)
+          PopupMenuItem(
+            value: 'login',
+            child: Row(children: [
+              const Icon(Icons.login, size: 18, color: Color(0xFF1A5276)),
+              const SizedBox(width: 8),
+              Text(s.loginOrRegister,
+                  style: const TextStyle(
+                      color: Color(0xFF1A5276), fontWeight: FontWeight.w600)),
+            ]),
+          ),
+        PopupMenuItem(
+          value: 'settings',
+          child: Row(children: [
+            const Icon(Icons.settings_outlined, size: 18),
+            const SizedBox(width: 8),
+            Text(s.settings),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'about',
+          child: Row(children: [
+            const Icon(Icons.info_outline, size: 18),
+            const SizedBox(width: 8),
+            Text(s.appInfo),
+          ]),
+        ),
+        PopupMenuItem(
+          value: 'premium',
+          child: Row(children: [
+            ShaderMask(
+              shaderCallback: (b) => const LinearGradient(
+                      colors: [Color(0xFFFFD700), Color(0xFFFFA500)])
+                  .createShader(b),
+              child: const Icon(Icons.workspace_premium_rounded,
+                  size: 18, color: Colors.white),
+            ),
+            const SizedBox(width: 8),
+            const Text('Premium',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+          ]),
+        ),
+        if (user != null && user.isAdmin) ...[
+          PopupMenuItem(
+            value: 'admin_users',
+            child: Row(children: [
+              const Icon(Icons.admin_panel_settings_outlined,
+                  size: 18, color: Color(0xFF1A5276)),
+              const SizedBox(width: 8),
+              Text(s.registeredUsers,
+                  style: const TextStyle(color: Color(0xFF1A5276))),
+            ]),
+          ),
+          PopupMenuItem(
+            value: 'admin_stats',
+            child: Row(children: [
+              const Icon(Icons.bar_chart, size: 18, color: Color(0xFF1A5276)),
+              const SizedBox(width: 8),
+              Text(s.visitorStats,
+                  style: const TextStyle(color: Color(0xFF1A5276))),
+            ]),
+          ),
+        ],
+        if (user != null) ...[
+          const PopupMenuDivider(),
+          PopupMenuItem(
+            value: 'logout',
+            child: Row(children: [
+              const Icon(Icons.logout, size: 18),
+              const SizedBox(width: 8),
+              Text(s.logout),
+            ]),
+          ),
+        ],
+      ],
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        child: extended
+            ? Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: const Color(0xFF1A5276),
+                    child: Text(
+                      user != null
+                          ? user.username.substring(0, 1).toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          user != null ? user.username : s.guest,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: textColor),
+                        ),
+                        Text(
+                          'v1.3.33',
+                          style: TextStyle(
+                              fontSize: 10, color: Colors.grey.shade400),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.more_vert,
+                      size: 16, color: Colors.grey.shade400),
+                ],
+              )
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircleAvatar(
+                    radius: 14,
+                    backgroundColor: const Color(0xFF1A5276),
+                    child: Text(
+                      user != null
+                          ? user.username.substring(0, 1).toUpperCase()
+                          : '?',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
       ),
     );
   }

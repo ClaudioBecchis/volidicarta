@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../database/db_helper.dart';
@@ -48,7 +49,7 @@ class _StatsScreenState extends State<StatsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(S.of(context).stats)),
+      appBar: (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) || MediaQuery.of(context).size.width > 700 ? null : AppBar(title: Text(S.of(context).stats)),
       backgroundColor: AppColors.screenBg(context),
       body: _stats == null
           ? const Center(child: CircularProgressIndicator())

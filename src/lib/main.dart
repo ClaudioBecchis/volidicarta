@@ -86,13 +86,6 @@ class _BookReviewAppState extends State<BookReviewApp> {
       supportedLocales: SettingsService.supportedLanguages
           .map((l) => Locale(l['code']!))
           .toList(),
-      localeResolutionCallback: (locale, supported) {
-        if (locale == null) return const Locale('it');
-        for (final s in supported) {
-          if (s.languageCode == locale.languageCode) return s;
-        }
-        return const Locale('it');
-      },
       theme: _buildTheme(Brightness.light),
       darkTheme: _buildTheme(Brightness.dark),
       home: const SplashScreen(),
