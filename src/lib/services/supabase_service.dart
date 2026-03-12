@@ -218,11 +218,11 @@ class SupabaseService {
 
   // ── Presence ──────────────────────────────────────────────────────────────
 
-  Future<void> updatePresence() async {
+  Future<void> updatePresence({String platform = 'unknown'}) async {
     final c = _client;
     if (c == null) return;
     try {
-      await c.rpc('update_presence');
+      await c.rpc('update_presence', params: {'platform_param': platform});
     } catch (_) {}
   }
 

@@ -42,10 +42,18 @@ class _SplashScreenState extends State<SplashScreen> {
 
     // Sync recensioni + aggiorna presenza (solo se consenso dato)
     final uid = AuthService().currentUser?.id;
+    String platform = 'unknown';
+    if (kIsWeb) {
+      platform = 'web';
+    } else if (defaultTargetPlatform == TargetPlatform.android) {
+      platform = 'android';
+    } else if (defaultTargetPlatform == TargetPlatform.windows) {
+      platform = 'windows';
+    }
     if (SupabaseConfig.isInitialized) {
       if (uid != null) {
         ReviewSyncService().syncFromCloud(uid);
-        if (consentAccepted) SupabaseService().updatePresence();
+        if (consentAccepted) SupabaseService().updatePresence(platform: platform);
       } else if (consentAccepted) {
         // Utente non registrato: traccia come sessione anonima solo con consenso
         _trackAnonymousPresence();

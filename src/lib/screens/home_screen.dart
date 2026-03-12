@@ -63,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final s = S.of(context);
 
     if (isDesktop) {
-      final isExtended = width > 960;
+      final isExtended = width > 1200;
       return Scaffold(
         body: Row(
           children: [
@@ -174,7 +174,14 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const VerticalDivider(width: 1, thickness: 1),
             Expanded(
-              child: IndexedStack(index: _tab, children: _pages),
+              child: width > 1400
+                  ? Center(
+                      child: SizedBox(
+                        width: 1200,
+                        child: IndexedStack(index: _tab, children: _pages),
+                      ),
+                    )
+                  : IndexedStack(index: _tab, children: _pages),
             ),
           ],
         ),
