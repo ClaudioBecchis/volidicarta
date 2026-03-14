@@ -301,12 +301,14 @@ class PremiumScreen extends StatelessWidget {
                             Icon(Icons.rocket_launch_rounded,
                                 color: Colors.white, size: 20),
                             SizedBox(width: 10),
-                            Text(
-                              'In arrivo — iscriviti per essere il primo a sapere!',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 13,
+                            Flexible(
+                              child: Text(
+                                'In arrivo — iscriviti per essere il primo a sapere!',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                           ],
