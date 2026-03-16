@@ -463,16 +463,11 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => BookPreviewScreen(
-                              title: 'PDF',
-                              url: book.pdfDownloadLink!,
-                            ),
-                          ),
-                        );
+                      onPressed: () async {
+                        final uri = Uri.parse(book.pdfDownloadLink!);
+                        if (await canLaunchUrl(uri)) {
+                          await launchUrl(uri, mode: LaunchMode.externalApplication);
+                        }
                       },
                       icon: const Icon(Icons.picture_as_pdf_outlined,
                           color: Colors.red),
