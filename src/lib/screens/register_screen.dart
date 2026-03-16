@@ -253,7 +253,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 'e memorizzati localmente sul dispositivo per il funzionamento offline.',
                                 style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey.shade700,
+                                    color: Colors.grey,
                                     height: 1.4),
                               ),
                             ),

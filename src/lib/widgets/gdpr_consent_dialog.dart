@@ -69,12 +69,12 @@ class GdprConsentDialog extends StatelessWidget {
             const SizedBox(height: 12),
             const Text(
               'Se ti registri alla community, salviamo anche email e username su Supabase (server UE).',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 12),
             const Text(
               'Ricerca libri: le query vengono inviate a Google Books e Open Library (soggette alle loro policy).',
-              style: TextStyle(fontSize: 12, color: Colors.black54),
+              style: TextStyle(fontSize: 12, color: Colors.grey),
             ),
             const SizedBox(height: 12),
             GestureDetector(

@@ -198,7 +198,7 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               onChanged: (_) => _applyFilter(),
             ),
@@ -452,6 +452,7 @@ class _ReviewTile extends StatelessWidget {
                       review.bookAuthor,
                       style: TextStyle(
                           color: Colors.grey.shade600, fontSize: 13),
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
                     ),
                     if (review.bookGenre != null) ...[
                       const SizedBox(height: 3),
@@ -467,6 +468,7 @@ class _ReviewTile extends StatelessWidget {
                           review.bookGenre!,
                           style: const TextStyle(
                               fontSize: 11, color: Color(0xFF1A5276)),
+                          maxLines: 1, overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

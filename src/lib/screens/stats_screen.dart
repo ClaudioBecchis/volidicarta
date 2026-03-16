@@ -255,7 +255,7 @@ class _DistRow extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: pct,
                 minHeight: 12,
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: Colors.grey.shade400,
                 valueColor: const AlwaysStoppedAnimation<Color>(
                     Color(0xFFFFB300)),
               ),
@@ -303,7 +303,7 @@ class _GenreRow extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: pct,
                 minHeight: 10,
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: Colors.grey.shade400,
                 valueColor: const AlwaysStoppedAnimation<Color>(
                     Color(0xFF1A5276)),
               ),
@@ -351,7 +351,7 @@ class _YearRow extends StatelessWidget {
               child: LinearProgressIndicator(
                 value: pct,
                 minHeight: 12,
-                backgroundColor: Colors.grey.shade200,
+                backgroundColor: Colors.grey.shade400,
                 valueColor: const AlwaysStoppedAnimation<Color>(
                     Color(0xFF7C3AED)),
               ),

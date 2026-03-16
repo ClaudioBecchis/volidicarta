@@ -381,8 +381,8 @@ class _DashboardTabState extends State<_DashboardTab> {
         child: Row(children: [
           const Icon(Icons.login, size: 18, color: Color(0xFF1A5276)),
           const SizedBox(width: 8),
-          Text(s.loginOrRegister,
-              style: const TextStyle(color: Color(0xFF1A5276), fontWeight: FontWeight.w600)),
+          Expanded(child: Text(s.loginOrRegister,
+              style: const TextStyle(color: Color(0xFF1A5276), fontWeight: FontWeight.w600))),
         ]),
       ),
       const PopupMenuDivider(),
@@ -392,7 +392,7 @@ class _DashboardTabState extends State<_DashboardTab> {
       child: Row(children: [
         const Icon(Icons.settings_outlined, size: 18),
         const SizedBox(width: 8),
-        Text(s.settings),
+        Expanded(child: Text(s.settings)),
       ]),
     ),
     PopupMenuItem(
@@ -400,7 +400,7 @@ class _DashboardTabState extends State<_DashboardTab> {
       child: Row(children: [
         const Icon(Icons.info_outline, size: 18),
         const SizedBox(width: 8),
-        Text(s.appInfo),
+        Expanded(child: Text(s.appInfo)),
       ]),
     ),
     PopupMenuItem(
@@ -412,11 +412,13 @@ class _DashboardTabState extends State<_DashboardTab> {
           child: const Icon(Icons.workspace_premium_rounded, size: 18, color: Colors.white),
         ),
         const SizedBox(width: 8),
-        ShaderMask(
-          shaderCallback: (b) =>
-              const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)]).createShader(b),
-          child: const Text('Premium',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        Expanded(
+          child: ShaderMask(
+            shaderCallback: (b) =>
+                const LinearGradient(colors: [Color(0xFFFFD700), Color(0xFFFFA500)]).createShader(b),
+            child: const Text('Premium',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
         ),
       ]),
     ),
@@ -426,7 +428,7 @@ class _DashboardTabState extends State<_DashboardTab> {
         child: Row(children: [
           const Icon(Icons.admin_panel_settings_outlined, size: 18, color: Color(0xFF1A5276)),
           const SizedBox(width: 8),
-          Text(s.registeredUsers, style: const TextStyle(color: Color(0xFF1A5276))),
+          Expanded(child: Text(s.registeredUsers, style: const TextStyle(color: Color(0xFF1A5276)))),
         ]),
       ),
       PopupMenuItem(
@@ -434,7 +436,7 @@ class _DashboardTabState extends State<_DashboardTab> {
         child: Row(children: [
           const Icon(Icons.bar_chart, size: 18, color: Color(0xFF1A5276)),
           const SizedBox(width: 8),
-          Text(s.visitorStats, style: const TextStyle(color: Color(0xFF1A5276))),
+          Expanded(child: Text(s.visitorStats, style: const TextStyle(color: Color(0xFF1A5276)))),
         ]),
       ),
     ],
@@ -445,7 +447,7 @@ class _DashboardTabState extends State<_DashboardTab> {
         child: Row(children: [
           const Icon(Icons.logout, size: 18),
           const SizedBox(width: 8),
-          Text(s.logout),
+          Expanded(child: Text(s.logout)),
         ]),
       ),
     ],
@@ -664,8 +666,7 @@ class _DashboardTabState extends State<_DashboardTab> {
         if (isWide)
           Row(
             children: [
-              SizedBox(
-                width: 220,
+              Expanded(
                 child: _QuickCard(
                   icon: Icons.menu_book_rounded,
                   label: s.booksRead,
@@ -674,8 +675,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                 ),
               ),
               const SizedBox(width: 8),
-              SizedBox(
-                width: 220,
+              Expanded(
                 child: _QuickCard(
                   icon: Icons.star_rounded,
                   label: s.avgRating,
@@ -684,8 +684,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                 ),
               ),
               const SizedBox(width: 8),
-              SizedBox(
-                width: 220,
+              Expanded(
                 child: _QuickCard(
                   icon: Icons.bookmark_rounded,
                   label: s.toRead,
@@ -808,7 +807,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 10,
                       crossAxisSpacing: 10,
-                      childAspectRatio: 1.4,
+                      childAspectRatio: 1.1,
                       children: [
                         _GridActionCard(
                           icon: Icons.add_box_outlined,
@@ -931,7 +930,7 @@ class _QuickCard extends StatelessWidget {
                     color: color)),
             Text(label,
                 style: TextStyle(
-                    color: Colors.grey.shade600, fontSize: 12),
+                    color: Colors.grey, fontSize: 12),
                 textAlign: TextAlign.center),
           ],
         ),

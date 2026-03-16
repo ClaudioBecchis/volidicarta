@@ -145,7 +145,7 @@ class _AboutScreenState extends State<AboutScreen> {
             children: [
               const Text(
                 'Hai un\'idea per migliorare l\'app? Descrivila qui sotto e verrà inviata direttamente agli sviluppatori.',
-                style: TextStyle(fontSize: 13, color: Colors.black54),
+                style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -238,7 +238,7 @@ class _AboutScreenState extends State<AboutScreen> {
             children: [
               const Text(
                 'Descrivi cosa stavi facendo quando si è verificato il problema.',
-                style: TextStyle(fontSize: 13, color: Colors.black54),
+                style: TextStyle(fontSize: 13, color: Colors.grey),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -261,7 +261,7 @@ class _AboutScreenState extends State<AboutScreen> {
                 child: Text(
                   'Versione: $_currentVersion · Piattaforma: $_platform'
                   '${crash != null ? '\nUltimo crash: ${crash.time}' : ''}',
-                  style: const TextStyle(fontSize: 11, color: Colors.black54),
+                  style: const TextStyle(fontSize: 11, color: Colors.grey),
                 ),
               ),
             ],

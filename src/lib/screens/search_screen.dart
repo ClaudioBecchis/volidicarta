@@ -233,7 +233,7 @@ class _SearchScreenState extends State<SearchScreen> {
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
             child: TextField(
               controller: _ctrl,
-              style: const TextStyle(color: Colors.black87),
+              style: TextStyle(color: Theme.of(context).colorScheme.onSurface),
               decoration: InputDecoration(
                 hintText: _searchType == 'inauthor'
                     ? 'Es: Baricco, Umberto Eco, Calvino...'
@@ -251,7 +251,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       )
                     : null,
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               onSubmitted: (_) {
                 setState(() => _suggestions = []);

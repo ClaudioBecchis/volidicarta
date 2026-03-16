@@ -127,7 +127,7 @@ class PremiumScreen extends StatelessWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 24),
-                                Column(
+                                Flexible(child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   crossAxisAlignment:
                                       CrossAxisAlignment.start,
@@ -182,7 +182,7 @@ class PremiumScreen extends StatelessWidget {
                                       ),
                                     ),
                                   ],
-                                ),
+                                )),
                               ],
                             )
                           : Column(
@@ -382,13 +382,15 @@ class PremiumScreen extends StatelessWidget {
                                   Icon(Icons.notifications_active_rounded,
                                       color: Colors.white, size: 22),
                                   SizedBox(width: 10),
-                                  Text(
-                                    'Avvisami al lancio',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
+                                  Flexible(
+                                    child: Text(
+                                      'Avvisami al lancio',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.bold,
+                                        letterSpacing: 0.5,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -427,8 +429,10 @@ class PremiumScreen extends StatelessWidget {
         title: const Row(children: [
           Text('🚀', style: TextStyle(fontSize: 24)),
           SizedBox(width: 10),
-          Text('Prossimamente!',
-              style: TextStyle(fontWeight: FontWeight.bold)),
+          Flexible(
+            child: Text('Prossimamente!',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
         ]),
         content: const Text(
           'Il piano Premium è in sviluppo.\n\nSeguici su GitHub per ricevere aggiornamenti sul lancio.',
@@ -505,6 +509,8 @@ class _FeatureCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   feature.desc,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey.shade500,

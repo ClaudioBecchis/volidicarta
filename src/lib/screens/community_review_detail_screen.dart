@@ -181,18 +181,19 @@ class _CommunityReviewDetailScreenState
                           ),
                         ),
                         const SizedBox(width: 10),
-                        Column(
+                        Expanded(child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(_review.username,
                                 style: const TextStyle(
-                                    fontWeight: FontWeight.w600)),
+                                    fontWeight: FontWeight.w600),
+                                maxLines: 1, overflow: TextOverflow.ellipsis),
                             Text(_formatDate(_review.createdAt),
                                 style: TextStyle(
                                     color: Colors.grey.shade500,
                                     fontSize: 11)),
                           ],
-                        ),
+                        )),
                       ],
                     ),
                     const SizedBox(height: 12),

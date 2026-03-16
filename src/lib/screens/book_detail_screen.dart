@@ -356,6 +356,8 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(book.title,
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(
                                   fontSize: 18, fontWeight: FontWeight.bold)),
                           const SizedBox(height: 6),
@@ -626,9 +628,11 @@ class _ReviewCard extends StatelessWidget {
                 const Icon(Icons.rate_review,
                     color: Color(0xFF1A5276), size: 20),
                 const SizedBox(width: 8),
-                Text(S.of(context).myReviewCard,
-                    style: const TextStyle(
-                        fontWeight: FontWeight.bold, fontSize: 15)),
+                Flexible(
+                  child: Text(S.of(context).myReviewCard,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 15)),
+                ),
                 const Spacer(),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined),
@@ -660,13 +664,15 @@ class _ReviewCard extends StatelessWidget {
                   const Icon(Icons.calendar_today,
                       size: 14, color: Colors.grey),
                   const SizedBox(width: 4),
-                  Text(
-                    review.startDate != null && review.endDate != null
-                        ? '${_fmtDate(review.startDate)} → ${_fmtDate(review.endDate)}'
-                        : review.endDate != null
-                            ? 'Finito il ${_fmtDate(review.endDate)}'
-                            : 'Iniziato il ${_fmtDate(review.startDate)}',
-                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  Flexible(
+                    child: Text(
+                      review.startDate != null && review.endDate != null
+                          ? '${_fmtDate(review.startDate)} → ${_fmtDate(review.endDate)}'
+                          : review.endDate != null
+                              ? 'Finito il ${_fmtDate(review.endDate)}'
+                              : 'Iniziato il ${_fmtDate(review.startDate)}',
+                      style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  ),
                 ],
               ),
             ],

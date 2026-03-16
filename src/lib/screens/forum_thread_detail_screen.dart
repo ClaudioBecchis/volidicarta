@@ -177,7 +177,7 @@ class _ForumThreadDetailScreenState extends State<ForumThreadDetailScreen> {
               const SizedBox(height: 10),
               Text(_thread.body!,
                   style: TextStyle(
-                      color: Colors.grey.shade700, fontSize: 14, height: 1.5)),
+                      color: Colors.grey, fontSize: 14, height: 1.5)),
             ],
             const SizedBox(height: 12),
             // Autore + data
@@ -342,7 +342,7 @@ class _ForumThreadDetailScreenState extends State<ForumThreadDetailScreen> {
             const SizedBox(height: 8),
             Text(reply.body,
                 style: TextStyle(
-                    color: Colors.grey.shade800, fontSize: 14, height: 1.4)),
+                    color: Colors.grey, fontSize: 14, height: 1.4)),
             const SizedBox(height: 8),
             InkWell(
               onTap: () => _toggleReplyLike(index),

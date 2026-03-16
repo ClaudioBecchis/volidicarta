@@ -115,25 +115,31 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                _StatBadge(
-                  icon: Icons.people_rounded,
-                  label: 'Totale',
-                  value: '${_users.length}',
-                  color: Colors.white,
+                Expanded(
+                  child: _StatBadge(
+                    icon: Icons.people_rounded,
+                    label: 'Totale',
+                    value: '${_users.length}',
+                    color: Colors.white,
+                  ),
                 ),
                 const SizedBox(width: 20),
-                _StatBadge(
-                  icon: Icons.circle,
-                  label: 'Online',
-                  value: '$onlineCount',
-                  color: const Color(0xFF2ECC71),
+                Expanded(
+                  child: _StatBadge(
+                    icon: Icons.circle,
+                    label: 'Online',
+                    value: '$onlineCount',
+                    color: const Color(0xFF2ECC71),
+                  ),
                 ),
                 const SizedBox(width: 20),
-                _StatBadge(
-                  icon: Icons.circle_outlined,
-                  label: 'Offline',
-                  value: '${_users.length - onlineCount}',
-                  color: Colors.grey.shade400,
+                Expanded(
+                  child: _StatBadge(
+                    icon: Icons.circle_outlined,
+                    label: 'Offline',
+                    value: '${_users.length - onlineCount}',
+                    color: Colors.grey.shade400,
+                  ),
                 ),
               ],
             ),
