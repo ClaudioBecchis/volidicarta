@@ -90,7 +90,15 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
       // ── Android: lancia il wizard di installazione nativo ────────────────
       if (UpdateService.isAndroid) {
-        await OpenFilex.open(installer.path, type: 'application/vnd.android.package-archive');
+        final result = await OpenFilex.open(installer.path, type: 'application/vnd.android.package-archive');
+        // Se l'installazione fallisce (permesso mancante), apri nel browser
+        if (result.type != ResultType.done) {
+          final downloadUrl = UpdateService().apkUrl(info.downloadUrl, info.latestVersion) ?? info.downloadUrl!;
+          final uri = Uri.parse(downloadUrl);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri, mode: LaunchMode.externalApplication);
+          }
+        }
         if (mounted) Navigator.pop(context);
         return;
       }

@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
 import '../database/db_helper.dart';
 
@@ -107,10 +108,15 @@ class UpdateService {
         }
 
         // Lancia il wizard di installazione nativo — unica azione richiesta all'utente
-        await OpenFilex.open(
+        final result = await OpenFilex.open(
           apkFile.path,
           type: 'application/vnd.android.package-archive',
         );
+        // Fallback: se il permesso manca, apri il download nel browser
+        if (result.type != ResultType.done) {
+          final uri = Uri.parse(apkUrl(info.downloadUrl, info.latestVersion) ?? info.downloadUrl!);
+          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        }
         return;
       }
 
