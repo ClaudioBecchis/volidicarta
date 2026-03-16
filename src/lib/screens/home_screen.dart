@@ -807,7 +807,7 @@ class _DashboardTabState extends State<_DashboardTab> {
                       crossAxisCount: 2,
                       mainAxisSpacing: 10,
                       crossAxisSpacing: 10,
-                      childAspectRatio: 1.1,
+                      childAspectRatio: 1.0,
                       children: [
                         _GridActionCard(
                           icon: Icons.add_box_outlined,
@@ -920,18 +920,27 @@ class _QuickCard extends StatelessWidget {
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: color, size: 28),
             const SizedBox(height: 6),
-            Text(value,
-                style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: color)),
-            Text(label,
-                style: TextStyle(
-                    color: Colors.grey, fontSize: 12),
-                textAlign: TextAlign.center),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(value,
+                  style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: color)),
+            ),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(label,
+                  style: const TextStyle(
+                      color: Colors.grey, fontSize: 12),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis),
+            ),
           ],
         ),
       ),
@@ -1215,29 +1224,32 @@ class _GridActionCard extends StatelessWidget {
             color: color.withValues(alpha: 0.2),
           ),
         ),
-        padding: const EdgeInsets.all(14),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              width: 40,
-              height: 40,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: color.withValues(alpha: 0.12),
               ),
-              child: Icon(icon, color: color, size: 20),
+              child: Icon(icon, color: color, size: 24),
             ),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+            const SizedBox(height: 10),
+            Flexible(
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: isDark ? Colors.white : const Color(0xFF1A1A2E),
+                ),
               ),
             ),
           ],

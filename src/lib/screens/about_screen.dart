@@ -188,11 +188,11 @@ class _AboutScreenState extends State<AboutScreen> {
         ],
       ),
     );
+    final t = titleCtrl.text.trim();
+    final b = bodyCtrl.text.trim();
     titleCtrl.dispose();
     bodyCtrl.dispose();
     if (result != true || !mounted) return;
-    final t = titleCtrl.text.trim();
-    final b = bodyCtrl.text.trim();
     if (t.isEmpty) return;
     final issueBody = [
       '## Descrizione del suggerimento',
@@ -283,9 +283,9 @@ class _AboutScreenState extends State<AboutScreen> {
         ],
       ),
     );
+    final desc = descCtrl.text.trim();
     descCtrl.dispose();
     if (result != true || !mounted) return;
-    final desc = descCtrl.text.trim();
     final issueBody = [
       '## Descrizione del problema',
       '',
