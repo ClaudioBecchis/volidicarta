@@ -218,7 +218,16 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       body: IndexedStack(index: _tab, children: _pages),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: Theme(
+        data: Theme.of(context).copyWith(
+          navigationBarTheme: NavigationBarThemeData(
+            height: 60,
+            labelTextStyle: WidgetStateProperty.all(
+              const TextStyle(fontSize: 10, overflow: TextOverflow.ellipsis),
+            ),
+          ),
+        ),
+        child: NavigationBar(
         selectedIndex: _tab,
         onDestinationSelected: _onTabSelected,
         labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
@@ -248,7 +257,7 @@ class _HomeScreenState extends State<HomeScreen> {
               selectedIcon: const Icon(Icons.people),
               label: s.community),
         ],
-      ),
+      )),
     );
   }
 }
