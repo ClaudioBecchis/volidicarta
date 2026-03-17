@@ -78,13 +78,43 @@ class _ForumThreadDetailScreenState extends State<ForumThreadDetailScreen> {
   }
 
   Future<void> _toggleThreadLike() async {
-    final updated = await _service.toggleThreadLike(_thread);
-    if (mounted) setState(() => _thread = updated);
+    final result = await _service.toggleThreadLike(_thread);
+    if (!mounted) return;
+    setState(() => _thread = result.thread);
+    if (result.error != null) {
+      if (result.error == 'login_required') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Accedi per mettere Mi piace')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error!),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _toggleReplyLike(int index) async {
-    final updated = await _service.toggleReplyLike(_replies[index]);
-    if (mounted) setState(() => _replies[index] = updated);
+    final result = await _service.toggleReplyLike(_replies[index]);
+    if (!mounted) return;
+    setState(() => _replies[index] = result.reply);
+    if (result.error != null) {
+      if (result.error == 'login_required') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Accedi per mettere Mi piace')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error!),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _deleteReply(int index) async {

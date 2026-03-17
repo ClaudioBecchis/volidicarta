@@ -111,8 +111,23 @@ class _ForumScreenState extends State<ForumScreen> {
   }
 
   Future<void> _toggleLike(int index) async {
-    final updated = await _service.toggleThreadLike(_threads[index]);
-    if (mounted) setState(() => _threads[index] = updated);
+    final result = await _service.toggleThreadLike(_threads[index]);
+    if (!mounted) return;
+    setState(() => _threads[index] = result.thread);
+    if (result.error != null) {
+      if (result.error == 'login_required') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Accedi per mettere Mi piace')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error!),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 import '../models/public_review.dart';
@@ -159,10 +160,15 @@ class SupabaseService {
 
   // ── Likes ─────────────────────────────────────────────────────────────────
 
-  Future<PublicReview> toggleLike(PublicReview review) async {
-    if (!isLoggedIn) return review;
+  /// Risultato del toggle like: [review] aggiornata + [error] se fallito.
+  Future<({PublicReview review, String? error})> toggleLike(PublicReview review) async {
+    if (!isLoggedIn) {
+      return (review: review, error: 'login_required');
+    }
     final c = _client;
-    if (c == null) return review;
+    if (c == null) {
+      return (review: review, error: 'Community non disponibile in questa build.');
+    }
     try {
       if (review.isLikedByMe) {
         await c
@@ -170,22 +176,39 @@ class SupabaseService {
             .delete()
             .eq('user_id', currentUser!.id)
             .eq('review_id', review.id);
-        return review.copyWith(
-          isLikedByMe: false,
-          likesCount: (review.likesCount - 1).clamp(0, 9999),
+        return (
+          review: review.copyWith(
+            isLikedByMe: false,
+            likesCount: (review.likesCount - 1).clamp(0, 9999),
+          ),
+          error: null,
         );
       } else {
         await c.from('likes').insert({
           'user_id': currentUser!.id,
           'review_id': review.id,
         });
-        return review.copyWith(
-          isLikedByMe: true,
-          likesCount: review.likesCount + 1,
+        return (
+          review: review.copyWith(
+            isLikedByMe: true,
+            likesCount: review.likesCount + 1,
+          ),
+          error: null,
         );
       }
-    } catch (_) {
-      return review;
+    } on PostgrestException catch (e) {
+      debugPrint('toggleLike PostgrestException: code=${e.code} msg=${e.message} details=${e.details}');
+      // Conflitto chiave unica → il like esiste già, forza stato corretto
+      if (e.code == '23505') {
+        return (
+          review: review.copyWith(isLikedByMe: true),
+          error: null,
+        );
+      }
+      return (review: review, error: 'Errore database: ${e.message}');
+    } catch (e) {
+      debugPrint('toggleLike error: $e');
+      return (review: review, error: 'Errore di rete. Riprova.');
     }
   }
 

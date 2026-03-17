@@ -70,12 +70,13 @@ class Book {
   factory Book.fromGoogleApi(Map<String, dynamic> json) {
     final info = json['volumeInfo'] ?? {};
     final imageLinks = info['imageLinks'] ?? {};
-    final identifiers = (info['industryIdentifiers'] as List?)
-            ?.firstWhere(
-              (i) => i['type'] == 'ISBN_13',
-              orElse: () => (info['industryIdentifiers'] as List?)?.firstOrNull ?? {},
-            ) ??
-        {};
+    final idList = (info['industryIdentifiers'] as List?)
+        ?.cast<Map<String, dynamic>>();
+    final identifiers = idList?.firstWhere(
+          (i) => i['type'] == 'ISBN_13',
+          orElse: () => idList.firstOrNull ?? <String, dynamic>{},
+        ) ??
+        <String, dynamic>{};
 
     String? toHttps(String? url) =>
         url?.replaceFirst('http://', 'https://');

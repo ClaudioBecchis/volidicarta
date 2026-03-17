@@ -6,6 +6,7 @@ import '../widgets/star_rating.dart';
 import '../config/app_colors.dart';
 import '../utils/date_format.dart';
 import '../l10n/app_strings.dart';
+import 'login_screen.dart';
 
 class CommunityReviewDetailScreen extends StatefulWidget {
   final PublicReview review;
@@ -19,6 +20,7 @@ class CommunityReviewDetailScreen extends StatefulWidget {
 class _CommunityReviewDetailScreenState
     extends State<CommunityReviewDetailScreen> {
   late PublicReview _review;
+  bool _likeBusy = false;
 
   @override
   void initState() {
@@ -27,8 +29,37 @@ class _CommunityReviewDetailScreenState
   }
 
   Future<void> _toggleLike() async {
-    final updated = await SupabaseService().toggleLike(_review);
-    if (mounted) setState(() => _review = updated);
+    if (_likeBusy) return;
+    setState(() => _likeBusy = true);
+    final result = await SupabaseService().toggleLike(_review);
+    if (!mounted) return;
+    setState(() {
+      _review = result.review;
+      _likeBusy = false;
+    });
+    if (result.error != null) {
+      if (result.error == 'login_required') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Accedi per mettere Mi piace'),
+            action: SnackBarAction(
+              label: 'ACCEDI',
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()));
+              },
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error!),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
   }
 
   Future<void> _deleteReview() async {
@@ -69,10 +100,21 @@ class _CommunityReviewDetailScreenState
     final s = S.of(context);
     final isMyReview =
         SupabaseService().currentUser?.id == _review.userId;
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) {
+          Navigator.pop(context, _review);
+        }
+      },
+      child: Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
         title: Text(s.reviewScreen),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => Navigator.pop(context, _review),
+        ),
         actions: [
           if (isMyReview)
             IconButton(
@@ -256,15 +298,20 @@ class _CommunityReviewDetailScreenState
             // Like button
             Center(
               child: OutlinedButton.icon(
-                onPressed: _toggleLike,
-                icon: Icon(
-                  _review.isLikedByMe
-                      ? Icons.favorite
-                      : Icons.favorite_border,
-                  color: _review.isLikedByMe
-                      ? Colors.red
-                      : const Color(0xFF1A5276),
-                ),
+                onPressed: _likeBusy ? null : _toggleLike,
+                icon: _likeBusy
+                    ? const SizedBox(
+                        width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Icon(
+                        _review.isLikedByMe
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: _review.isLikedByMe
+                            ? Colors.red
+                            : const Color(0xFF1A5276),
+                      ),
                 label: Text(
                   '${_review.likesCount} Mi piace',
                   style: TextStyle(
@@ -287,7 +334,8 @@ class _CommunityReviewDetailScreenState
           ],
         ),
       ),
-    );
+      ), // Scaffold
+    ); // PopScope
   }
 
   Widget _coverPlaceholder(BuildContext ctx) {

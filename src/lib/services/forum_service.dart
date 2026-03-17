@@ -84,9 +84,15 @@ class ForumService {
     }
   }
 
-  Future<ForumThread> toggleThreadLike(ForumThread thread) async {
+  /// Risultato del toggle like: [thread] aggiornato + [error] se fallito.
+  Future<({ForumThread thread, String? error})> toggleThreadLike(ForumThread thread) async {
+    if (_myId.isEmpty) {
+      return (thread: thread, error: 'login_required');
+    }
     final client = _client;
-    if (client == null) return thread;
+    if (client == null) {
+      return (thread: thread, error: 'Community non disponibile.');
+    }
     try {
       if (thread.isLikedByMe) {
         await client
@@ -94,23 +100,35 @@ class ForumService {
             .delete()
             .eq('user_id', _myId)
             .eq('thread_id', thread.id);
-        return thread.copyWith(
-          likesCount: thread.likesCount - 1,
-          isLikedByMe: false,
+        return (
+          thread: thread.copyWith(
+            likesCount: (thread.likesCount - 1).clamp(0, 9999),
+            isLikedByMe: false,
+          ),
+          error: null,
         );
       } else {
         await client.from('forum_thread_likes').insert({
           'user_id': _myId,
           'thread_id': thread.id,
         });
-        return thread.copyWith(
-          likesCount: thread.likesCount + 1,
-          isLikedByMe: true,
+        return (
+          thread: thread.copyWith(
+            likesCount: thread.likesCount + 1,
+            isLikedByMe: true,
+          ),
+          error: null,
         );
       }
+    } on PostgrestException catch (e) {
+      debugPrint('ForumService.toggleThreadLike PostgrestException: code=${e.code} msg=${e.message}');
+      if (e.code == '23505') {
+        return (thread: thread.copyWith(isLikedByMe: true), error: null);
+      }
+      return (thread: thread, error: 'Errore database: ${e.message}');
     } catch (e) {
       debugPrint('ForumService.toggleThreadLike error: $e');
-      return thread;
+      return (thread: thread, error: 'Errore di rete. Riprova.');
     }
   }
 
@@ -177,9 +195,15 @@ class ForumService {
     }
   }
 
-  Future<ForumReply> toggleReplyLike(ForumReply reply) async {
+  /// Risultato del toggle like: [reply] aggiornato + [error] se fallito.
+  Future<({ForumReply reply, String? error})> toggleReplyLike(ForumReply reply) async {
+    if (_myId.isEmpty) {
+      return (reply: reply, error: 'login_required');
+    }
     final client = _client;
-    if (client == null) return reply;
+    if (client == null) {
+      return (reply: reply, error: 'Community non disponibile.');
+    }
     try {
       if (reply.isLikedByMe) {
         await client
@@ -187,23 +211,35 @@ class ForumService {
             .delete()
             .eq('user_id', _myId)
             .eq('reply_id', reply.id);
-        return reply.copyWith(
-          likesCount: reply.likesCount - 1,
-          isLikedByMe: false,
+        return (
+          reply: reply.copyWith(
+            likesCount: (reply.likesCount - 1).clamp(0, 9999),
+            isLikedByMe: false,
+          ),
+          error: null,
         );
       } else {
         await client.from('forum_reply_likes').insert({
           'user_id': _myId,
           'reply_id': reply.id,
         });
-        return reply.copyWith(
-          likesCount: reply.likesCount + 1,
-          isLikedByMe: true,
+        return (
+          reply: reply.copyWith(
+            likesCount: reply.likesCount + 1,
+            isLikedByMe: true,
+          ),
+          error: null,
         );
       }
+    } on PostgrestException catch (e) {
+      debugPrint('ForumService.toggleReplyLike PostgrestException: code=${e.code} msg=${e.message}');
+      if (e.code == '23505') {
+        return (reply: reply.copyWith(isLikedByMe: true), error: null);
+      }
+      return (reply: reply, error: 'Errore database: ${e.message}');
     } catch (e) {
       debugPrint('ForumService.toggleReplyLike error: $e');
-      return reply;
+      return (reply: reply, error: 'Errore di rete. Riprova.');
     }
   }
 }

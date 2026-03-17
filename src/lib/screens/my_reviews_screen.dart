@@ -27,6 +27,8 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
   bool _loading = true;
   final _searchCtrl = TextEditingController();
   int _filterRating = 0;
+  String? _filterYear;
+  String? _filterGenre;
   _GroupBy _groupBy = _GroupBy.none;
   Map<String, List<Review>>? _groupedCache;
 
@@ -69,7 +71,12 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
             (r.reviewBody?.toLowerCase().contains(q) ?? false);
         final matchRating =
             _filterRating == 0 || r.rating == _filterRating;
-        return matchText && matchRating;
+        final matchYear = _filterYear == null ||
+            (r.bookYear?.startsWith(_filterYear!) ?? false) ||
+            (r.endDate?.startsWith(_filterYear!) ?? false);
+        final matchGenre = _filterGenre == null ||
+            (r.bookGenre?.toLowerCase() == _filterGenre!.toLowerCase());
+        return matchText && matchRating && matchYear && matchGenre;
       }).toList();
       _groupedCache = null;
     });
@@ -165,6 +172,45 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
                 ),
             ],
           ),
+          // Filtro avanzato (anno + genere)
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.filter_list),
+            tooltip: 'Filtri avanzati',
+            onSelected: (v) {
+              if (v.startsWith('year:')) {
+                setState(() => _filterYear = v == 'year:all' ? null : v.substring(5));
+              } else if (v.startsWith('genre:')) {
+                setState(() => _filterGenre = v == 'genre:all' ? null : v.substring(6));
+              }
+              _applyFilter();
+            },
+            itemBuilder: (_) {
+              final years = _reviews
+                  .map((r) => r.bookYear?.substring(0, 4) ?? r.endDate?.substring(0, 4))
+                  .where((y) => y != null)
+                  .cast<String>()
+                  .toSet()
+                  .toList()
+                ..sort((a, b) => b.compareTo(a));
+              final genres = _reviews
+                  .where((r) => r.bookGenre != null && r.bookGenre!.isNotEmpty)
+                  .map((r) => r.bookGenre!)
+                  .toSet()
+                  .toList()
+                ..sort();
+              return [
+                const PopupMenuItem(enabled: false, child: Text('PER ANNO', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                PopupMenuItem(value: 'year:all', child: Text(_filterYear == null ? '✓ Tutti gli anni' : 'Tutti gli anni')),
+                for (final y in years.take(8))
+                  PopupMenuItem(value: 'year:$y', child: Text(_filterYear == y ? '✓ $y' : y)),
+                const PopupMenuDivider(),
+                const PopupMenuItem(enabled: false, child: Text('PER GENERE', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11))),
+                PopupMenuItem(value: 'genre:all', child: Text(_filterGenre == null ? '✓ Tutti i generi' : 'Tutti i generi')),
+                for (final g in genres.take(10))
+                  PopupMenuItem(value: 'genre:$g', child: Text(_filterGenre?.toLowerCase() == g.toLowerCase() ? '✓ $g' : g)),
+              ];
+            },
+          ),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -204,10 +250,12 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
             ),
           ),
           // Chips filtri attivi
-          if (_filterRating > 0 || _groupBy != _GroupBy.none)
+          if (_filterRating > 0 || _groupBy != _GroupBy.none || _filterYear != null || _filterGenre != null)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
                 children: [
                   if (_filterRating > 0)
                     Padding(
@@ -230,22 +278,49 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
                       ),
                     ),
                   if (_groupBy != _GroupBy.none)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Chip(
+                        avatar: Icon(
+                          _groupBy == _GroupBy.author
+                              ? Icons.person_outline
+                              : Icons.category_outlined,
+                          size: 16,
+                        ),
+                        label: Text(
+                          _groupBy == _GroupBy.author
+                              ? s.byAuthor
+                              : s.byGenre,
+                        ),
+                        onDeleted: () => setState(() => _groupBy = _GroupBy.none),
+                        deleteIcon: const Icon(Icons.close, size: 16),
+                      ),
+                    ),
+                  if (_filterYear != null)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Chip(
+                        avatar: const Icon(Icons.calendar_today, size: 14),
+                        label: Text('Anno $_filterYear'),
+                        onDeleted: () {
+                          setState(() => _filterYear = null);
+                          _applyFilter();
+                        },
+                        deleteIcon: const Icon(Icons.close, size: 16),
+                      ),
+                    ),
+                  if (_filterGenre != null)
                     Chip(
-                      avatar: Icon(
-                        _groupBy == _GroupBy.author
-                            ? Icons.person_outline
-                            : Icons.category_outlined,
-                        size: 16,
-                      ),
-                      label: Text(
-                        _groupBy == _GroupBy.author
-                            ? s.byAuthor
-                            : s.byGenre,
-                      ),
-                      onDeleted: () => setState(() => _groupBy = _GroupBy.none),
+                      avatar: const Icon(Icons.category, size: 14),
+                      label: Text(_filterGenre!),
+                      onDeleted: () {
+                        setState(() => _filterGenre = null);
+                        _applyFilter();
+                      },
                       deleteIcon: const Icon(Icons.close, size: 16),
                     ),
                 ],
+              ),
               ),
             ),
           Expanded(child: _buildList(context)),

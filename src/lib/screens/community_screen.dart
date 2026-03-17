@@ -8,6 +8,7 @@ import '../services/auth_service.dart';
 import '../widgets/star_rating.dart';
 import 'community_review_detail_screen.dart';
 import 'forum_screen.dart';
+import 'login_screen.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
 
@@ -286,6 +287,7 @@ class _ReviewCard extends StatefulWidget {
 
 class _ReviewCardState extends State<_ReviewCard> {
   late PublicReview _r;
+  bool _likeBusy = false;
 
   @override
   void initState() {
@@ -293,9 +295,48 @@ class _ReviewCardState extends State<_ReviewCard> {
     _r = widget.review;
   }
 
+  @override
+  void didUpdateWidget(covariant _ReviewCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.review.id != widget.review.id ||
+        oldWidget.review.likesCount != widget.review.likesCount ||
+        oldWidget.review.isLikedByMe != widget.review.isLikedByMe) {
+      _r = widget.review;
+    }
+  }
+
   Future<void> _toggleLike() async {
-    final updated = await SupabaseService().toggleLike(_r);
-    if (mounted) setState(() => _r = updated);
+    if (_likeBusy) return;
+    setState(() => _likeBusy = true);
+    final result = await SupabaseService().toggleLike(_r);
+    if (!mounted) return;
+    setState(() {
+      _r = result.review;
+      _likeBusy = false;
+    });
+    if (result.error != null) {
+      if (result.error == 'login_required') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Accedi per mettere Mi piace'),
+            action: SnackBarAction(
+              label: 'ACCEDI',
+              onPressed: () {
+                Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()));
+              },
+            ),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(result.error!),
+            backgroundColor: Colors.red.shade700,
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -305,12 +346,17 @@ class _ReviewCardState extends State<_ReviewCard> {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (_) =>
-                  CommunityReviewDetailScreen(review: _r)),
-        ),
+        onTap: () async {
+          final updated = await Navigator.push<PublicReview>(
+            context,
+            MaterialPageRoute(
+                builder: (_) =>
+                    CommunityReviewDetailScreen(review: _r)),
+          );
+          if (updated != null && mounted) {
+            setState(() => _r = updated);
+          }
+        },
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: Column(
@@ -413,7 +459,7 @@ class _ReviewCardState extends State<_ReviewCard> {
                   _r.reviewBody!,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
+                  style: const TextStyle(
                       color: Colors.grey, fontSize: 13),
                 ),
               ],
@@ -423,22 +469,28 @@ class _ReviewCardState extends State<_ReviewCard> {
               Row(
                 children: [
                   InkWell(
-                    onTap: _toggleLike,
+                    onTap: _likeBusy ? null : _toggleLike,
                     borderRadius: BorderRadius.circular(20),
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 4, vertical: 2),
                       child: Row(
                         children: [
-                          Icon(
-                            _r.isLikedByMe
-                                ? Icons.favorite
-                                : Icons.favorite_border,
-                            size: 18,
-                            color: _r.isLikedByMe
-                                ? Colors.red
-                                : Colors.grey,
-                          ),
+                          if (_likeBusy)
+                            const SizedBox(
+                              width: 18, height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          else
+                            Icon(
+                              _r.isLikedByMe
+                                  ? Icons.favorite
+                                  : Icons.favorite_border,
+                              size: 18,
+                              color: _r.isLikedByMe
+                                  ? Colors.red
+                                  : Colors.grey,
+                            ),
                           const SizedBox(width: 4),
                           Text('${_r.likesCount}',
                               style: TextStyle(

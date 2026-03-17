@@ -1,9 +1,11 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/settings_service.dart';
 import '../services/supabase_service.dart';
 import '../services/auth_service.dart';
+import '../services/export_import_service.dart';
 import '../database/db_helper.dart';
 import '../l10n/app_strings.dart';
 import '../widgets/gdpr_consent_dialog.dart';
@@ -167,6 +169,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+
+          // ── Dati: Export / Import ─────────────────────────────────────────
+          if (!kIsWeb) ...[
+            const SizedBox(height: 12),
+            Card(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              child: Column(
+                children: [
+                  ListTile(
+                    leading: const Icon(Icons.file_download_outlined, color: Color(0xFF1A5276)),
+                    title: const Text('Esporta dati (JSON)'),
+                    subtitle: const Text('Salva recensioni e wishlist', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _exportJson(context),
+                  ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.table_chart_outlined, color: Color(0xFF1A5276)),
+                    title: const Text('Esporta recensioni (CSV)'),
+                    subtitle: const Text('Formato foglio di calcolo', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _exportCsv(context),
+                  ),
+                ],
+              ),
+            ),
+          ],
 
           // ── Elimina account ───────────────────────────────────────────────
           if (AuthService().isLoggedIn) ...[
@@ -429,6 +458,70 @@ class _SettingsScreenState extends State<SettingsScreen> {
               : 'Consenso rifiutato — nessun dato anonimo inviato'),
           duration: const Duration(seconds: 2),
         ));
+      }
+    }
+  }
+
+  Future<void> _exportJson(BuildContext context) async {
+    final uid = AuthService().currentUser?.id;
+    if (uid == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ID utente non disponibile. Apri prima una recensione.')),
+        );
+      }
+      return;
+    }
+    try {
+      final path = await ExportImportService().exportToJson(uid);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Esportato in: $path'),
+          action: SnackBarAction(
+            label: 'CONDIVIDI',
+            onPressed: () => ExportImportService().shareFile(path),
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore esportazione: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _exportCsv(BuildContext context) async {
+    final uid = AuthService().currentUser?.id;
+    if (uid == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ID utente non disponibile.')),
+        );
+      }
+      return;
+    }
+    try {
+      final path = await ExportImportService().exportReviewsToCsv(uid);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('CSV esportato: $path'),
+          action: SnackBarAction(
+            label: 'CONDIVIDI',
+            onPressed: () => ExportImportService().shareFile(path),
+          ),
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore esportazione CSV: $e'), backgroundColor: Colors.red),
+        );
       }
     }
   }
