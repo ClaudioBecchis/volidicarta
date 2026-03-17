@@ -200,7 +200,15 @@ class _ForumScreenState extends State<ForumScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openNewThread,
+        onPressed: () {
+          if (!AuthService().isLoggedIn) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Accedi per creare un nuovo thread')),
+            );
+            return;
+          }
+          _openNewThread();
+        },
         backgroundColor: const Color(0xFF1A5276),
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add),

@@ -1,3 +1,5 @@
+const _sentinel = Object();
+
 class Review {
   final int? id;
   final String userId; // UUID Supabase
@@ -36,7 +38,7 @@ class Review {
   });
 
   Map<String, dynamic> toMap() => {
-        'id': id,
+        if (id != null) 'id': id,
         'user_id': userId,
         'book_id': bookId,
         'book_title': bookTitle,
@@ -75,11 +77,11 @@ class Review {
 
   Review copyWith({
     int? rating,
-    String? reviewTitle,
-    String? reviewBody,
-    String? startDate,
-    String? endDate,
-    String? bookGenre,
+    Object? reviewTitle = _sentinel,
+    Object? reviewBody = _sentinel,
+    Object? startDate = _sentinel,
+    Object? endDate = _sentinel,
+    Object? bookGenre = _sentinel,
   }) =>
       Review(
         id: id,
@@ -90,12 +92,12 @@ class Review {
         bookCoverUrl: bookCoverUrl,
         bookPublisher: bookPublisher,
         bookYear: bookYear,
-        bookGenre: bookGenre ?? this.bookGenre,
+        bookGenre: bookGenre == _sentinel ? this.bookGenre : bookGenre as String?,
         rating: rating ?? this.rating,
-        reviewTitle: reviewTitle ?? this.reviewTitle,
-        reviewBody: reviewBody ?? this.reviewBody,
-        startDate: startDate ?? this.startDate,
-        endDate: endDate ?? this.endDate,
+        reviewTitle: reviewTitle == _sentinel ? this.reviewTitle : reviewTitle as String?,
+        reviewBody: reviewBody == _sentinel ? this.reviewBody : reviewBody as String?,
+        startDate: startDate == _sentinel ? this.startDate : startDate as String?,
+        endDate: endDate == _sentinel ? this.endDate : endDate as String?,
         createdAt: createdAt,
         updatedAt: DateTime.now().toIso8601String(),
       );

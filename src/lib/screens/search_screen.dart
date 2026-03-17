@@ -499,6 +499,7 @@ class _SearchScreenState extends State<SearchScreen> {
       );
     }
     return ListView.builder(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       itemCount: _results.length,
       itemBuilder: (_, i) {
         final book = _results[i];

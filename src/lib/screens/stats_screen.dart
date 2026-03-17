@@ -52,7 +52,20 @@ class _StatsScreenState extends State<StatsScreen> {
       appBar: (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) || MediaQuery.of(context).size.width > 700 ? null : AppBar(title: Text(S.of(context).stats)),
       backgroundColor: AppColors.screenBg(context),
       body: _stats == null
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  TextButton.icon(
+                    onPressed: _load,
+                    icon: const Icon(Icons.refresh),
+                    label: const Text('Riprova'),
+                  ),
+                ],
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _load,
               child: _buildBody(),

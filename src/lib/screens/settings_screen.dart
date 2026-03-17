@@ -192,6 +192,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () => _exportCsv(context),
                   ),
+                  const Divider(height: 1, indent: 16, endIndent: 16),
+                  ListTile(
+                    leading: const Icon(Icons.file_upload_outlined, color: Color(0xFF1A5276)),
+                    title: const Text('Importa dati (JSON)'),
+                    subtitle: const Text('Ripristina da backup precedente', style: TextStyle(fontSize: 12)),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => _importJson(context),
+                  ),
                 ],
               ),
             ),
@@ -392,7 +400,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     // Cancella dati locali
-    try { await DbHelper().deleteAllUserData(); } catch (_) {}
+    final uid = AuthService().currentUser?.id;
+    try { if (uid != null) await DbHelper().deleteAllUserData(uid); } catch (_) {}
 
     if (!context.mounted) return;
     // Torna alla root e mostra messaggio
@@ -521,6 +530,76 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Errore esportazione CSV: $e'), backgroundColor: Colors.red),
+        );
+      }
+    }
+  }
+
+  Future<void> _importJson(BuildContext context) async {
+    final uid = AuthService().currentUser?.id;
+    if (uid == null) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('ID utente non disponibile. Effettua il login.')),
+        );
+      }
+      return;
+    }
+    final pathCtrl = TextEditingController();
+    final filePath = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Row(children: [
+          Icon(Icons.file_upload_outlined, color: Color(0xFF1A5276)),
+          SizedBox(width: 10),
+          Text('Importa JSON', style: TextStyle(fontSize: 16)),
+        ]),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Inserisci il percorso del file JSON esportato in precedenza.',
+              style: TextStyle(fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: pathCtrl,
+              decoration: const InputDecoration(
+                hintText: '/percorso/del/file/volidicarta_export.json',
+                border: OutlineInputBorder(),
+                isDense: true,
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Annulla'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, pathCtrl.text.trim()),
+            child: const Text('Importa'),
+          ),
+        ],
+      ),
+    );
+    pathCtrl.dispose();
+    if (filePath == null || filePath.isEmpty) return;
+    try {
+      final result = await ExportImportService().importFromJson(filePath, uid);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Importati: ${result.reviews} recensioni, ${result.wishlist} wishlist'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore importazione: $e'), backgroundColor: Colors.red),
         );
       }
     }

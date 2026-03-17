@@ -243,7 +243,7 @@ class _CommunityReviewDetailScreenState
                     const SizedBox(height: 4),
                     Text(
                       ['', 'Pessimo', 'Scarso', 'Nella media', 'Buono',
-                          'Eccellente'][_review.rating],
+                          'Eccellente'][_review.rating.clamp(0, 5)],
                       style: const TextStyle(
                           color: Color(0xFFFFB300),
                           fontWeight: FontWeight.w500),

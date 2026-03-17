@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/book.dart';
 import '../config/app_config.dart';
+import '../utils/retry_helper.dart';
 
 class BookApiService {
   static const _googleBase = 'https://www.googleapis.com/books/v1/volumes';
@@ -184,7 +185,11 @@ class BookApiService {
   Future<({List<Book> books, String? error})> _fetchGoogle(Uri uri, {bool isRetry = false}) async {
     try {
       await _throttle();
-      final res = await http.get(uri).timeout(const Duration(seconds: 7));
+      final res = await retryWithBackoff(
+        () => http.get(uri).timeout(const Duration(seconds: 7)),
+        maxRetries: 2,
+        initialDelay: const Duration(milliseconds: 500),
+      );
       if (res.statusCode == 429 || res.statusCode == 503) {
         if (!isRetry) {
           await Future.delayed(const Duration(seconds: 3));

@@ -65,17 +65,19 @@ create policy "likes_delete" on likes for delete using (auth.uid() = user_id);
 
 -- ── Funzione per aggiornare likes_count ─────────────────────
 
-create or replace function update_likes_count()
+-- NOTA: usare public.public_reviews (qualificazione esplicita)
+-- perché Supabase può sovrascrivere il search_path con stringa vuota.
+create or replace function public.update_likes_count()
 returns trigger as $$
 begin
   if TG_OP = 'INSERT' then
-    update public_reviews set likes_count = likes_count + 1 where id = NEW.review_id;
+    update public.public_reviews set likes_count = likes_count + 1 where id = NEW.review_id;
   elsif TG_OP = 'DELETE' then
-    update public_reviews set likes_count = greatest(0, likes_count - 1) where id = OLD.review_id;
+    update public.public_reviews set likes_count = greatest(0, likes_count - 1) where id = OLD.review_id;
   end if;
   return null;
 end;
-$$ language plpgsql security definer set search_path = 'public';
+$$ language plpgsql security definer;
 
 create trigger likes_count_trigger
 after insert or delete on likes

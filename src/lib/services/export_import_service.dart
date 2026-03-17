@@ -18,6 +18,9 @@ class ExportImportService {
   /// Esporta tutte le recensioni e la wishlist in un file JSON.
   /// Restituisce il percorso del file generato.
   Future<String> exportToJson(String userId) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Export JSON non supportato su Web. Usa la versione desktop o mobile.');
+    }
     final db = DbHelper();
     final reviews = await db.getReviewsByUser(userId);
     final wishlist = await db.getWishlist(userId);
@@ -42,6 +45,9 @@ class ExportImportService {
 
   /// Esporta le recensioni in formato CSV.
   Future<String> exportReviewsToCsv(String userId) async {
+    if (kIsWeb) {
+      throw UnsupportedError('Export CSV non supportato su Web. Usa la versione desktop o mobile.');
+    }
     final reviews = await DbHelper().getReviewsByUser(userId);
     final buffer = StringBuffer();
 

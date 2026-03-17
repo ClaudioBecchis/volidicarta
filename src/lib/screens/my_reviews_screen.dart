@@ -11,6 +11,7 @@ import 'book_detail_screen.dart';
 import 'add_book_manual_screen.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
+import '../utils/date_format.dart';
 
 enum _GroupBy { none, author, genre }
 
@@ -357,6 +358,7 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
 
     if (_groupBy == _GroupBy.none) {
       return ListView.builder(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
         padding: const EdgeInsets.only(bottom: 80),
         itemCount: _filtered.length,
         itemBuilder: (_, i) => _ReviewTile(
@@ -371,6 +373,7 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
     final groups = _grouped();
     final keys = groups.keys.toList();
     return ListView.builder(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
       padding: const EdgeInsets.only(bottom: 80),
       itemCount: keys.length,
       itemBuilder: (_, i) {
@@ -459,7 +462,9 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
     );
     if (confirm == true) {
       try {
-        await DbHelper().deleteReview(r.id!);
+        if (r.id != null) {
+          await DbHelper().deleteReview(r.id!);
+        }
         await ReviewSyncService().delete(r.userId, r.bookId);
         _load();
       } catch (e) {
@@ -564,10 +569,10 @@ class _ReviewTile extends StatelessWidget {
                       const SizedBox(height: 3),
                       Text(
                         review.startDate != null && review.endDate != null
-                            ? '${review.startDate} → ${review.endDate}'
+                            ? '${formatDateForDisplay(review.startDate)} → ${formatDateForDisplay(review.endDate)}'
                             : review.endDate != null
-                                ? 'Finito: ${review.endDate}'
-                                : 'Iniziato: ${review.startDate}',
+                                ? 'Finito: ${formatDateForDisplay(review.endDate)}'
+                                : 'Iniziato: ${formatDateForDisplay(review.startDate)}',
                         style: TextStyle(
                             color: Colors.grey.shade400, fontSize: 11),
                       ),

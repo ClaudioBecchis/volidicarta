@@ -9,6 +9,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'config/supabase_config.dart';
 import 'services/crash_service.dart';
 import 'services/settings_service.dart';
+import 'services/analytics_service.dart';
 import 'screens/splash_screen.dart';
 
 void main() async {
@@ -40,6 +41,11 @@ void main() async {
     await SettingsService().load();
   } catch (e) {
     debugPrint('SettingsService load error: $e');
+  }
+  try {
+    await AnalyticsService().init();
+  } catch (e) {
+    debugPrint('AnalyticsService init error: $e');
   }
   runZonedGuarded(
     () => runApp(const BookReviewApp()),

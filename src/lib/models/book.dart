@@ -45,6 +45,7 @@ class Book {
           (s) => s.length == 13,
           orElse: () => isbns.isNotEmpty ? isbns.first as String : '',
         );
+    final isbnResult = (isbn13 != null && isbn13.isNotEmpty) ? isbn13 : null;
     final authors = (json['author_name'] as List?)?.cast<String>().join(', ')
         ?? 'Autore sconosciuto';
     final subjects = (json['subject'] as List?)?.cast<String>().take(3).join(', ');
@@ -58,7 +59,7 @@ class Book {
       coverLargeUrl: coverLarge,
       publisher: (json['publisher'] as List?)?.cast<String>().firstOrNull,
       publishedDate: year,
-      isbn: isbn13,
+      isbn: isbnResult,
       pageCount: json['number_of_pages_median'],
       categories: subjects,
       previewLink: coverId != null

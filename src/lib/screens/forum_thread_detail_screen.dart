@@ -406,6 +406,29 @@ class _ForumThreadDetailScreenState extends State<ForumThreadDetailScreen> {
   }
 
   Widget _buildReplyInput() {
+    final isLoggedIn = AuthService().isLoggedIn;
+    if (!isLoggedIn) {
+      return Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 8,
+                offset: const Offset(0, -2)),
+          ],
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            const Icon(Icons.lock_outline, size: 18, color: Colors.grey),
+            const SizedBox(width: 8),
+            Text('Accedi per rispondere',
+                style: TextStyle(color: Colors.grey.shade600, fontSize: 14)),
+          ],
+        ),
+      );
+    }
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,

@@ -278,7 +278,9 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
     if (confirm == true && _review != null) {
       try {
         final r = _review!;
-        await DbHelper().deleteReview(r.id!);
+        if (r.id != null) {
+          await DbHelper().deleteReview(r.id!);
+        }
         ReviewSyncService().delete(r.userId, r.bookId);
         if (mounted) setState(() => _review = null);
       } catch (e) {

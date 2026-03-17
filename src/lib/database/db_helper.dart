@@ -140,7 +140,8 @@ class DbHelper {
 
   Future<List<Review>> searchReviews(String userId, String query) async {
     final db = await database;
-    final q = '%$query%';
+    final escaped = query.replaceAll('%', '\\%').replaceAll('_', '\\_');
+    final q = '%$escaped%';
     final res = await db.query(
       'reviews',
       where:
@@ -239,10 +240,10 @@ class DbHelper {
     return res.map(Review.fromMap).toList();
   }
 
-  Future<void> deleteAllUserData() async {
+  Future<void> deleteAllUserData(String userId) async {
     final db = await database;
-    await db.delete('reviews');
-    await db.delete('wishlist');
+    await db.delete('reviews', where: 'user_id = ?', whereArgs: [userId]);
+    await db.delete('wishlist', where: 'user_id = ?', whereArgs: [userId]);
   }
 
   Future<void> close() async {

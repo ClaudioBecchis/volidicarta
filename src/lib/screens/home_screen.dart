@@ -23,6 +23,7 @@ import 'admin_stats_screen.dart';
 import '../models/book.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
+import '../utils/platform_adaptive.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -277,6 +278,7 @@ class _DashboardTabState extends State<_DashboardTab> {
   List<Review> _recent = [];
   int _communityUsers = 0;
   int _onlineUsers = 0;
+  bool _loading = true;
 
   @override
   void initState() {
@@ -301,7 +303,7 @@ class _DashboardTabState extends State<_DashboardTab> {
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
     if (uid == null) {
-      if (mounted) setState(() {});
+      if (mounted) setState(() => _loading = false);
       return;
     }
     try {
@@ -317,10 +319,12 @@ class _DashboardTabState extends State<_DashboardTab> {
           _avg = stats['avg'] != null ? (stats['avg'] as num).toDouble() : null;
           _recent = results[1] as List<Review>;
           _wishlistCount = results[2] as int;
+          _loading = false;
         });
       }
     } catch (e) {
       debugPrint('Dashboard load error: $e');
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -466,7 +470,7 @@ class _DashboardTabState extends State<_DashboardTab> {
   Widget build(BuildContext context) {
     final user = AuthService().currentUser;
     final s = S.of(context);
-    final isDesktop = (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) || MediaQuery.of(context).size.width > 700;
+    final isDesktop = PlatformAdaptive.isDesktop || MediaQuery.of(context).size.width > 700;
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: isDesktop
@@ -492,21 +496,23 @@ class _DashboardTabState extends State<_DashboardTab> {
                 ),
               ],
             ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: _buildDashboardContent(context, user, s),
-          ),
-        ),
-      ),
+      body: _loading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: _buildDashboardContent(context, user, s),
+                ),
+              ),
+            ),
     );
   }
 
   Widget _buildDashboardContent(BuildContext context, dynamic user, S s) {
-    final isWide = (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) || MediaQuery.of(context).size.width > 900;
+    final isWide = PlatformAdaptive.isDesktop || MediaQuery.of(context).size.width > 900;
     final actionCards = [
       _ActionCard(
         icon: Icons.add_box_outlined,
@@ -1141,7 +1147,7 @@ class _DesktopUserTile extends StatelessWidget {
                     backgroundColor: const Color(0xFF1A5276),
                     child: Text(
                       user != null
-                          ? user.username.substring(0, 1).toUpperCase()
+                          ? (user.username.isNotEmpty ? user.username.substring(0, 1).toUpperCase() : '?')
                           : '?',
                       style: const TextStyle(
                           color: Colors.white,
@@ -1184,7 +1190,7 @@ class _DesktopUserTile extends StatelessWidget {
                     backgroundColor: const Color(0xFF1A5276),
                     child: Text(
                       user != null
-                          ? user.username.substring(0, 1).toUpperCase()
+                          ? (user.username.isNotEmpty ? user.username.substring(0, 1).toUpperCase() : '?')
                           : '?',
                       style: const TextStyle(
                           color: Colors.white,

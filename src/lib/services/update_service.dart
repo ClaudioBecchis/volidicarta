@@ -1,5 +1,5 @@
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform, debugPrint;
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
@@ -107,6 +107,15 @@ class UpdateService {
           await apkFile.writeAsBytes(await response.stream.toBytes());
         }
 
+        // Verifica integrità SHA-256
+        if (info.sha256 != null && info.sha256!.isNotEmpty) {
+          final digest = sha256.convert(await apkFile.readAsBytes());
+          if (digest.toString() != info.sha256) {
+            await apkFile.delete();
+            throw Exception('SHA-256 mismatch: APK corrotto o manomesso');
+          }
+        }
+
         // Lancia il wizard di installazione nativo — unica azione richiesta all'utente
         final result = await OpenFilex.open(
           apkFile.path,
@@ -145,8 +154,8 @@ class UpdateService {
         await DbHelper().close();
         await SystemNavigator.pop();
       }
-    } catch (_) {
-      // Fallimento silenzioso — l'aggiornamento verrà ritentato al prossimo avvio
+    } catch (e) {
+      debugPrint('UpdateService.downloadAndInstall error: $e');
     }
   }
 }
