@@ -3,6 +3,7 @@ import '../models/book.dart';
 import '../models/review.dart';
 import '../models/public_review.dart';
 import '../services/auth_service.dart';
+import '../services/analytics_service.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
 import '../services/supabase_service.dart';
@@ -167,6 +168,10 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           updatedAt: now,
         );
         await DbHelper().insertReview(review);
+        AnalyticsService().trackEvent('review_save', {
+          'rating': _rating.toString(),
+          'book': widget.book.title,
+        });
         ReviewSyncService().upsert(review).catchError((_) {
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
@@ -197,6 +202,7 @@ class _WriteReviewScreenState extends State<WriteReviewScreen> {
           createdAt: review.createdAt ?? DateTime.now().toIso8601String(),
         );
         await SupabaseService().publishReview(pub);
+        AnalyticsService().trackEvent('community_share', {'book': widget.book.title});
       }
 
       if (mounted) Navigator.pop(context, true);

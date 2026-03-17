@@ -8,6 +8,7 @@ import '../models/book.dart';
 import '../models/review.dart';
 import '../models/wishlist_book.dart';
 import '../services/book_api_service.dart';
+import '../services/analytics_service.dart';
 import '../services/auth_service.dart';
 import '../database/db_helper.dart';
 import '../widgets/book_card.dart';
@@ -109,6 +110,7 @@ class _SearchScreenState extends State<SearchScreen> {
     if (overrideQuery != null) {
       _ctrl.text = overrideQuery;
     }
+    AnalyticsService().trackEvent('search', {'query': q});
     setState(() { _loading = true; _searched = true; _error = null; });
     final res = _langFilter == 'all'
         ? await _api.searchAll(q, searchType: _searchType)

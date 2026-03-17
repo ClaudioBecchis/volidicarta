@@ -13,6 +13,7 @@ import '../services/review_sync_service.dart';
 import '../widgets/star_rating.dart';
 import 'write_review_screen.dart';
 import 'book_preview_screen.dart';
+import 'pdf_viewer_screen.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
 
@@ -465,11 +466,16 @@ class _BookDetailScreenState extends State<BookDetailScreen> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () async {
-                        final uri = Uri.parse(book.pdfDownloadLink!);
-                        if (await canLaunchUrl(uri)) {
-                          await launchUrl(uri, mode: LaunchMode.externalApplication);
-                        }
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => PdfViewerScreen(
+                              title: book.title,
+                              url: book.pdfDownloadLink!,
+                            ),
+                          ),
+                        );
                       },
                       icon: const Icon(Icons.picture_as_pdf_outlined,
                           color: Colors.red),

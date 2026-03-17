@@ -24,6 +24,7 @@ import '../models/book.dart';
 import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
 import '../utils/platform_adaptive.dart';
+import '../widgets/connectivity_indicator.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -218,7 +219,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      body: IndexedStack(index: _tab, children: _pages),
+      body: ConnectivityIndicator(
+        child: IndexedStack(index: _tab, children: _pages),
+      ),
       bottomNavigationBar: Theme(
         data: Theme.of(context).copyWith(
           navigationBarTheme: NavigationBarThemeData(
