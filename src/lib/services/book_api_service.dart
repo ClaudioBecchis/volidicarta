@@ -8,6 +8,7 @@ import '../utils/retry_helper.dart';
 class BookApiService {
   static const _googleBase = 'https://www.googleapis.com/books/v1/volumes';
   static const _openLibBase = 'https://openlibrary.org/search.json';
+  static const _sbnBase = 'https://opac.sbn.it/opacmobilegw/search.json';
 
   // Cache in memoria: chiave = query+lang, valore = risultato (max 100 voci, TTL 30 min)
   static final _cache = <String, ({List<Book> books, String? error, DateTime ts})>{};
@@ -57,44 +58,61 @@ class BookApiService {
 
     final effectiveQuery = _buildQuery(query, searchType);
 
-    // Per il filtro ITA: doppia ricerca parallela — con e senza langRestrict,
-    // poi filtro client-side su language='it' e merge per coprire edizioni
-    // italiane con metadati mancanti o errati.
+    // Per il filtro ITA: ricerca parallela su 4 fonti — Google (con/senza lang),
+    // Open Library (con/senza lang) e OPAC SBN per autori emergenti e piccoli
+    // editori non indicizzati da Google.
     if (langRestrict == 'it') {
       final results = await Future.wait([
         _searchGoogle(effectiveQuery, maxResults: 40, langRestrict: 'it'),
         _searchGoogle(effectiveQuery, maxResults: 40),
-        _searchOpenLibrary(query, maxResults: 20, lang: 'ita', searchType: searchType),
+        _searchOpenLibrary(query, maxResults: 40, lang: 'ita', searchType: searchType),
+        _searchOpenLibrary(query, maxResults: 20, searchType: searchType),
+        _searchSbn(query, maxResults: 20),
       ]);
       final withRestrict = results[0];
       final withoutRestrict = results[1];
-      final openLib = results[2];
+      final openLibIt = results[2];
+      final openLibAll = results[3];
+      final sbn = results[4];
 
       final seenIds = <String>{};
+      final seenTitles = <String>{};
       final merged = <Book>[];
-      for (final b in withRestrict.books) {
-        if (seenIds.add(b.id)) merged.add(b);
-      }
-      for (final b in withoutRestrict.books) {
-        if (b.language == 'it' && seenIds.add(b.id)) merged.add(b);
-      }
-      // Aggiunge risultati Open Library se Google ha trovato poco
-      if (merged.length < 10) {
-        for (final b in openLib.books) {
-          if (seenIds.add(b.id)) merged.add(b);
+
+      void addUnique(Book b) {
+        if (seenIds.add(b.id)) {
+          final titleKey = '${b.title.toLowerCase()}|${b.authors.toLowerCase()}';
+          if (seenTitles.add(titleKey)) merged.add(b);
         }
       }
 
+      // 1. Google con filtro lingua (priorità alta)
+      for (final b in withRestrict.books) { addUnique(b); }
+      // 2. Google senza filtro, solo lingua IT
+      for (final b in withoutRestrict.books) {
+        if (b.language == 'it') addUnique(b);
+      }
+      // 3. SEMPRE include Open Library IT (autori emergenti)
+      for (final b in openLibIt.books) { addUnique(b); }
+      // 4. Open Library senza filtro (cattura metadati lingua mancanti)
+      for (final b in openLibAll.books) { addUnique(b); }
+      // 5. OPAC SBN — catalogo completo biblioteche italiane
+      for (final b in sbn.books) { addUnique(b); }
+
       if (merged.isEmpty && withRestrict.error != null) {
-        if (openLib.error == null && openLib.books.isNotEmpty) {
-          _addToCache(key, openLib);
-          return openLib;
+        if (openLibIt.error == null && openLibIt.books.isNotEmpty) {
+          _addToCache(key, openLibIt);
+          return openLibIt;
+        }
+        if (sbn.error == null && sbn.books.isNotEmpty) {
+          _addToCache(key, sbn);
+          return sbn;
         }
         final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: 'ita', searchType: searchType);
         if (fallback.error == null) _addToCache(key, fallback);
         return fallback;
       }
-      final limited = (books: merged.take(40).toList(), error: null);
+      final limited = (books: merged.take(60).toList(), error: null);
       _addToCache(key, limited);
       return limited;
     }
@@ -102,7 +120,7 @@ class BookApiService {
     final olLang = langRestrict == 'en' ? 'eng' : null;
     final results = await Future.wait([
       _searchGoogle(effectiveQuery, maxResults: 40, langRestrict: langRestrict == 'it' ? 'it' : langRestrict),
-      _searchOpenLibrary(query, maxResults: 20, lang: olLang, searchType: searchType),
+      _searchOpenLibrary(query, maxResults: 40, lang: olLang, searchType: searchType),
     ]);
     final googleResult = results[0];
     final olResult = results[1];
@@ -113,16 +131,22 @@ class BookApiService {
     }
 
     final seenIds = <String>{};
+    final seenTitles = <String>{};
     final merged = <Book>[];
     for (final b in googleResult.books) {
-      if (seenIds.add(b.id)) merged.add(b);
-    }
-    if (merged.length < 10) {
-      for (final b in olResult.books) {
-        if (seenIds.add(b.id)) merged.add(b);
+      if (seenIds.add(b.id)) {
+        seenTitles.add('${b.title.toLowerCase()}|${b.authors.toLowerCase()}');
+        merged.add(b);
       }
     }
-    final result = (books: merged.take(40).toList(), error: null);
+    // SEMPRE include Open Library (autori emergenti)
+    for (final b in olResult.books) {
+      if (seenIds.add(b.id)) {
+        final titleKey = '${b.title.toLowerCase()}|${b.authors.toLowerCase()}';
+        if (seenTitles.add(titleKey)) merged.add(b);
+      }
+    }
+    final result = (books: merged.take(60).toList(), error: null);
     _addToCache(key, result);
     return result;
   }
@@ -141,7 +165,7 @@ class BookApiService {
     final effectiveQuery = _buildQuery(query, searchType);
     final results = await Future.wait([
       _searchGoogle(effectiveQuery, maxResults: 40),
-      _searchOpenLibrary(query, maxResults: 20, searchType: searchType),
+      _searchOpenLibrary(query, maxResults: 40, searchType: searchType),
     ]);
     final googleResult = results[0];
     final olResult = results[1];
@@ -152,16 +176,22 @@ class BookApiService {
     }
 
     final seenIds = <String>{};
+    final seenTitles = <String>{};
     final merged = <Book>[];
     for (final b in googleResult.books) {
-      if (seenIds.add(b.id)) merged.add(b);
-    }
-    if (merged.length < 15) {
-      for (final b in olResult.books) {
-        if (seenIds.add(b.id)) merged.add(b);
+      if (seenIds.add(b.id)) {
+        seenTitles.add('${b.title.toLowerCase()}|${b.authors.toLowerCase()}');
+        merged.add(b);
       }
     }
-    final result = (books: merged.take(40).toList(), error: null);
+    // SEMPRE include Open Library (autori emergenti/indie)
+    for (final b in olResult.books) {
+      if (seenIds.add(b.id)) {
+        final titleKey = '${b.title.toLowerCase()}|${b.authors.toLowerCase()}';
+        if (seenTitles.add(titleKey)) merged.add(b);
+      }
+    }
+    final result = (books: merged.take(60).toList(), error: null);
     _addToCache(key, result);
     return result;
   }
@@ -240,6 +270,53 @@ class BookApiService {
       return (books: <Book>[], error: 'Timeout: controlla la connessione internet');
     } catch (e) {
       return (books: <Book>[], error: 'Errore rete: ${e.toString()}');
+    }
+  }
+
+  /// Cerca nel catalogo OPAC SBN (Servizio Bibliotecario Nazionale italiano).
+  /// Indicizza TUTTI i libri pubblicati in Italia, inclusi piccoli editori
+  /// e autori emergenti/self-published con ISBN.
+  Future<({List<Book> books, String? error})> _searchSbn(
+      String query, {int maxResults = 20}) async {
+    try {
+      final encoded = Uri.encodeQueryComponent(query.trim());
+      // L'API OPAC SBN usa il formato SRU/OpenSearch
+      final url = '$_sbnBase?any=$encoded&rows=$maxResults&channel=OPAC_MOBILE';
+      final res = await http.get(Uri.parse(url))
+          .timeout(const Duration(seconds: 8));
+      if (res.statusCode != 200) {
+        return (books: <Book>[], error: null); // Fallimento silenzioso, non blocca
+      }
+      final data = jsonDecode(res.body);
+      final records = (data['briefRecords'] ?? data['records'] ?? []) as List;
+      if (records.isEmpty) return (books: <Book>[], error: null);
+
+      final books = <Book>[];
+      for (final r in records) {
+        try {
+          final title = (r['title'] ?? r['titolo'] ?? '') as String;
+          final authors = (r['author'] ?? r['autore'] ?? 'Autore sconosciuto') as String;
+          if (title.isEmpty) continue;
+          final bid = r['bid'] ?? r['id'] ?? '';
+          books.add(Book(
+            id: 'sbn_$bid',
+            title: title.replaceAll(RegExp(r'\s*/\s*$'), '').trim(),
+            authors: authors.replaceAll(RegExp(r'\s*/\s*$'), '').trim(),
+            publisher: r['publisher'] as String?,
+            publishedDate: r['date'] as String?,
+            isbn: r['isbn'] as String?,
+            language: 'it',
+            coverUrl: r['coverUrl'] as String?,
+          ));
+        } catch (_) {
+          // Record malformato, skip
+        }
+      }
+      return (books: books, error: null);
+    } on TimeoutException {
+      return (books: <Book>[], error: null); // Non blocca la ricerca principale
+    } catch (e) {
+      return (books: <Book>[], error: null); // Fallimento silenzioso
     }
   }
 
