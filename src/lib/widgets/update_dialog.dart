@@ -99,7 +99,10 @@ class _UpdateDialogState extends State<UpdateDialog> {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
           }
         }
-        if (mounted) Navigator.pop(context);
+        // Chiudi l'app per permettere l'installazione pulita
+        await Future.delayed(const Duration(milliseconds: 800));
+        await DbHelper().close();
+        await SystemNavigator.pop();
         return;
       }
 
