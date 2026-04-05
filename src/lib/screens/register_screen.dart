@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../config/supabase_config.dart';
 import '../services/auth_service.dart';
+import '../services/aruba_http.dart';
 import 'home_screen.dart';
 import '../config/app_colors.dart';
 import 'login_screen.dart';
@@ -57,10 +56,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() { _loading = false; _error = err; });
     } else {
       if (!mounted) return;
-      final session = SupabaseConfig.isInitialized
-          ? Supabase.instance.client.auth.currentSession
-          : null;
-      if (session != null) {
+      final isLoggedIn = ArubaHttp().isLoggedIn;
+      if (isLoggedIn) {
         if (Navigator.canPop(context)) {
           Navigator.pop(context);
         } else {

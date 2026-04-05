@@ -329,3 +329,22 @@ returns json as $$
     )
   );
 $$ language sql security definer set search_path = 'public';
+
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- APP_VERSION (auto-update)
+-- ═══════════════════════════════════════════════════════════════════════════
+
+create table if not exists app_version (
+  id serial primary key,
+  version text not null,
+  download_url text,
+  sha256_checksum text,
+  release_notes text,
+  created_at timestamptz default now()
+);
+
+alter table app_version enable row level security;
+create policy "appver_select" on app_version for select using (true);
+
+create index if not exists idx_app_version_id on app_version(id desc);

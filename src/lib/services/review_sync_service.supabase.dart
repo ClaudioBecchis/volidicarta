@@ -1,22 +1,23 @@
 import 'package:flutter/foundation.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import '../config/supabase_config.dart';
 import '../models/review.dart';
 import '../database/db_helper.dart';
-import 'aruba_http.dart';
 
-/// Sincronizzazione recensioni SQLite locale ↔ MySQL Aruba.
-/// Drop-in replacement di review_sync_service.dart (Supabase).
 class ReviewSyncService {
   static final ReviewSyncService _instance = ReviewSyncService._();
   factory ReviewSyncService() => _instance;
   ReviewSyncService._();
 
-  final _http = ArubaHttp();
+  SupabaseClient? get _client =>
+      SupabaseConfig.isInitialized ? Supabase.instance.client : null;
 
-  // ── Upsert singola recensione su Aruba (fire & forget) ─────────────────
+  // ── Upsert singola recensione su Supabase (fire & forget) ─────────────────
   Future<void> upsert(Review review) async {
-    if (!_http.isLoggedIn) return;
+    final c = _client;
+    if (c == null) return;
     try {
-      await _http.post('user_reviews', {
+      await c.from('user_reviews').upsert({
         'user_id': review.userId,
         'book_id': review.bookId,
         'book_title': review.bookTitle,
@@ -32,34 +33,44 @@ class ReviewSyncService {
         'end_date': review.endDate,
         'created_at': review.createdAt ?? DateTime.now().toIso8601String(),
         'updated_at': review.updatedAt,
-      });
+      }, onConflict: 'user_id,book_id');
     } catch (e) {
       debugPrint('ReviewSyncService.upsert error: $e');
     }
   }
 
-  // ── Elimina recensione da Aruba ────────────────────────────────────────
+  // ── Elimina recensione da Supabase ────────────────────────────────────────
   Future<void> delete(String userId, String bookId) async {
-    if (!_http.isLoggedIn) return;
+    final c = _client;
+    if (c == null) return;
     try {
-      await _http.delete('user_reviews', {'book_id': bookId});
+      await c
+          .from('user_reviews')
+          .delete()
+          .eq('user_id', userId)
+          .eq('book_id', bookId);
     } catch (e) {
       debugPrint('ReviewSyncService.delete error: $e');
     }
   }
 
-  // ── Sincronizza dal cloud al dispositivo (al login) ───────────────────
+  // ── Sincronizza dal cloud al dispositivo (al login) ───────────────────────
   Future<int> syncFromCloud(String userId) async {
-    if (!_http.isLoggedIn) return 0;
+    final c = _client;
+    if (c == null) return 0;
     int synced = 0;
     try {
-      final data = await _http.get('user_reviews');
-      if (data == null || data is! List) return 0;
+      final data = await c
+          .from('user_reviews')
+          .select()
+          .eq('user_id', userId)
+          .order('updated_at', ascending: false);
 
       final db = DbHelper();
-      for (final m in data) {
+      for (final m in data as List) {
         final map = m as Map<String, dynamic>;
         try {
+          // Controlla se esiste già in locale
           final bookId = map['book_id'] as String?;
           if (bookId == null) continue;
           final existing = await db.getReviewForBook(userId, bookId);
@@ -92,9 +103,10 @@ class ReviewSyncService {
     return synced;
   }
 
-  // ── Carica TUTTE le recensioni locali su Aruba (primo sync) ─────────────
+  // ── Carica TUTTE le recensioni locali su Supabase (primo sync) ─────────────
   Future<void> uploadAll(String userId) async {
-    if (!_http.isLoggedIn) return;
+    final c = _client;
+    if (c == null) return;
     try {
       final reviews = await DbHelper().getReviewsByUser(userId);
       for (final r in reviews) {

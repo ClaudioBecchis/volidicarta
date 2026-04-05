@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 import '../config/app_colors.dart';
+import '../services/aruba_http.dart';
 
 class AdminStatsScreen extends StatefulWidget {
   const AdminStatsScreen({super.key});
@@ -42,13 +42,11 @@ class _AdminStatsScreenState extends State<AdminStatsScreen> {
     if (!SupabaseConfig.isInitialized || !mounted) return;
     setState(() => _loading = true);
     try {
-      final c = Supabase.instance.client;
+      final http = ArubaHttp();
 
-      final statsRaw = await c.rpc('get_community_stats');
-      final stats = statsRaw as Map<String, dynamic>;
+      final stats = await http.get('community_stats') as Map<String, dynamic>? ?? {};
 
-      final adminRaw = await c.rpc('get_admin_stats');
-      final admin = adminRaw as Map<String, dynamic>;
+      final admin = await http.get('admin_stats') as Map<String, dynamic>? ?? {};
 
       final regByDay = (admin['registrations_by_day'] as List? ?? [])
           .map((r) => (

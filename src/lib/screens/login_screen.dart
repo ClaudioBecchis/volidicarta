@@ -1,7 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import '../config/supabase_config.dart';
 import '../services/auth_service.dart';
 import 'home_screen.dart';
 import '../config/app_colors.dart';
@@ -45,18 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void initState() {
     super.initState();
-    if (SupabaseConfig.isInitialized) {
-      _authSub = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
-        if (data.event == AuthChangeEvent.signedIn && mounted) {
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context);
-          } else {
-            Navigator.pushReplacement(
-                context, MaterialPageRoute(builder: (_) => const HomeScreen()));
-          }
-        }
-      });
-    }
+    // Backend Aruba: nessun listener auth realtime necessario
   }
 
   @override

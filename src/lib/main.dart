@@ -5,8 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:sqflite_common_ffi_web/sqflite_ffi_web.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
-import 'config/supabase_config.dart';
+import 'services/aruba_http.dart';
 import 'services/crash_service.dart';
 import 'services/settings_service.dart';
 import 'services/analytics_service.dart';
@@ -24,18 +23,11 @@ void main() async {
     databaseFactory = databaseFactoryFfi;
   }
   // Android/iOS: sqflite nativo, nessuna inizializzazione necessaria
-  if (SupabaseConfig.isConfigured) {
-    try {
-      await Supabase.initialize(
-        url: SupabaseConfig.url,
-        anonKey: SupabaseConfig.anonKey,
-        authOptions: const FlutterAuthClientOptions(
-          detectSessionInUri: false,
-        ),
-      );
-    } catch (e) {
-      debugPrint('Supabase init error: $e');
-    }
+  // Backend Aruba: carica sessione salvata
+  try {
+    await ArubaHttp().loadSession();
+  } catch (e) {
+    debugPrint('ArubaHttp session load error: $e');
   }
   try {
     await SettingsService().load();

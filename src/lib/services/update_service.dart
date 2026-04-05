@@ -8,6 +8,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
+import 'aruba_http.dart';
 import '../database/db_helper.dart';
 
 class UpdateInfo {
@@ -57,17 +58,9 @@ class UpdateService {
   Future<UpdateInfo?> checkForUpdate(String currentVersion) async {
     if (!SupabaseConfig.isConfigured) return null;
     try {
-      final uri = Uri.parse(
-          '${SupabaseConfig.url}/rest/v1/app_version'
-          '?select=version,release_notes,download_url,sha256_checksum'
-          '&order=id.desc&limit=1');
-      final res = await http.get(uri, headers: {
-        'apikey': SupabaseConfig.anonKey,
-        'Authorization': 'Bearer ${SupabaseConfig.anonKey}',
-      }).timeout(const Duration(seconds: 8));
-
-      if (res.statusCode != 200) return null;
-      final data = jsonDecode(res.body) as List;
+      final result = await ArubaHttp().get('app_version');
+      if (result == null) return null;
+      final data = result is List ? result : [result];
       if (data.isEmpty) return null;
 
       final row = data.first as Map<String, dynamic>;

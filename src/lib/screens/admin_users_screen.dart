@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 import '../config/app_colors.dart';
+import '../services/aruba_http.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -32,10 +32,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     if (!SupabaseConfig.isInitialized) return;
     setState(() => _loading = true);
     try {
-      final data = await Supabase.instance.client
-          .from('profiles')
-          .select('id, username, created_at, last_seen')
-          .order('created_at', ascending: false);
+      final data = await ArubaHttp().get('profiles');
       if (mounted) {
         setState(() {
           _users = List<Map<String, dynamic>>.from((data as List? ?? []));

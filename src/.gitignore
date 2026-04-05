@@ -49,3 +49,16 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Binari di release — usare GitHub Releases
+*.apk
+*.exe
+*.msi
+*.zip
+*.tar.gz
+
+# Screenshot e banner (opzionale, commentare se servono nel repo)
+# *.png
+
+# File temporanei Aider
+.aider.*
