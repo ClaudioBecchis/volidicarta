@@ -39,3 +39,5 @@ sqflite_sw.js
 sqlite3.wasm
 .last_build_id
 version.json
+docs/
+*.bak
