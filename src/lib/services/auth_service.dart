@@ -96,8 +96,21 @@ class AuthService {
     await _http.clearSession();
   }
 
+  Future<String?> resendConfirmation(String email) async {
+    final res = await _http.post('resend_confirmation', {'email': email.trim()});
+    if (res == null) return 'Errore di connessione. Riprova.';
+    if (res['error'] != null) {
+      final e = (res['error'] as String).toLowerCase();
+      if (e.contains('gia confermato')) return 'Account già confermato. Prova ad accedere.';
+      if (e.contains('non trovata')) return 'Email non registrata.';
+      return res['error'] as String;
+    }
+    return null;
+  }
+
   String _translateLoginError(String msg) {
     final m = msg.toLowerCase();
+    if (m.contains('non confermato')) return 'account_non_confermato';
     if (m.contains('troppi tentativi')) return 'Troppi tentativi. Attendi qualche minuto.';
     return 'Email o password errata';
   }

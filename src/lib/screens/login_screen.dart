@@ -18,14 +18,23 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _loading = false;
   bool _obscure = true;
   String? _error;
+  bool _notConfirmed = false;
 
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() { _loading = true; _error = null; });
+    setState(() { _loading = true; _error = null; _notConfirmed = false; });
     final err = await AuthService().login(_emailCtrl.text, _passCtrl.text);
     if (!mounted) return;
     if (err != null) {
-      setState(() { _loading = false; _error = err; });
+      setState(() {
+        _loading = false;
+        if (err == 'account_non_confermato') {
+          _notConfirmed = true;
+          _error = 'Account non ancora confermato. Controlla la tua email.';
+        } else {
+          _error = err;
+        }
+      });
     } else {
       await AuthService().refreshAdminStatus();
       if (!mounted) return;
@@ -38,10 +47,23 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  @override
-  void initState() {
-    super.initState();
-    // Backend Aruba: nessun listener auth realtime necessario
+  Future<void> _resendEmail() async {
+    setState(() => _loading = true);
+    final err = await AuthService().resendConfirmation(_emailCtrl.text);
+    if (!mounted) return;
+    setState(() => _loading = false);
+    if (err != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(err), backgroundColor: Colors.red),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Email di conferma inviata. Controlla la tua casella.'),
+          backgroundColor: Color(0xFF1A5276),
+        ),
+      );
+    }
   }
 
   @override
@@ -62,8 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
             constraints: const BoxConstraints(maxWidth: 400),
             child: Card(
               elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16)),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
               child: Padding(
                 padding: const EdgeInsets.all(32),
                 child: Form(
@@ -71,20 +92,14 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.menu_book_rounded,
-                          size: 64, color: Color(0xFF1A5276)),
+                      const Icon(Icons.menu_book_rounded, size: 64, color: Color(0xFF1A5276)),
                       const SizedBox(height: 12),
                       Text('Accedi',
-                          style: Theme.of(context)
-                              .textTheme
-                              .headlineSmall
-                              ?.copyWith(
-                                  color: const Color(0xFF1A5276),
-                                  fontWeight: FontWeight.bold)),
+                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              color: const Color(0xFF1A5276), fontWeight: FontWeight.bold)),
                       const SizedBox(height: 4),
                       Text('Voli di Carta Community',
-                          style: TextStyle(
-                              color: Colors.grey.shade600, fontSize: 13)),
+                          style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
                       const SizedBox(height: 24),
                       TextFormField(
                         controller: _emailCtrl,
@@ -104,11 +119,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelText: 'Password',
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
-                            icon: Icon(_obscure
-                                ? Icons.visibility_off
-                                : Icons.visibility),
-                            onPressed: () =>
-                                setState(() => _obscure = !_obscure),
+                            icon: Icon(_obscure ? Icons.visibility_off : Icons.visibility),
+                            onPressed: () => setState(() => _obscure = !_obscure),
                           ),
                         ),
                         validator: (v) =>
@@ -120,19 +132,55 @@ class _LoginScreenState extends State<LoginScreen> {
                         Container(
                           padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.red.shade50,
+                            color: _notConfirmed
+                                ? Colors.orange.shade50
+                                : Colors.red.shade50,
                             borderRadius: BorderRadius.circular(8),
-                            border: Border.all(color: Colors.red.shade200),
+                            border: Border.all(
+                              color: _notConfirmed
+                                  ? Colors.orange.shade300
+                                  : Colors.red.shade200,
+                            ),
                           ),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(Icons.error_outline,
-                                  color: Colors.red, size: 18),
-                              const SizedBox(width: 8),
-                              Expanded(
-                                  child: Text(_error!,
-                                      style:
-                                          const TextStyle(color: Colors.red))),
+                              Row(
+                                children: [
+                                  Icon(
+                                    _notConfirmed
+                                        ? Icons.mark_email_unread_outlined
+                                        : Icons.error_outline,
+                                    color: _notConfirmed ? Colors.orange : Colors.red,
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      _error!,
+                                      style: TextStyle(
+                                        color: _notConfirmed ? Colors.orange.shade800 : Colors.red,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              if (_notConfirmed) ...[
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    icon: const Icon(Icons.send, size: 16),
+                                    label: const Text('Rinvia email di conferma'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.orange.shade800,
+                                      side: BorderSide(color: Colors.orange.shade300),
+                                      padding: const EdgeInsets.symmetric(vertical: 8),
+                                    ),
+                                    onPressed: _loading ? null : _resendEmail,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -144,21 +192,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: _loading ? null : _login,
                           child: _loading
                               ? const SizedBox(
-                                  height: 20,
-                                  width: 20,
-                                  child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white))
-                              : const Text('Accedi',
-                                  style: TextStyle(fontSize: 16)),
+                                  height: 20, width: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Accedi', style: TextStyle(fontSize: 16)),
                         ),
                       ),
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () => Navigator.pushReplacement(context,
-                            MaterialPageRoute(
-                                builder: (_) => const RegisterScreen())),
-                        child: const Text(
-                            'Non hai un account? Registrati',
+                            MaterialPageRoute(builder: (_) => const RegisterScreen())),
+                        child: const Text('Non hai un account? Registrati',
                             style: TextStyle(color: Color(0xFF1A5276))),
                       ),
                     ],
