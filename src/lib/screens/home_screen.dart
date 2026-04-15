@@ -25,6 +25,7 @@ import '../config/app_colors.dart';
 import '../l10n/app_strings.dart';
 import '../utils/platform_adaptive.dart';
 import '../widgets/connectivity_indicator.dart';
+import '../services/admin_notification_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -51,6 +52,9 @@ class _HomeScreenState extends State<HomeScreen> {
       const StatsScreen(),
       const CommunityScreen(),
     ];
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      AdminNotificationService.checkNewRegistrations(context);
+    });
   }
 
   void _onTabSelected(int i) {

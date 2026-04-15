@@ -96,6 +96,10 @@ class AuthService {
     await _http.clearSession();
   }
 
+  Future<void> resetPassword(String email) async {
+    await _http.post('reset_password', {'email': email});
+  }
+
   Future<String?> resendConfirmation(String email) async {
     final res = await _http.post('resend_confirmation', {'email': email.trim()});
     if (res == null) return 'Errore di connessione. Riprova.';

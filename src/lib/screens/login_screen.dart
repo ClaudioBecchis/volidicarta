@@ -3,6 +3,7 @@ import '../services/auth_service.dart';
 import 'home_screen.dart';
 import '../config/app_colors.dart';
 import 'register_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -197,7 +198,14 @@ class _LoginScreenState extends State<LoginScreen> {
                               : const Text('Accedi', style: TextStyle(fontSize: 16)),
                         ),
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: () => Navigator.push(context,
+                            MaterialPageRoute(builder: (_) => const ForgotPasswordScreen())),
+                        child: const Text('Password dimenticata?',
+                            style: TextStyle(color: Color(0xFF1A5276))),
+                      ),
+                      const SizedBox(height: 4),
                       TextButton(
                         onPressed: () => Navigator.pushReplacement(context,
                             MaterialPageRoute(builder: (_) => const RegisterScreen())),
