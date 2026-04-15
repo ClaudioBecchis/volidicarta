@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../config/supabase_config.dart';
 import '../config/app_colors.dart';
 import '../services/aruba_http.dart';
+import '../services/auth_service.dart';
 
 class AdminUsersScreen extends StatefulWidget {
   const AdminUsersScreen({super.key});
@@ -29,7 +29,6 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   }
 
   Future<void> _load() async {
-    if (!SupabaseConfig.isInitialized) return;
     setState(() => _loading = true);
     try {
       final data = await ArubaHttp().get('profiles');
@@ -45,11 +44,84 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     }
   }
 
+  Future<void> _toggleAdmin(Map<String, dynamic> user) async {
+    final isAdmin = user['is_admin'] == true || user['is_admin'] == 1;
+    final username = user['username'] as String;
+    final userId = user['id'] as String;
+    final myId = AuthService().currentUser?.id;
+
+    // Conferma
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(isAdmin ? 'Rimuovi admin' : 'Rendi admin'),
+        content: Text(
+          isAdmin
+              ? 'Vuoi rimuovere i permessi admin a "$username"?'
+              : 'Vuoi rendere "$username" amministratore?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annulla'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isAdmin ? Colors.red : const Color(0xFF1A5276),
+            ),
+            child: Text(isAdmin ? 'Rimuovi' : 'Rendi admin'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true || !mounted) return;
+
+    // Blocca auto-demozione
+    if (userId == myId && isAdmin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Non puoi rimuovere il tuo stesso ruolo admin')),
+      );
+      return;
+    }
+
+    final res = await ArubaHttp().post('set_admin', {
+      'user_id': userId,
+      'is_admin': !isAdmin,
+    });
+
+    if (!mounted) return;
+    if (res != null && res['error'] == null) {
+      setState(() {
+        final idx = _users.indexWhere((u) => u['id'] == userId);
+        if (idx != -1) _users[idx] = {..._users[idx], 'is_admin': !isAdmin};
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isAdmin
+              ? '$username non è più admin'
+              : '$username è ora admin'),
+          backgroundColor: isAdmin ? Colors.orange : const Color(0xFF1A5276),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Errore: ${res?['error'] ?? 'sconosciuto'}'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   List<Map<String, dynamic>> get _filtered {
     if (_search.isEmpty) return _users;
     final q = _search.toLowerCase();
     return _users
-        .where((u) => ((u['username'] as String?) ?? '').toLowerCase().contains(q))
+        .where((u) =>
+            ((u['username'] as String?) ?? '').toLowerCase().contains(q) ||
+            ((u['email'] as String?) ?? '').toLowerCase().contains(q))
         .toList();
   }
 
@@ -74,8 +146,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     if (iso == null) return 'mai';
     try {
       final d = DateTime.parse(iso).toLocal();
-      final now = DateTime.now();
-      final diff = now.difference(d);
+      final diff = DateTime.now().difference(d);
       if (diff.inMinutes < 1) return 'adesso';
       if (diff.inMinutes < 60) return '${diff.inMinutes} min fa';
       if (diff.inHours < 24) return '${diff.inHours}h fa';
@@ -90,18 +161,16 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   Widget build(BuildContext context) {
     final filtered = _filtered;
     final onlineCount = _users.where((u) => _isOnline(u['last_seen'] as String?)).length;
+    final adminCount = _users.where((u) => u['is_admin'] == true || u['is_admin'] == 1).length;
 
     return Scaffold(
       backgroundColor: AppColors.screenBg(context),
       appBar: AppBar(
-        title: Text('Utenti registrati (${_users.length})'),
+        title: Text('Utenti (${_users.length})'),
         backgroundColor: const Color(0xFF1A5276),
         foregroundColor: Colors.white,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _load,
-          ),
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
         ],
       ),
       body: Column(
@@ -112,32 +181,11 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             child: Row(
               children: [
-                Expanded(
-                  child: _StatBadge(
-                    icon: Icons.people_rounded,
-                    label: 'Totale',
-                    value: '${_users.length}',
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: _StatBadge(
-                    icon: Icons.circle,
-                    label: 'Online',
-                    value: '$onlineCount',
-                    color: const Color(0xFF2ECC71),
-                  ),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: _StatBadge(
-                    icon: Icons.circle_outlined,
-                    label: 'Offline',
-                    value: '${_users.length - onlineCount}',
-                    color: Colors.grey.shade400,
-                  ),
-                ),
+                Expanded(child: _StatBadge(icon: Icons.people_rounded, label: 'Totale', value: '${_users.length}', color: Colors.white)),
+                const SizedBox(width: 12),
+                Expanded(child: _StatBadge(icon: Icons.circle, label: 'Online', value: '$onlineCount', color: const Color(0xFF2ECC71))),
+                const SizedBox(width: 12),
+                Expanded(child: _StatBadge(icon: Icons.shield_rounded, label: 'Admin', value: '$adminCount', color: const Color(0xFFF39C12))),
               ],
             ),
           ),
@@ -147,7 +195,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
             child: TextField(
               controller: _searchCtrl,
               decoration: InputDecoration(
-                hintText: 'Cerca per username...',
+                hintText: 'Cerca username o email...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _search.isNotEmpty
                     ? IconButton(
@@ -158,10 +206,7 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                         },
                       )
                     : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                 filled: true,
                 fillColor: AppColors.chipBg(context),
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
@@ -176,41 +221,37 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                 : filtered.isEmpty
                     ? Center(
                         child: Text(
-                          _search.isEmpty
-                              ? 'Nessun utente registrato'
-                              : 'Nessun risultato per "$_search"',
+                          _search.isEmpty ? 'Nessun utente registrato' : 'Nessun risultato per "$_search"',
                           style: TextStyle(color: Colors.grey.shade500),
                         ),
                       )
                     : RefreshIndicator(
                         onRefresh: _load,
                         child: ListView.builder(
-                          padding: const EdgeInsets.only(
-                              left: 12, right: 12, bottom: 20),
+                          padding: const EdgeInsets.only(left: 12, right: 12, bottom: 20),
                           itemCount: filtered.length,
                           itemBuilder: (_, i) {
                             final u = filtered[i];
-                            final username = u['username'] as String;
-                            final createdAt = u['created_at'] as String?;
-                            final lastSeen = u['last_seen'] as String?;
-                            final online = _isOnline(lastSeen);
+                            final username = u['username'] as String? ?? '?';
+                            final email = u['email'] as String? ?? '';
+                            final isAdmin = u['is_admin'] == true || u['is_admin'] == 1;
+                            final online = _isOnline(u['last_seen'] as String?);
+                            final isMe = u['id'] == AuthService().currentUser?.id;
 
                             return Card(
                               margin: const EdgeInsets.only(bottom: 8),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               child: ListTile(
                                 leading: Stack(
                                   children: [
                                     CircleAvatar(
-                                      backgroundColor: const Color(0xFF1A5276)
-                                          .withValues(alpha: 0.12),
+                                      backgroundColor: isAdmin
+                                          ? const Color(0xFFF39C12).withValues(alpha: 0.15)
+                                          : const Color(0xFF1A5276).withValues(alpha: 0.12),
                                       child: Text(
-                                        username.isNotEmpty
-                                            ? username[0].toUpperCase()
-                                            : 'U',
-                                        style: const TextStyle(
-                                          color: Color(0xFF1A5276),
+                                        username.isNotEmpty ? username[0].toUpperCase() : 'U',
+                                        style: TextStyle(
+                                          color: isAdmin ? const Color(0xFFF39C12) : const Color(0xFF1A5276),
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
@@ -225,55 +266,37 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                           decoration: BoxDecoration(
                                             color: const Color(0xFF2ECC71),
                                             shape: BoxShape.circle,
-                                            border: Border.all(
-                                                color: Theme.of(context)
-                                                    .cardColor,
-                                                width: 1.5),
+                                            border: Border.all(color: Theme.of(context).cardColor, width: 1.5),
                                           ),
                                         ),
                                       ),
                                   ],
                                 ),
-                                title: Text(
-                                  username,
-                                  style: const TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 14),
-                                ),
-                                subtitle: Text(
-                                  'Iscritto il ${_formatDate(createdAt)}',
-                                  style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 12),
-                                ),
-                                trailing: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                title: Row(
                                   children: [
-                                    if (online)
+                                    Text(username, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+                                    if (isMe) ...[
+                                      const SizedBox(width: 6),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 7, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2ECC71)
-                                              .withValues(alpha: 0.12),
-                                          borderRadius:
-                                              BorderRadius.circular(10),
-                                        ),
-                                        child: const Text('online',
-                                            style: TextStyle(
-                                                color: Color(0xFF1A7A4A),
-                                                fontSize: 11,
-                                                fontWeight: FontWeight.w600)),
-                                      )
-                                    else
-                                      Text(
-                                        _formatLastSeen(lastSeen),
-                                        style: TextStyle(
-                                            color: Colors.grey.shade400,
-                                            fontSize: 11),
+                                        padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                        decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(6)),
+                                        child: Text('tu', style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
                                       ),
+                                    ],
+                                    if (isAdmin) ...[
+                                      const SizedBox(width: 6),
+                                      const Icon(Icons.shield_rounded, size: 14, color: Color(0xFFF39C12)),
+                                    ],
                                   ],
+                                ),
+                                subtitle: Text(email, style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                                trailing: IconButton(
+                                  icon: Icon(
+                                    isAdmin ? Icons.shield_rounded : Icons.shield_outlined,
+                                    color: isAdmin ? const Color(0xFFF39C12) : Colors.grey.shade400,
+                                  ),
+                                  tooltip: isAdmin ? 'Rimuovi admin' : 'Rendi admin',
+                                  onPressed: () => _toggleAdmin(u),
                                 ),
                               ),
                             );
@@ -293,12 +316,7 @@ class _StatBadge extends StatelessWidget {
   final String value;
   final Color color;
 
-  const _StatBadge({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _StatBadge({required this.icon, required this.label, required this.value, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -306,14 +324,9 @@ class _StatBadge extends StatelessWidget {
       children: [
         Icon(icon, color: color, size: 14),
         const SizedBox(width: 5),
-        Text(value,
-            style: TextStyle(
-                color: color,
-                fontWeight: FontWeight.bold,
-                fontSize: 16)),
+        Text(value, style: TextStyle(color: color, fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(width: 4),
-        Text(label,
-            style: const TextStyle(color: Colors.white60, fontSize: 12)),
+        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 12)),
       ],
     );
   }
