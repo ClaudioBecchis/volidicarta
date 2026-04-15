@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/public_review.dart';
-import '../services/supabase_service.dart';
+import '../services/auth_service.dart';
+import '../services/aruba_community_service.dart' show SupabaseService;
 import '../widgets/star_rating.dart';
 import '../config/app_colors.dart';
 import '../utils/date_format.dart';
@@ -99,7 +100,7 @@ class _CommunityReviewDetailScreenState
   Widget build(BuildContext context) {
     final s = S.of(context);
     final isMyReview =
-        SupabaseService().currentUser?.id == _review.userId;
+        AuthService().currentUser?.id == _review.userId;
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) {

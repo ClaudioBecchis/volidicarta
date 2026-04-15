@@ -77,7 +77,7 @@ class AuthService {
       'password': password,
     });
     if (res == null) return 'Errore di connessione. Riprova.';
-    if (res['error'] != null) return _translateError(res['error'] as String);
+    if (res['error'] != null) return _translateLoginError(res['error'] as String);
     final user = res['user'] as Map<String, dynamic>?;
     final token = res['access_token'] as String?;
     if (user != null && token != null) {
@@ -94,6 +94,12 @@ class AuthService {
   Future<void> logout() async {
     await _http.post('logout');
     await _http.clearSession();
+  }
+
+  String _translateLoginError(String msg) {
+    final m = msg.toLowerCase();
+    if (m.contains('troppi tentativi')) return 'Troppi tentativi. Attendi qualche minuto.';
+    return 'Email o password errata';
   }
 
   String _translateError(String msg) {
