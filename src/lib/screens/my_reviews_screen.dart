@@ -43,7 +43,17 @@ class MyReviewsScreenState extends State<MyReviewsScreen> {
 
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      if (mounted) {
+        setState(() {
+          _reviews = [];
+          _filtered = [];
+          _loading = false;
+          _groupedCache = null;
+        });
+      }
+      return;
+    }
     try {
       final reviews = await DbHelper().getReviewsByUser(uid);
       if (mounted) {

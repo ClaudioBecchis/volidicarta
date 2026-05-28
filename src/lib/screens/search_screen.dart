@@ -1,4 +1,5 @@
-import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, TargetPlatform;
+import 'package:flutter/foundation.dart'
+    show kIsWeb, defaultTargetPlatform, TargetPlatform;
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -33,8 +34,12 @@ class _SearchScreenState extends State<SearchScreen> {
   String? _error;
   bool _loading = false;
   bool _searched = false;
-  String _langFilter = 'it'; // 'it', 'en', 'all'
+  String _langFilter = 'it_en'; // 'it_en', 'it', 'en', 'all'
   String _searchType = 'all'; // 'all', 'intitle', 'inauthor'
+  int _maxResults = 30;
+  String _lastQuery = '';
+  String _lastLangFilter = 'it_en';
+  String _lastSearchType = 'all';
   Map<String, Review> _reviewedMap = {}; // bookId → Review
   Set<String> _wishlistIds = {}; // bookId → in wishlist
   List<String> _history = [];
@@ -104,20 +109,80 @@ class _SearchScreenState extends State<SearchScreen> {
     }
   }
 
-  Future<void> _search([String? overrideQuery]) async {
+  String? _friendlyError(String? raw) {
+    if (raw == null) return null;
+    if (raw == 'timeout') {
+      return 'Connessione lenta. Riprova tra qualche secondo.';
+    }
+    if (raw == 'google_limit') {
+      return 'Servizio momentaneamente occupato. Riprova a breve.';
+    }
+    if (raw.startsWith('Errore server')) {
+      return 'Il servizio di ricerca non è disponibile al momento.';
+    }
+    if (raw.startsWith('Errore rete')) {
+      return 'Problema di rete. Verifica la connessione e riprova.';
+    }
+    return raw;
+  }
+
+  bool get _canLoadMore =>
+      _searched &&
+      !_loading &&
+      _error == null &&
+      _results.isNotEmpty &&
+      _results.length >= _maxResults;
+
+  Future<void> _search({String? overrideQuery, bool loadMore = false}) async {
     final q = (overrideQuery ?? _ctrl.text).trim();
     if (q.isEmpty) return;
     if (overrideQuery != null) {
       _ctrl.text = overrideQuery;
     }
+    final isSameSearch = q == _lastQuery &&
+        _langFilter == _lastLangFilter &&
+        _searchType == _lastSearchType;
+    final targetMax = (loadMore && isSameSearch) ? _maxResults + 30 : 30;
+    final previousCount = _results.length;
+
     AnalyticsService().trackEvent('search', {'query': q});
-    setState(() { _loading = true; _searched = true; _error = null; });
-    final res = _langFilter == 'all'
-        ? await _api.searchAll(q, searchType: _searchType)
-        : await _api.search(q, langRestrict: _langFilter, searchType: _searchType);
+    setState(() {
+      _loading = true;
+      _searched = true;
+      _error = null;
+      if (!(loadMore && isSameSearch)) {
+        _results = [];
+      }
+    });
+    final res = switch (_langFilter) {
+      'all' =>
+        await _api.searchAll(q, searchType: _searchType, maxResults: targetMax),
+      'it' => await _api.search(q,
+          langRestrict: 'it', searchType: _searchType, maxResults: targetMax),
+      'en' => await _api.search(q,
+          langRestrict: 'en', searchType: _searchType, maxResults: targetMax),
+      _ => await _api.searchBilingual(q,
+          searchType: _searchType, maxResults: targetMax),
+    };
     if (mounted) {
-      setState(() { _results = res.books; _error = res.error; _loading = false; });
+      setState(() {
+        _results = res.books;
+        _error = _friendlyError(res.error);
+        _loading = false;
+        _maxResults = targetMax;
+        _lastQuery = q;
+        _lastLangFilter = _langFilter;
+        _lastSearchType = _searchType;
+      });
       if (res.books.isNotEmpty || res.error == null) _addToHistory(q);
+      if (loadMore && isSameSearch && res.books.length <= previousCount) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Nessun altro risultato disponibile.'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
     }
   }
 
@@ -130,9 +195,9 @@ class _SearchScreenState extends State<SearchScreen> {
         await DbHelper().removeFromWishlist(uid, book.id);
         if (mounted) setState(() => _wishlistIds.remove(book.id));
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Rimosso dalla lista "Da leggere"'),
-                  duration: Duration(seconds: 2)));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Rimosso dalla lista "Da leggere"'),
+              duration: Duration(seconds: 2)));
         }
       } else {
         final wb = WishlistBook(
@@ -142,26 +207,26 @@ class _SearchScreenState extends State<SearchScreen> {
           bookAuthor: book.authors,
           bookCoverUrl: book.coverUrl,
           bookPublisher: book.publisher,
-          bookYear: book.publishedDate != null && book.publishedDate!.length >= 4
-              ? book.publishedDate!.substring(0, 4)
-              : book.publishedDate,
+          bookYear:
+              book.publishedDate != null && book.publishedDate!.length >= 4
+                  ? book.publishedDate!.substring(0, 4)
+                  : book.publishedDate,
           bookGenre: book.categories,
           addedAt: DateTime.now().toIso8601String(),
         );
         await DbHelper().addToWishlist(wb);
         if (mounted) setState(() => _wishlistIds.add(book.id));
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Aggiunto a "Da leggere" 🔖'),
-                  duration: Duration(seconds: 2)));
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Aggiunto a "Da leggere" 🔖'),
+              duration: Duration(seconds: 2)));
         }
       }
     } catch (e) {
       debugPrint('Wishlist toggle error: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Errore. Riprova.'),
-                duration: Duration(seconds: 2)));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+            content: Text('Errore. Riprova.'), duration: Duration(seconds: 2)));
       }
     }
   }
@@ -184,23 +249,31 @@ class _SearchScreenState extends State<SearchScreen> {
       if (_suggestions.isNotEmpty) setState(() => _suggestions = []);
       return;
     }
-    _suggestTimer = Timer(const Duration(milliseconds: 350), () => _fetchSuggestions(value.trim()));
+    _suggestTimer = Timer(const Duration(milliseconds: 350),
+        () => _fetchSuggestions(value.trim()));
   }
 
   Future<void> _fetchSuggestions(String q) async {
     try {
       List<String> results = [];
       if (_searchType == 'inauthor') {
-        final url = 'https://openlibrary.org/search/authors.json?q=${Uri.encodeQueryComponent(q)}&limit=6';
-        final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+        final url =
+            'https://openlibrary.org/search/authors.json?q=${Uri.encodeQueryComponent(q)}&limit=6';
+        final res =
+            await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
           final docs = data['docs'] as List? ?? [];
-          results = docs.map((d) => d['name'] as String? ?? '').where((n) => n.isNotEmpty).toList();
+          results = docs
+              .map((d) => d['name'] as String? ?? '')
+              .where((n) => n.isNotEmpty)
+              .toList();
         }
       } else if (_searchType == 'intitle') {
-        final url = 'https://www.googleapis.com/books/v1/volumes?q=intitle:${Uri.encodeQueryComponent(q)}&maxResults=6&printType=books&fields=items(volumeInfo/title)';
-        final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
+        final url =
+            'https://www.googleapis.com/books/v1/volumes?q=intitle:${Uri.encodeQueryComponent(q)}&maxResults=6&printType=books&fields=items(volumeInfo/title)';
+        final res =
+            await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
         if (res.statusCode == 200) {
           final data = jsonDecode(res.body);
           final items = data['items'] as List? ?? [];
@@ -226,9 +299,15 @@ class _SearchScreenState extends State<SearchScreen> {
   Widget build(BuildContext context) {
     final s = S.of(context);
     return Scaffold(
-      appBar: (!kIsWeb && (defaultTargetPlatform == TargetPlatform.windows || defaultTargetPlatform == TargetPlatform.linux || defaultTargetPlatform == TargetPlatform.macOS)) || MediaQuery.of(context).size.width > 700 ? null : AppBar(
-        title: Text(s.search),
-      ),
+      appBar: (!kIsWeb &&
+                  (defaultTargetPlatform == TargetPlatform.windows ||
+                      defaultTargetPlatform == TargetPlatform.linux ||
+                      defaultTargetPlatform == TargetPlatform.macOS)) ||
+              MediaQuery.of(context).size.width > 700
+          ? null
+          : AppBar(
+              title: Text(s.search),
+            ),
       body: Column(
         children: [
           Padding(
@@ -248,12 +327,17 @@ class _SearchScreenState extends State<SearchScreen> {
                         icon: const Icon(Icons.clear),
                         onPressed: () {
                           _ctrl.clear();
-                          setState(() { _results = []; _searched = false; _error = null; });
+                          setState(() {
+                            _results = [];
+                            _searched = false;
+                            _error = null;
+                          });
                         },
                       )
                     : null,
                 filled: true,
-                fillColor: Theme.of(context).colorScheme.surfaceContainerHighest,
+                fillColor:
+                    Theme.of(context).colorScheme.surfaceContainerHighest,
               ),
               onSubmitted: (_) {
                 setState(() => _suggestions = []);
@@ -276,16 +360,19 @@ class _SearchScreenState extends State<SearchScreen> {
                   itemBuilder: (_, i) => ListTile(
                     dense: true,
                     leading: Icon(
-                      _searchType == 'inauthor' ? Icons.person_outline : Icons.book_outlined,
+                      _searchType == 'inauthor'
+                          ? Icons.person_outline
+                          : Icons.book_outlined,
                       size: 18,
                       color: Colors.grey.shade500,
                     ),
-                    title: Text(_suggestions[i], style: const TextStyle(fontSize: 14)),
+                    title: Text(_suggestions[i],
+                        style: const TextStyle(fontSize: 14)),
                     onTap: () {
                       final selected = _suggestions[i];
                       _ctrl.text = selected;
                       setState(() => _suggestions = []);
-                      _search(selected);
+                      _search(overrideQuery: selected);
                     },
                   ),
                 ),
@@ -305,7 +392,11 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: ChoiceChip(
                       label: Text(chip.$1),
                       selected: _searchType == chip.$2,
-                      onSelected: (_) => setState(() { _searchType = chip.$2; _suggestions = []; }),
+                      onSelected: (_) => setState(() {
+                        _searchType = chip.$2;
+                        _suggestions = [];
+                        _searched = false;
+                      }),
                     ),
                   ),
               ],
@@ -316,6 +407,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: Row(
               children: [
                 for (final chip in [
+                  ('🇮🇹+🇬🇧 ITA+ENG', 'it_en'),
                   ('🇮🇹 ITA', 'it'),
                   ('🇬🇧 ENG', 'en'),
                   ('🌐 Tutti', 'all'),
@@ -325,7 +417,10 @@ class _SearchScreenState extends State<SearchScreen> {
                     child: ChoiceChip(
                       label: Text(chip.$1),
                       selected: _langFilter == chip.$2,
-                      onSelected: (_) => setState(() => _langFilter = chip.$2),
+                      onSelected: (_) => setState(() {
+                        _langFilter = chip.$2;
+                        _searched = false;
+                      }),
                     ),
                   ),
               ],
@@ -336,7 +431,7 @@ class _SearchScreenState extends State<SearchScreen> {
             child: SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: _loading ? null : _search,
+                onPressed: _loading ? null : () => _search(),
                 icon: _loading
                     ? const SizedBox(
                         width: 16,
@@ -357,14 +452,16 @@ class _SearchScreenState extends State<SearchScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text('Powered by ',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+                    style:
+                        TextStyle(fontSize: 10, color: Colors.grey.shade400)),
                 const Text('Google',
                     style: TextStyle(
                         fontSize: 10,
                         color: Color(0xFF4285F4),
                         fontWeight: FontWeight.w600)),
                 Text(' · Open Library',
-                    style: TextStyle(fontSize: 10, color: Colors.grey.shade400)),
+                    style:
+                        TextStyle(fontSize: 10, color: Colors.grey.shade400)),
               ],
             ),
           ),
@@ -403,7 +500,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
               ),
               const SizedBox(height: 8),
-              Text('Fonte: Google Books (Amazon, Feltrinelli, IBS...)',
+              Text('Fonti: Google Books · Open Library · OPAC SBN',
                   style: TextStyle(color: Colors.grey.shade400, fontSize: 12)),
             ],
           ),
@@ -420,7 +517,8 @@ class _SearchScreenState extends State<SearchScreen> {
                 const SizedBox(width: 6),
                 const Expanded(
                   child: Text('Ricerche recenti',
-                      style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                      style:
+                          TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                 ),
                 TextButton(
                   onPressed: _clearHistory,
@@ -429,7 +527,8 @@ class _SearchScreenState extends State<SearchScreen> {
                       minimumSize: Size.zero,
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                   child: Text('Cancella tutto',
-                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                      style:
+                          TextStyle(fontSize: 12, color: Colors.grey.shade500)),
                 ),
               ],
             ),
@@ -439,14 +538,16 @@ class _SearchScreenState extends State<SearchScreen> {
               itemCount: _history.length,
               itemBuilder: (_, i) => ListTile(
                 dense: true,
-                leading: const Icon(Icons.history, color: Colors.grey, size: 20),
+                leading:
+                    const Icon(Icons.history, color: Colors.grey, size: 20),
                 title: Text(_history[i], style: const TextStyle(fontSize: 14)),
                 trailing: IconButton(
-                  icon: Icon(Icons.close, size: 18, color: Colors.grey.shade400),
+                  icon:
+                      Icon(Icons.close, size: 18, color: Colors.grey.shade400),
                   onPressed: () => _removeFromHistory(i),
                   tooltip: 'Rimuovi',
                 ),
-                onTap: () => _search(_history[i]),
+                onTap: () => _search(overrideQuery: _history[i]),
               ),
             ),
           ),
@@ -467,7 +568,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   style: TextStyle(color: Colors.red.shade700)),
               const SizedBox(height: 16),
               ElevatedButton.icon(
-                onPressed: _search,
+                onPressed: () => _search(),
                 icon: const Icon(Icons.refresh),
                 label: const Text('Riprova'),
               ),
@@ -481,8 +582,7 @@ class _SearchScreenState extends State<SearchScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.find_in_page,
-                size: 64, color: Colors.grey.shade300),
+            Icon(Icons.find_in_page, size: 64, color: Colors.grey.shade300),
             const SizedBox(height: 12),
             Text('Nessun risultato trovato',
                 style: TextStyle(color: Colors.grey.shade500)),
@@ -493,34 +593,52 @@ class _SearchScreenState extends State<SearchScreen> {
                   setState(() => _langFilter = 'all');
                   _search();
                 },
-                child: const Text('Cerca in tutte le lingue'),
+                child: const Text('Allarga ricerca a tutte le lingue'),
               ),
             ],
           ],
         ),
       );
     }
-    return ListView.builder(
-      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-      itemCount: _results.length,
-      itemBuilder: (_, i) {
-        final book = _results[i];
-        return BookCard(
-          book: book,
-          hasReview: _reviewedMap.containsKey(book.id),
-          inWishlist: _wishlistIds.contains(book.id),
-          onWishlistToggle: () => _toggleWishlist(book),
-          onTap: () async {
-            await Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (_) => BookDetailScreen(book: book)),
-            );
-            _loadReviewed();
-          },
-          onSelectRead: () => _selectBook(book),
-        );
-      },
+    return Column(
+      children: [
+        Expanded(
+          child: ListView.builder(
+            keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+            itemCount: _results.length,
+            itemBuilder: (_, i) {
+              final book = _results[i];
+              return BookCard(
+                book: book,
+                hasReview: _reviewedMap.containsKey(book.id),
+                inWishlist: _wishlistIds.contains(book.id),
+                onWishlistToggle: () => _toggleWishlist(book),
+                onTap: () async {
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (_) => BookDetailScreen(book: book)),
+                  );
+                  _loadReviewed();
+                },
+                onSelectRead: () => _selectBook(book),
+              );
+            },
+          ),
+        ),
+        if (_canLoadMore)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(12, 4, 12, 10),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _search(loadMore: true),
+                icon: const Icon(Icons.expand_more),
+                label: const Text('Carica altri risultati'),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

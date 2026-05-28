@@ -16,6 +16,26 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
   String _search = '';
   final _searchCtrl = TextEditingController();
 
+  Future<void> _setAdmin(String userId, bool isAdmin) async {
+    final res = await ArubaHttp().post('set_admin', {'user_id': userId, 'is_admin': isAdmin ? 1 : 0});
+    if (res != null && res['is_admin'] != null) {
+      setState(() {
+        final idx = _users.indexWhere((u) => u['id'] == userId);
+        if (idx != -1) _users[idx]['is_admin'] = isAdmin;
+      });
+    }
+  }
+
+  Future<void> _setConfirmed(String userId, bool isConfirmed) async {
+    final res = await ArubaHttp().post('set_confirmed', {'user_id': userId, 'is_confirmed': isConfirmed ? 1 : 0});
+    if (res != null && res['is_confirmed'] != null) {
+      setState(() {
+        final idx = _users.indexWhere((u) => u['id'] == userId);
+        if (idx != -1) _users[idx]['is_confirmed'] = isConfirmed;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -42,6 +62,13 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
     } catch (e) {
       debugPrint('AdminUsers load error: $e');
       if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _resendConfirmation(String userId, String email) async {
+    final res = await ArubaHttp().post('resend_confirmation', {'user_id': userId, 'email': email});
+    if (res != null && res['success'] == true) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Email di conferma reinviata')));
     }
   }
 
@@ -240,11 +267,33 @@ class _AdminUsersScreenState extends State<AdminUsersScreen> {
                                       fontWeight: FontWeight.w600,
                                       fontSize: 14),
                                 ),
-                                subtitle: Text(
-                                  'Iscritto il ${_formatDate(createdAt)}',
-                                  style: TextStyle(
-                                      color: Colors.grey.shade500,
-                                      fontSize: 12),
+                                subtitle: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Iscritto il ${_formatDate(createdAt)}',
+                                      style: TextStyle(
+                                          color: Colors.grey.shade500,
+                                          fontSize: 12),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        _ToggleChip(
+                                          label: 'Admin',
+                                          value: (u['is_admin'] as int?) == 1,
+                                          onChanged: (v) => _setAdmin(u['id'] as String, v),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        _ToggleChip(
+                                          label: 'Confermato',
+                                          value: (u['is_confirmed'] as int?) == 1,
+                                          onChanged: (v) => _setConfirmed(u['id'] as String, v),
+                                          color: const Color(0xFF27AE60),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
                                 ),
                                 trailing: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
@@ -315,6 +364,44 @@ class _StatBadge extends StatelessWidget {
         Text(label,
             style: const TextStyle(color: Colors.white60, fontSize: 12)),
       ],
+    );
+  }
+}
+
+class _ToggleChip extends StatelessWidget {
+  final String label;
+  final bool value;
+  final ValueChanged<bool> onChanged;
+  final Color? color;
+
+  const _ToggleChip({
+    required this.label,
+    required this.value,
+    required this.onChanged,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? const Color(0xFF1A5276);
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          color: value ? c.withValues(alpha: 0.15) : Colors.grey.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: value ? c : Colors.grey.shade400, width: 1),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.w600,
+            color: value ? c : Colors.grey.shade600,
+          ),
+        ),
+      ),
     );
   }
 }

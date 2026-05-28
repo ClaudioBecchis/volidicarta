@@ -38,7 +38,16 @@ class _WishlistScreenState extends State<WishlistScreen> {
 
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      if (mounted) {
+        setState(() {
+          _books = [];
+          _filtered = [];
+          _loading = false;
+        });
+      }
+      return;
+    }
     try {
       final books = await DbHelper().getWishlist(uid);
       if (mounted) {

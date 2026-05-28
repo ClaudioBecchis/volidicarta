@@ -26,7 +26,16 @@ class _StatsScreenState extends State<StatsScreen> {
 
   Future<void> _load() async {
     final uid = AuthService().currentUser?.id;
-    if (uid == null) return;
+    if (uid == null) {
+      if (mounted) {
+        setState(() {
+          _stats = {'total': 0, 'avg': null, 'distribution': <int, int>{}};
+          _byGenre = {};
+          _byYear = {};
+        });
+      }
+      return;
+    }
     try {
       final results = await Future.wait([
         DbHelper().getStats(uid),

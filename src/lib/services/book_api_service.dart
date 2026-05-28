@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import '../models/book.dart';
 import '../config/app_config.dart';
@@ -11,7 +12,8 @@ class BookApiService {
   static const _sbnBase = 'https://opac.sbn.it/opacmobilegw/search.json';
 
   // Cache in memoria: chiave = query+lang, valore = risultato (max 100 voci, TTL 30 min)
-  static final _cache = <String, ({List<Book> books, String? error, DateTime ts})>{};
+  static final _cache =
+      <String, ({List<Book> books, String? error, DateTime ts})>{};
   static const _cacheMaxSize = 100;
   static const _cacheTtl = Duration(minutes: 30);
   // Ultimo timestamp di chiamata Google Books
@@ -44,10 +46,37 @@ class BookApiService {
     return q;
   }
 
-  Future<({List<Book> books, String? error})> search(
-      String query, {int maxResults = 30, String langRestrict = 'it', String searchType = 'all'}) async {
+  List<String> _buildQueryVariants(String query) {
+    final base = query.trim();
+    if (base.isEmpty) return [];
+    final normalized = base
+        .replaceAll(RegExp(r'[^A-Za-z0-9\s]'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+    final isbnCandidate = base.replaceAll(RegExp(r'[^0-9Xx]'), '');
+    final variants = <String>[base];
+    if (normalized.isNotEmpty &&
+        normalized.toLowerCase() != base.toLowerCase()) {
+      variants.add(normalized);
+    }
+    if (isbnCandidate.length == 10 || isbnCandidate.length == 13) {
+      variants.add('isbn:$isbnCandidate');
+    }
+    final dedup = <String>{};
+    final out = <String>[];
+    for (final v in variants) {
+      final key = v.toLowerCase();
+      if (dedup.add(key)) out.add(v);
+    }
+    return out;
+  }
+
+  Future<({List<Book> books, String? error})> search(String query,
+      {int maxResults = 30,
+      String langRestrict = 'it',
+      String searchType = 'all'}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
-    final key = '${query.trim()}|$langRestrict|$searchType';
+    final key = '${query.trim()}|$langRestrict|$searchType|$maxResults';
     if (_cache.containsKey(key)) {
       final entry = _cache[key]!;
       if (DateTime.now().difference(entry.ts) < _cacheTtl) {
@@ -57,17 +86,22 @@ class BookApiService {
     }
 
     final effectiveQuery = _buildQuery(query, searchType);
+    final sourceLimit = math.max(20, math.min(80, maxResults * 2));
+    final secondaryLimit = math.max(15, sourceLimit ~/ 2);
 
     // Per il filtro ITA: ricerca parallela su 4 fonti — Google (con/senza lang),
     // Open Library (con/senza lang) e OPAC SBN per autori emergenti e piccoli
     // editori non indicizzati da Google.
     if (langRestrict == 'it') {
       final results = await Future.wait([
-        _searchGoogle(effectiveQuery, maxResults: 40, langRestrict: 'it'),
-        _searchGoogle(effectiveQuery, maxResults: 40),
-        _searchOpenLibrary(query, maxResults: 40, lang: 'ita', searchType: searchType),
-        _searchOpenLibrary(query, maxResults: 20, searchType: searchType),
-        _searchSbn(query, maxResults: 20),
+        _searchGoogle(effectiveQuery,
+            maxResults: sourceLimit, langRestrict: 'it'),
+        _searchGoogle(effectiveQuery, maxResults: sourceLimit),
+        _searchOpenLibrary(query,
+            maxResults: sourceLimit, lang: 'ita', searchType: searchType),
+        _searchOpenLibrary(query,
+            maxResults: secondaryLimit, searchType: searchType),
+        _searchSbn(query, maxResults: secondaryLimit),
       ]);
       final withRestrict = results[0];
       final withoutRestrict = results[1];
@@ -81,23 +115,32 @@ class BookApiService {
 
       void addUnique(Book b) {
         if (seenIds.add(b.id)) {
-          final titleKey = '${b.title.toLowerCase()}|${b.authors.toLowerCase()}';
+          final titleKey =
+              '${b.title.toLowerCase()}|${b.authors.toLowerCase()}';
           if (seenTitles.add(titleKey)) merged.add(b);
         }
       }
 
       // 1. Google con filtro lingua (priorità alta)
-      for (final b in withRestrict.books) { addUnique(b); }
+      for (final b in withRestrict.books) {
+        addUnique(b);
+      }
       // 2. Google senza filtro, solo lingua IT
       for (final b in withoutRestrict.books) {
         if (b.language == 'it') addUnique(b);
       }
       // 3. SEMPRE include Open Library IT (autori emergenti)
-      for (final b in openLibIt.books) { addUnique(b); }
+      for (final b in openLibIt.books) {
+        addUnique(b);
+      }
       // 4. Open Library senza filtro (cattura metadati lingua mancanti)
-      for (final b in openLibAll.books) { addUnique(b); }
+      for (final b in openLibAll.books) {
+        addUnique(b);
+      }
       // 5. OPAC SBN — catalogo completo biblioteche italiane
-      for (final b in sbn.books) { addUnique(b); }
+      for (final b in sbn.books) {
+        addUnique(b);
+      }
 
       if (merged.isEmpty && withRestrict.error != null) {
         if (openLibIt.error == null && openLibIt.books.isNotEmpty) {
@@ -108,19 +151,23 @@ class BookApiService {
           _addToCache(key, sbn);
           return sbn;
         }
-        final fallback = await _searchOpenLibrary(query, maxResults: maxResults, lang: 'ita', searchType: searchType);
+        final fallback = await _searchOpenLibrary(query,
+            maxResults: maxResults, lang: 'ita', searchType: searchType);
         if (fallback.error == null) _addToCache(key, fallback);
         return fallback;
       }
-      final limited = (books: merged.take(60).toList(), error: null);
+      final limited = (books: merged.take(maxResults).toList(), error: null);
       _addToCache(key, limited);
       return limited;
     }
 
     final olLang = langRestrict == 'en' ? 'eng' : null;
     final results = await Future.wait([
-      _searchGoogle(effectiveQuery, maxResults: 40, langRestrict: langRestrict == 'it' ? 'it' : langRestrict),
-      _searchOpenLibrary(query, maxResults: 40, lang: olLang, searchType: searchType),
+      _searchGoogle(effectiveQuery,
+          maxResults: sourceLimit,
+          langRestrict: langRestrict == 'it' ? 'it' : langRestrict),
+      _searchOpenLibrary(query,
+          maxResults: sourceLimit, lang: olLang, searchType: searchType),
     ]);
     final googleResult = results[0];
     final olResult = results[1];
@@ -146,15 +193,90 @@ class BookApiService {
         if (seenTitles.add(titleKey)) merged.add(b);
       }
     }
-    final result = (books: merged.take(60).toList(), error: null);
+    final result = (books: merged.take(maxResults).toList(), error: null);
     _addToCache(key, result);
     return result;
   }
 
-  Future<({List<Book> books, String? error})> searchAll(
-      String query, {int maxResults = 30, String searchType = 'all'}) async {
+  Future<({List<Book> books, String? error})> searchBilingual(String query,
+      {int maxResults = 30, String searchType = 'all'}) async {
     if (query.trim().isEmpty) return (books: <Book>[], error: null);
-    final key = '${query.trim()}|all|$searchType';
+    final key = '${query.trim()}|it_en|$searchType|$maxResults';
+    if (_cache.containsKey(key)) {
+      final entry = _cache[key]!;
+      if (DateTime.now().difference(entry.ts) < _cacheTtl) {
+        return (books: entry.books, error: entry.error);
+      }
+      _cache.remove(key);
+    }
+    final sourceLimit = math.max(20, math.min(80, maxResults * 2));
+    final secondaryLimit = math.max(15, sourceLimit ~/ 2);
+    final variants = _buildQueryVariants(query);
+
+    final seenIds = <String>{};
+    final seenTitles = <String>{};
+    final merged = <Book>[];
+
+    void addUnique(Book b) {
+      if (seenIds.add(b.id)) {
+        final titleKey = '${b.title.toLowerCase()}|${b.authors.toLowerCase()}';
+        if (seenTitles.add(titleKey)) merged.add(b);
+      }
+    }
+
+    for (final variant in variants) {
+      final effectiveQuery = _buildQuery(variant, searchType);
+      final results = await Future.wait([
+        _searchGoogle(effectiveQuery,
+            maxResults: sourceLimit, langRestrict: 'it'),
+        _searchGoogle(effectiveQuery,
+            maxResults: sourceLimit, langRestrict: 'en'),
+        _searchOpenLibrary(variant,
+            maxResults: sourceLimit, lang: 'ita', searchType: searchType),
+        _searchOpenLibrary(variant,
+            maxResults: sourceLimit, lang: 'eng', searchType: searchType),
+        _searchSbn(variant, maxResults: secondaryLimit),
+      ]);
+      final googleIt = results[0];
+      final googleEn = results[1];
+      final openLibIt = results[2];
+      final openLibEn = results[3];
+      final sbn = results[4];
+
+      for (final b in googleIt.books) {
+        addUnique(b);
+      }
+      for (final b in googleEn.books) {
+        addUnique(b);
+      }
+      for (final b in openLibIt.books) {
+        addUnique(b);
+      }
+      for (final b in openLibEn.books) {
+        addUnique(b);
+      }
+      for (final b in sbn.books) {
+        addUnique(b);
+      }
+      if (merged.length >= maxResults) break;
+    }
+
+    if (merged.isEmpty) {
+      final fallback = await searchAll(query,
+          maxResults: maxResults, searchType: searchType);
+      if (fallback.error == null) _addToCache(key, fallback);
+      return fallback;
+    }
+
+    final result = (books: merged.take(maxResults).toList(), error: null);
+    _addToCache(key, result);
+    return result;
+  }
+
+  Future<({List<Book> books, String? error})> searchAll(String query,
+      {int maxResults = 30, String searchType = 'all'}) async {
+    if (query.trim().isEmpty) return (books: <Book>[], error: null);
+    final key = '${query.trim()}|all|$searchType|$maxResults';
     if (_cache.containsKey(key)) {
       final entry = _cache[key]!;
       if (DateTime.now().difference(entry.ts) < _cacheTtl) {
@@ -163,9 +285,11 @@ class BookApiService {
       _cache.remove(key);
     }
     final effectiveQuery = _buildQuery(query, searchType);
+    final sourceLimit = math.max(20, math.min(80, maxResults * 2));
     final results = await Future.wait([
-      _searchGoogle(effectiveQuery, maxResults: 40),
-      _searchOpenLibrary(query, maxResults: 40, searchType: searchType),
+      _searchGoogle(effectiveQuery, maxResults: sourceLimit),
+      _searchOpenLibrary(query,
+          maxResults: sourceLimit, searchType: searchType),
     ]);
     final googleResult = results[0];
     final olResult = results[1];
@@ -191,7 +315,7 @@ class BookApiService {
         if (seenTitles.add(titleKey)) merged.add(b);
       }
     }
-    final result = (books: merged.take(60).toList(), error: null);
+    final result = (books: merged.take(maxResults).toList(), error: null);
     _addToCache(key, result);
     return result;
   }
@@ -203,8 +327,8 @@ class BookApiService {
     _cache[key] = (books: value.books, error: value.error, ts: DateTime.now());
   }
 
-  Future<({List<Book> books, String? error})> _searchGoogle(
-      String query, {int maxResults = 15, String? langRestrict}) async {
+  Future<({List<Book> books, String? error})> _searchGoogle(String query,
+      {int maxResults = 15, String? langRestrict}) async {
     final encoded = Uri.encodeQueryComponent(query.trim());
     var url = '$_googleBase?q=$encoded&maxResults=$maxResults&printType=books';
     if (langRestrict != null) url += '&langRestrict=$langRestrict';
@@ -212,7 +336,8 @@ class BookApiService {
     return _fetchGoogle(uri);
   }
 
-  Future<({List<Book> books, String? error})> _fetchGoogle(Uri uri, {bool isRetry = false}) async {
+  Future<({List<Book> books, String? error})> _fetchGoogle(Uri uri,
+      {bool isRetry = false}) async {
     try {
       await _throttle();
       final res = await retryWithBackoff(
@@ -233,7 +358,10 @@ class BookApiService {
       final data = jsonDecode(res.body);
       final items = data['items'] as List?;
       if (items == null) return (books: <Book>[], error: null);
-      return (books: items.map((j) => Book.fromGoogleApi(j)).toList(), error: null);
+      return (
+        books: items.map((j) => Book.fromGoogleApi(j)).toList(),
+        error: null
+      );
     } on TimeoutException {
       return (books: <Book>[], error: 'timeout');
     } catch (e) {
@@ -241,8 +369,8 @@ class BookApiService {
     }
   }
 
-  Future<({List<Book> books, String? error})> _searchOpenLibrary(
-      String query, {int maxResults = 15, String? lang, String searchType = 'all'}) async {
+  Future<({List<Book> books, String? error})> _searchOpenLibrary(String query,
+      {int maxResults = 15, String? lang, String searchType = 'all'}) async {
     try {
       final encoded = Uri.encodeQueryComponent(query.trim());
       final String searchParam;
@@ -253,21 +381,31 @@ class BookApiService {
       } else {
         searchParam = 'q=$encoded';
       }
-      var url = '$_openLibBase?$searchParam&limit=$maxResults&fields=key,title,author_name,cover_i,isbn,publisher,first_publish_year,number_of_pages_median,subject';
+      var url =
+          '$_openLibBase?$searchParam&limit=$maxResults&fields=key,title,author_name,cover_i,isbn,publisher,first_publish_year,number_of_pages_median,subject';
       if (lang != null) url += '&language=$lang';
-      final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
+      final res =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 10));
       if (res.statusCode != 200) {
-        return (books: <Book>[], error: 'Open Library non disponibile (${res.statusCode}).');
+        return (
+          books: <Book>[],
+          error: 'Open Library non disponibile (${res.statusCode}).'
+        );
       }
       final data = jsonDecode(res.body);
       final docs = data['docs'] as List?;
       if (docs == null || docs.isEmpty) return (books: <Book>[], error: null);
       return (
-        books: docs.map((j) => Book.fromOpenLibrary(j as Map<String, dynamic>)).toList(),
+        books: docs
+            .map((j) => Book.fromOpenLibrary(j as Map<String, dynamic>))
+            .toList(),
         error: null
       );
     } on TimeoutException {
-      return (books: <Book>[], error: 'Timeout: controlla la connessione internet');
+      return (
+        books: <Book>[],
+        error: 'Timeout: controlla la connessione internet'
+      );
     } catch (e) {
       return (books: <Book>[], error: 'Errore rete: ${e.toString()}');
     }
@@ -276,16 +414,19 @@ class BookApiService {
   /// Cerca nel catalogo OPAC SBN (Servizio Bibliotecario Nazionale italiano).
   /// Indicizza TUTTI i libri pubblicati in Italia, inclusi piccoli editori
   /// e autori emergenti/self-published con ISBN.
-  Future<({List<Book> books, String? error})> _searchSbn(
-      String query, {int maxResults = 20}) async {
+  Future<({List<Book> books, String? error})> _searchSbn(String query,
+      {int maxResults = 20}) async {
     try {
       final encoded = Uri.encodeQueryComponent(query.trim());
       // L'API OPAC SBN usa il formato SRU/OpenSearch
       final url = '$_sbnBase?any=$encoded&rows=$maxResults&channel=OPAC_MOBILE';
-      final res = await http.get(Uri.parse(url))
-          .timeout(const Duration(seconds: 8));
+      final res =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
       if (res.statusCode != 200) {
-        return (books: <Book>[], error: null); // Fallimento silenzioso, non blocca
+        return (
+          books: <Book>[],
+          error: null
+        ); // Fallimento silenzioso, non blocca
       }
       final data = jsonDecode(res.body);
       final records = (data['briefRecords'] ?? data['records'] ?? []) as List;
@@ -295,7 +436,8 @@ class BookApiService {
       for (final r in records) {
         try {
           final title = (r['title'] ?? r['titolo'] ?? '') as String;
-          final authors = (r['author'] ?? r['autore'] ?? 'Autore sconosciuto') as String;
+          final authors =
+              (r['author'] ?? r['autore'] ?? 'Autore sconosciuto') as String;
           if (title.isEmpty) continue;
           final bid = r['bid'] ?? r['id'] ?? '';
           books.add(Book(

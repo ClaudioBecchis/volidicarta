@@ -63,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
     // Mostra dialog crash report su Android e Windows (non su Web)
     final isAndroid = !kIsWeb && defaultTargetPlatform == TargetPlatform.android;
     final isWindows = !kIsWeb && defaultTargetPlatform == TargetPlatform.windows;
-    if (isAndroid || isWindows) {
+    if (consentAccepted && (isAndroid || isWindows)) {
       try {
         await _checkAndReportCrash();
       } catch (e) {

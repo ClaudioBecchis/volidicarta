@@ -381,12 +381,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (confirmed != true) return;
     if (!context.mounted) return;
 
+    // Salva uid PRIMA del deleteAccount, perché il servizio pulisce la sessione
+    final uidBeforeDelete = AuthService().currentUser?.id;
+
     // Mostra loading
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => const Center(child: CircularProgressIndicator()),
     );
+    final messenger = ScaffoldMessenger.maybeOf(context);
 
     final error = await SupabaseService().deleteAccount();
 
@@ -394,19 +398,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Navigator.pop(context); // chiudi loading
 
     if (error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
+      messenger?.showSnackBar(
           SnackBar(content: Text(error), backgroundColor: Colors.red));
       return;
     }
 
     // Cancella dati locali
-    final uid = AuthService().currentUser?.id;
-    try { if (uid != null) await DbHelper().deleteAllUserData(uid); } catch (_) {}
+    try {
+      if (uidBeforeDelete != null) {
+        await DbHelper().deleteAllUserData(uidBeforeDelete);
+      }
+    } catch (_) {}
 
     if (!context.mounted) return;
     // Torna alla root e mostra messaggio
     Navigator.of(context).popUntil((r) => r.isFirst);
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+    messenger?.showSnackBar(const SnackBar(
       content: Text('Account eliminato con successo.'),
       duration: Duration(seconds: 3),
     ));
