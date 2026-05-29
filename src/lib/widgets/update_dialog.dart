@@ -5,7 +5,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
 import '../services/update_service.dart';
 import '../database/db_helper.dart';
 
@@ -36,8 +35,22 @@ class _UpdateDialogState extends State<UpdateDialog> {
   Future<void> _update() async {
     final info = widget.info;
 
+    // Android: gli aggiornamenti arrivano dal Play Store (nessuna installazione APK diretta)
+    if (UpdateService.isAndroid) {
+      final store = Uri.parse('market://details?id=it.polariscore.bookshelf');
+      final web = Uri.parse(
+          'https://play.google.com/store/apps/details?id=it.polariscore.bookshelf');
+      if (await canLaunchUrl(store)) {
+        await launchUrl(store, mode: LaunchMode.externalApplication);
+      } else {
+        await launchUrl(web, mode: LaunchMode.externalApplication);
+      }
+      if (mounted) Navigator.pop(context);
+      return;
+    }
+
     // Web o piattaforme non supportate: apri link nel browser
-    if (!UpdateService.isAndroid && !UpdateService.isWindows) {
+    if (!UpdateService.isWindows) {
       final uri = Uri.parse(info.downloadUrl ?? '');
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -87,24 +100,6 @@ class _UpdateDialogState extends State<UpdateDialog> {
 
       if (!mounted) return;
       setState(() { _downloading = false; _progress = 1; });
-
-      // ── Android: lancia il wizard di installazione nativo ────────────────
-      if (UpdateService.isAndroid) {
-        final result = await OpenFilex.open(installer.path, type: 'application/vnd.android.package-archive');
-        // Se l'installazione fallisce (permesso mancante), apri nel browser
-        if (result.type != ResultType.done) {
-          final downloadUrl = UpdateService().apkUrl(info.downloadUrl, info.latestVersion) ?? info.downloadUrl!;
-          final uri = Uri.parse(downloadUrl);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri, mode: LaunchMode.externalApplication);
-          }
-        }
-        // Chiudi l'app per permettere l'installazione pulita
-        await Future.delayed(const Duration(milliseconds: 800));
-        await DbHelper().close();
-        await SystemNavigator.pop();
-        return;
-      }
 
       // ── Windows: chiedi conferma e avvia setup ───────────────────────────
       final confirm = await showDialog<bool>(

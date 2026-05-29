@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
 import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
-import 'package:open_filex/open_filex.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
 import 'aruba_http.dart';
@@ -90,34 +89,14 @@ class UpdateService {
       final tmpDir = await getTemporaryDirectory();
 
       if (isAndroid) {
-        final url = apkUrl(info.downloadUrl, info.latestVersion)
-            ?? info.downloadUrl!;
-        final apkFile = File('${tmpDir.path}/VDC_update_${info.latestVersion}.apk');
-
-        if (!apkFile.existsSync()) {
-          final req = http.Request('GET', Uri.parse(url));
-          final response = await req.send().timeout(const Duration(minutes: 10));
-          await apkFile.writeAsBytes(await response.stream.toBytes());
-        }
-
-        // Verifica integrità SHA-256
-        if (info.sha256 != null && info.sha256!.isNotEmpty) {
-          final digest = sha256.convert(await apkFile.readAsBytes());
-          if (digest.toString() != info.sha256) {
-            await apkFile.delete();
-            throw Exception('SHA-256 mismatch: APK corrotto o manomesso');
-          }
-        }
-
-        // Lancia il wizard di installazione nativo — unica azione richiesta all'utente
-        final result = await OpenFilex.open(
-          apkFile.path,
-          type: 'application/vnd.android.package-archive',
-        );
-        // Fallback: se il permesso manca, apri il download nel browser
-        if (result.type != ResultType.done) {
-          final uri = Uri.parse(apkUrl(info.downloadUrl, info.latestVersion) ?? info.downloadUrl!);
-          await launchUrl(uri, mode: LaunchMode.externalApplication);
+        // Aggiornamenti Android dal Play Store (nessuna installazione APK diretta)
+        final store = Uri.parse('market://details?id=it.polariscore.bookshelf');
+        final web = Uri.parse(
+            'https://play.google.com/store/apps/details?id=it.polariscore.bookshelf');
+        if (await canLaunchUrl(store)) {
+          await launchUrl(store, mode: LaunchMode.externalApplication);
+        } else {
+          await launchUrl(web, mode: LaunchMode.externalApplication);
         }
         return;
       }
