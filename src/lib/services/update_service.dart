@@ -3,7 +3,6 @@ import 'package:flutter/foundation.dart' show kIsWeb, defaultTargetPlatform, Tar
 import 'package:flutter/services.dart' show SystemNavigator;
 import 'package:http/http.dart' as http;
 import 'package:crypto/crypto.dart';
-import 'dart:convert';
 import 'package:path_provider/path_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../config/supabase_config.dart';
